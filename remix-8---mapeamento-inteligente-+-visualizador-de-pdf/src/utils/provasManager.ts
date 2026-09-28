@@ -48,6 +48,8 @@ export function createNewSimulado(
     timeSpentSeconds: 0,
     notes: '',
     examType: examType === 'true_false' ? 'true_false' : 'multiple_choice',
+    subjectRanges: [],
+    reviewedQuestionIndexes: [],
   };
 }
 
@@ -62,6 +64,9 @@ export function duplicateSimulado(source: SimuladoData): SimuladoData {
     userAnswers: [...source.userAnswers],
     keyAnswers: [...source.keyAnswers],
     flaggedQuestions: [...source.flaggedQuestions],
+    subjectRanges: source.subjectRanges?.map(range => ({ ...range })) || [],
+    examMetadata: source.examMetadata ? { ...source.examMetadata } : undefined,
+    reviewedQuestionIndexes: [...(source.reviewedQuestionIndexes || [])],
     isCorrected: source.isCorrected,
     isLocked: source.isLocked ?? source.isCorrected,
     isResultOutdated: source.isResultOutdated ?? false,
@@ -94,6 +99,27 @@ export function sanitizeSimulado(item: any, fallbackIndex: number = 1): Simulado
   const isLocked = item?.isLocked !== undefined ? Boolean(item.isLocked) : isCorrected;
   const isResultOutdated = Boolean(item?.isResultOutdated || false);
 
+  const subjectRanges = Array.isArray(item?.subjectRanges)
+    ? item.subjectRanges
+        .filter((range: any) => range && typeof range.name === 'string')
+        .map((range: any, index: number) => ({
+          id: typeof range.id === 'string' && range.id ? range.id : `subject_${Date.now()}_${index}`,
+          name: range.name.trim() || `Disciplina ${index + 1}`,
+          start: Math.max(1, Math.min(tot, Number(range.start) || 1)),
+          end: Math.max(1, Math.min(tot, Number(range.end) || tot)),
+          color: ['slate', 'amber', 'emerald', 'blue', 'violet', 'rose', 'cyan'].includes(range.color)
+            ? range.color
+            : 'slate',
+        }))
+        .filter((range: any) => range.start <= range.end)
+    : [];
+
+  const reviewedQuestionIndexes = Array.isArray(item?.reviewedQuestionIndexes)
+    ? item.reviewedQuestionIndexes.filter(
+        (idx: any) => Number.isInteger(idx) && idx >= 0 && idx < tot
+      )
+    : [];
+
   const safeItem = typeof item === 'object' && item !== null ? item : {};
 
   return {
@@ -113,6 +139,12 @@ export function sanitizeSimulado(item: any, fallbackIndex: number = 1): Simulado
     timeSpentSeconds: typeof item?.timeSpentSeconds === 'number' ? item.timeSpentSeconds : 0,
     notes: typeof item?.notes === 'string' ? item.notes : '',
     examType: item?.examType === 'true_false' ? 'true_false' : 'multiple_choice',
+    subjectRanges,
+    examMetadata:
+      item?.examMetadata && typeof item.examMetadata === 'object'
+        ? { ...item.examMetadata }
+        : undefined,
+    reviewedQuestionIndexes,
   };
 }
 

@@ -1,23 +1,21 @@
 import React from 'react';
 import {
   PlusCircle,
-  Play,
   Upload,
   BookOpen,
   CheckCircle2,
   Shield,
-  ArrowRight,
   MessageSquare,
   ExternalLink,
   Zap,
-  Scale,
-  Lock,
-  Keyboard,
   FileCheck,
   Calendar,
   Sun,
   Moon,
   Check,
+  LibraryBig,
+  BarChart3,
+  BrainCircuit,
 } from 'lucide-react';
 import { SimuladoData, AppTheme } from '../types';
 import { computeSimuladoStats, getPerformanceInfo } from '../utils/parser';
@@ -32,6 +30,8 @@ interface WelcomeEmptyStateProps {
   onSelectProva?: (prova: SimuladoData) => void;
   onCreateFirstProva: () => void;
   onOpenPresetsModal: () => void;
+  onOpenLibrary: () => void;
+  onOpenInsights: () => void;
   onOpenBackupModal: (tab?: 'export' | 'import') => void;
 }
 
@@ -45,6 +45,8 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
   onSelectProva,
   onCreateFirstProva,
   onOpenPresetsModal,
+  onOpenLibrary,
+  onOpenInsights,
   onOpenBackupModal,
 }) => {
   const isNotebook = theme === 'notebook';
@@ -79,19 +81,19 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
 
   const highlights = [
     {
-      icon: Keyboard,
-      title: 'Modo Teclado Ultra-rápido',
-      description: 'Preencha de 100 a 120 questões em poucos minutos com teclas A–E ou V/F e salto automático.',
+      icon: LibraryBig,
+      title: 'Biblioteca de Provas',
+      description: 'Comece por estruturas de ENEM, Cebraspe, FGV e tribunais, sem depender de um banco fechado de questões.',
     },
     {
-      icon: Scale,
-      title: 'Cálculo Líquido Cebraspe',
-      description: 'Suporte a simulados Certo/Errado com a regra tradicional da banca: cada erro desconta um acerto.',
+      icon: BarChart3,
+      title: 'Diagnóstico por Disciplina',
+      description: 'Mapeie intervalos da prova e descubra exatamente quais áreas estão puxando sua nota para baixo.',
     },
     {
-      icon: Lock,
-      title: 'Trava Pós-Correção',
-      description: 'Após corrigir, as respostas são protegidas contra toques acidentais para garantir fidelidade ao espelho.',
+      icon: BrainCircuit,
+      title: 'Fila de Revisão',
+      description: 'Erros e questões sinalizadas viram uma lista acionável, que acompanha o que já foi revisado.',
     },
     {
       icon: Shield,
@@ -195,14 +197,14 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
           <h1 className={`font-serif-title font-bold text-2xl sm:text-4xl tracking-tight leading-snug ${
             isNotebook ? 'text-[#1c2b45]' : isDark ? 'text-zinc-100' : 'text-slate-900'
           }`}>
-            O seu cartão-resposta digital e inteligente para simulados.
+            Cada simulado revela o que estudar em seguida.
           </h1>
 
           {/* Subtitle */}
           <p className={`text-sm sm:text-base leading-relaxed ${
             isNotebook ? 'text-[#485366]' : isDark ? 'text-zinc-300' : 'text-slate-600'
           }`}>
-            Simule com fidelidade o dia da sua prova de concurso público ou vestibular. Preencha suas alternativas com rapidez, compare com o gabarito oficial da banca e receba uma análise detalhada dos seus erros e acertos.
+            Use provas de qualquer fonte, corrija com fidelidade e transforme respostas em diagnóstico por disciplina, fila de revisão e evolução mensurável — tudo com privacidade local.
           </p>
 
           {/* Action CTAs */}
@@ -234,6 +236,38 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
             >
               <Zap className="w-4 h-4 text-amber-500" />
               <span>Modelos por Banca</span>
+            </button>
+
+            <button
+              id="btn-welcome-open-library"
+              type="button"
+              onClick={onOpenLibrary}
+              className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm shadow-2xs transition cursor-pointer border ${
+                isNotebook
+                  ? 'bg-[#edf5ee] hover:bg-[#e2ede3] text-[#163824] border-[#cbe1d0]'
+                  : isDark
+                  ? 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border-emerald-800/60'
+                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-200'
+              }`}
+            >
+              <LibraryBig className="w-4 h-4" />
+              <span>Biblioteca de Provas</span>
+            </button>
+
+            <button
+              id="btn-welcome-open-insights"
+              type="button"
+              onClick={onOpenInsights}
+              className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm shadow-2xs transition cursor-pointer border ${
+                isNotebook
+                  ? 'bg-[#fbf4de] hover:bg-[#f4e9c7] text-amber-950 border-amber-300/80'
+                  : isDark
+                  ? 'bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border-amber-800/60'
+                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Meu Desempenho</span>
             </button>
 
             <button

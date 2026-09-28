@@ -11,6 +11,7 @@ import {
   ChevronDown,
   FolderDown,
   FolderKanban,
+  Layers3,
 } from 'lucide-react';
 import { AppTheme } from '../types';
 
@@ -30,6 +31,8 @@ interface ControlsBarProps {
   isKeyDrawerOpen?: boolean;
   onToggleKeyDrawer?: () => void;
   isExportModalOpen?: boolean;
+  subjectRangeCount?: number;
+  onOpenSubjectMapper?: () => void;
   theme?: AppTheme;
 }
 
@@ -49,6 +52,8 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
   isKeyDrawerOpen = false,
   onToggleKeyDrawer,
   isExportModalOpen = false,
+  subjectRangeCount = 0,
+  onOpenSubjectMapper,
   theme = 'clean',
 }) => {
   const isNotebook = theme === 'notebook';
@@ -179,6 +184,34 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
             <Keyboard className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Atalhos</span>
           </button>
+
+          {onOpenSubjectMapper && (
+            <button
+              id="btn-open-subject-mapper"
+              type="button"
+              onClick={onOpenSubjectMapper}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border ${
+                subjectRangeCount > 0
+                  ? isDark
+                    ? 'bg-violet-950/50 text-violet-300 border-violet-800/60 hover:bg-violet-900/50'
+                    : 'bg-violet-50 text-violet-800 border-violet-200 hover:bg-violet-100'
+                  : isDark
+                  ? 'bg-[#22242a] text-zinc-300 border-[#3b3e48] hover:bg-[#2a2c34]'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+              title="Mapear intervalos de questões por disciplina para liberar análises por área"
+            >
+              <Layers3 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Disciplinas</span>
+              {subjectRangeCount > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                  isDark ? 'bg-violet-900/70 text-violet-200' : 'bg-violet-100 text-violet-800'
+                }`}>
+                  {subjectRangeCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Right Side: Primary Actions (Gabarito, Central, Corrigir) */}

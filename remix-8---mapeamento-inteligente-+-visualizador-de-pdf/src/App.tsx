@@ -14,7 +14,10 @@ import { WelcomeEmptyState } from './components/WelcomeEmptyState';
 import { CompletionFeedbackModal } from './components/CompletionFeedbackModal';
 import { QuickPresetsModal } from './components/QuickPresetsModal';
 import { ParallaxBackground } from './components/ParallaxBackground';
-import { AnswerOption, ExamType, FilterMode, SimuladoData, MultiSimuladoStore, AppTheme } from './types';
+import { ExamLibrary } from './components/ExamLibrary';
+import { StudyInsights } from './components/StudyInsights';
+import { SubjectMapperModal } from './components/SubjectMapperModal';
+import { AnswerOption, ExamType, FilterMode, SimuladoData, MultiSimuladoStore, AppTheme, SubjectRange } from './types';
 import { VALID_LETTERS, downloadFile, generateFullReport, computeSimuladoStats } from './utils/parser';
 import {
   loadMultiSimuladoStore,
@@ -25,6 +28,7 @@ import {
   generateSimuladoId,
 } from './utils/provasManager';
 import { saveSnapshotToIndexedDB } from './utils/indexedDbStorage';
+import { ExamBlueprint, materializeSubjectRanges, metadataFromBlueprint } from './utils/examCatalog';
 import { FolderKanban, MessageSquare, ExternalLink, Bookmark, Sun, BookOpen, Moon } from 'lucide-react';
 
 export default function App() {
@@ -67,7 +71,10 @@ export default function App() {
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [backupInitialTab, setBackupInitialTab] = useState<'export' | 'import' | 'storage'>('storage');
   const [isCompletionFeedbackOpen, setIsCompletionFeedbackOpen] = useState(false);
-  const [isHomeView, setIsHomeView] = useState(false);
+  const [workspaceView, setWorkspaceView] = useState<'exam' | 'home' | 'library' | 'insights'>('exam');
+  const isHomeView = workspaceView === 'home';
+  const setIsHomeView = (show: boolean) => setWorkspaceView(show ? 'home' : 'exam');
+  const [mapperProvaId, setMapperProvaId] = useState<string | null>(null);
 
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number | null>(0);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
@@ -271,6 +278,9 @@ export default function App() {
         return {
           ...prev,
           userAnswers: next,
+          reviewedQuestionIndexes: (prev.reviewedQuestionIndexes || []).filter(
+            index => index !== questionIdx
+          ),
           isResultOutdated: prev.isCorrected ? true : prev.isResultOutdated,
         };
       });
@@ -305,6 +315,65 @@ export default function App() {
     if (target) {
       showToast(`Prova "${target.title}" carregada.`);
     }
+  };
+
+  const handleCreateFromBlueprint = (blueprint: ExamBlueprint) => {
+    const newProva = createNewSimulado(
+      blueprint.title,
+      blueprint.questions,
+      store.provas.length,
+      blueprint.examType
+    );
+    newProva.subjectRanges = materializeSubjectRanges(blueprint.subjectRanges);
+    newProva.examMetadata = metadataFromBlueprint(blueprint);
+    setStore(prev => ({
+      ...prev,
+      activeId: newProva.id,
+      provas: [newProva, ...prev.provas],
+    }));
+    setWorkspaceView('exam');
+    setActiveQuestionIndex(0);
+    setFilterMode('all');
+    showToast(`Prova “${blueprint.shortTitle}” criada com mapa de disciplinas.`);
+  };
+
+  const handleOpenExamFromInsights = (simuladoId: string, questionIndex: number = 0) => {
+    setStore(prev => ({ ...prev, activeId: simuladoId }));
+    setWorkspaceView('exam');
+    setActiveQuestionIndex(questionIndex);
+    setFilterMode('all');
+  };
+
+  const handleToggleReviewed = (simuladoId: string, questionIndex: number) => {
+    setStore(prev => ({
+      ...prev,
+      provas: prev.provas.map(prova => {
+        if (prova.id !== simuladoId) return prova;
+        const reviewed = prova.reviewedQuestionIndexes || [];
+        const exists = reviewed.includes(questionIndex);
+        return {
+          ...prova,
+          reviewedQuestionIndexes: exists
+            ? reviewed.filter(index => index !== questionIndex)
+            : [...reviewed, questionIndex],
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  };
+
+  const handleSaveSubjectRanges = (ranges: SubjectRange[]) => {
+    if (!mapperProvaId) return;
+    setStore(prev => ({
+      ...prev,
+      provas: prev.provas.map(prova =>
+        prova.id === mapperProvaId
+          ? { ...prova, subjectRanges: ranges, updatedAt: new Date().toISOString() }
+          : prova
+      ),
+    }));
+    setMapperProvaId(null);
+    showToast('Mapa de disciplinas salvo. O diagnóstico foi atualizado.');
   };
 
   // Create new prova
@@ -460,6 +529,12 @@ export default function App() {
         userAnswers: newUser,
         keyAnswers: newKey,
         flaggedQuestions: prev.flaggedQuestions.filter(idx => idx < validTotal),
+        reviewedQuestionIndexes: (prev.reviewedQuestionIndexes || []).filter(
+          idx => idx < validTotal
+        ),
+        subjectRanges: (prev.subjectRanges || [])
+          .map(range => ({ ...range, end: Math.min(range.end, validTotal) }))
+          .filter(range => range.start <= validTotal && range.start <= range.end),
         isCorrected: false,
         isLocked: false,
         isResultOutdated: false,
@@ -598,6 +673,9 @@ export default function App() {
   const withoutKeyCount = stats?.withoutKeyCount ?? 0;
   const userFilledCount = stats?.userFilledCount ?? 0;
   const keyFilledCount = stats?.keyCount ?? 0;
+  const mapperProva = mapperProvaId
+    ? store.provas.find(prova => prova.id === mapperProvaId) || null
+    : null;
 
   const handleDownloadReportDirect = () => {
     if (!simulado) return;
@@ -629,12 +707,16 @@ export default function App() {
           activeId={store.activeId}
           isOpen={isSidebarOpen}
           isMobileOpen={isMobileSidebarOpen}
-          isHomeActive={!simulado || isHomeView}
+          isHomeActive={workspaceView === 'home' || (!simulado && workspaceView === 'exam')}
+          isLibraryActive={workspaceView === 'library'}
+          isInsightsActive={workspaceView === 'insights'}
           theme={theme}
           onThemeChange={handleThemeChange}
           onToggleOpen={() => setIsSidebarOpen(prev => !prev)}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
-          onGoHome={() => setIsHomeView(true)}
+          onGoHome={() => setWorkspaceView('home')}
+          onOpenLibrary={() => setWorkspaceView('library')}
+          onOpenInsights={() => setWorkspaceView('insights')}
           onSelectProva={handleSelectProva}
           onOpenNewProvaModal={() => setIsNewProvaModalOpen(true)}
           onOpenRenameModal={p => setRenameModalProva(p)}
@@ -651,7 +733,23 @@ export default function App() {
 
         {/* Main Exam Paper or Empty Welcome Container */}
         <div className="flex-1 w-full min-w-0 max-w-5xl">
-          {!simulado || isHomeView ? (
+          {workspaceView === 'library' ? (
+            <ExamLibrary
+              theme={theme}
+              onBack={() => setWorkspaceView('home')}
+              onCreateFromBlueprint={handleCreateFromBlueprint}
+            />
+          ) : workspaceView === 'insights' ? (
+            <StudyInsights
+              theme={theme}
+              provas={store.provas}
+              onBack={() => setWorkspaceView('home')}
+              onOpenLibrary={() => setWorkspaceView('library')}
+              onOpenExam={handleOpenExamFromInsights}
+              onOpenMapper={setMapperProvaId}
+              onToggleReviewed={handleToggleReviewed}
+            />
+          ) : !simulado || isHomeView ? (
             <div className="space-y-4">
               {/* Mobile top bar to access sidebar & active exam */}
               <div className={`md:hidden flex items-center justify-between pb-2 border-b gap-2 ${
@@ -759,6 +857,8 @@ export default function App() {
                 }}
                 onCreateFirstProva={() => setIsNewProvaModalOpen(true)}
                 onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
+                onOpenLibrary={() => setWorkspaceView('library')}
+                onOpenInsights={() => setWorkspaceView('insights')}
                 onOpenBackupModal={(tab) => {
                   setBackupInitialTab(tab || 'export');
                   setIsBackupModalOpen(true);
@@ -818,6 +918,8 @@ export default function App() {
                 isKeyDrawerOpen={isKeyDrawerOpen}
                 onToggleKeyDrawer={() => setIsKeyDrawerOpen(prev => !prev)}
                 isExportModalOpen={modalState.isOpen}
+                subjectRangeCount={simulado.subjectRanges?.length || 0}
+                onOpenSubjectMapper={() => setMapperProvaId(simulado.id)}
                 theme={theme}
               />
 
@@ -1031,6 +1133,17 @@ export default function App() {
         onClose={() => setIsPresetsModalOpen(false)}
         onSelectPreset={handleSelectPreset}
       />
+
+      {mapperProva && (
+        <SubjectMapperModal
+          isOpen={true}
+          theme={theme}
+          totalQuestions={mapperProva.totalQuestions}
+          initialRanges={mapperProva.subjectRanges || []}
+          onClose={() => setMapperProvaId(null)}
+          onSave={handleSaveSubjectRanges}
+        />
+      )}
 
       {/* Rename Simulado Modal */}
       {renameModalProva && (

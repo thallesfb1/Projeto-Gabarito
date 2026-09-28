@@ -1,15 +1,17 @@
 {
-  "name": "react-example",
+  "name": "gabarito-pro",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
-    "build": "vite build && vite build --config vite.standalone.config.ts && mkdir -p dist public && cp dist-standalone/index.html dist/gabarito-offline.html && cp dist-standalone/index.html public/gabarito-offline.html && cp dist-standalone/index.html gabarito.html",
-    "build:standalone": "vite build --config vite.standalone.config.ts && mkdir -p public && cp dist-standalone/index.html public/gabarito-offline.html && cp dist-standalone/index.html gabarito.html",
+    "build": "vite build && vite build --config vite.standalone.config.ts && node scripts/finalize-build.mjs",
+    "build:standalone": "vite build --config vite.standalone.config.ts && node scripts/finalize-build.mjs --standalone-only",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "clean": "node scripts/clean.mjs",
+    "lint": "tsc --noEmit",
+    "test": "vitest --config vitest.config.ts",
+    "test:run": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -33,6 +35,7 @@
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
-    "vite-plugin-singlefile": "^2.3.3"
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^5.0.2"
   }
 }

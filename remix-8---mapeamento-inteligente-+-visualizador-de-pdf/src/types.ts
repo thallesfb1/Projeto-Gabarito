@@ -4,6 +4,27 @@ export type AppTheme = 'clean' | 'notebook' | 'dark';
 
 export type AnswerOption = 'A' | 'B' | 'C' | 'D' | 'E' | 'V' | 'F';
 
+export type SubjectColor = 'slate' | 'amber' | 'emerald' | 'blue' | 'violet' | 'rose' | 'cyan';
+
+export interface SubjectRange {
+  id: string;
+  name: string;
+  start: number; // questão inicial, base 1
+  end: number; // questão final, base 1
+  color: SubjectColor;
+}
+
+export interface ExamMetadata {
+  templateId?: string;
+  category?: string;
+  organizer?: string;
+  institution?: string;
+  role?: string;
+  year?: number;
+  durationMinutes?: number;
+  sourceLabel?: string;
+}
+
 export interface SimuladoData {
   id: string;
   title: string;
@@ -20,6 +41,9 @@ export interface SimuladoData {
   isLocked?: boolean;
   isResultOutdated?: boolean;
   examType?: ExamType; // 'multiple_choice' (A-E) ou 'true_false' (V/F)
+  subjectRanges?: SubjectRange[];
+  examMetadata?: ExamMetadata;
+  reviewedQuestionIndexes?: number[];
   [key: string]: any;
 }
 

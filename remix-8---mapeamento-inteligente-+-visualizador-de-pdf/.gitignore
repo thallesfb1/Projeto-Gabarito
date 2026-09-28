@@ -3,6 +3,8 @@ build/
 dist/
 dist-standalone/
 coverage/
+/gabarito.html
+/public/gabarito-offline.html
 .DS_Store
 *.log
 .env*
