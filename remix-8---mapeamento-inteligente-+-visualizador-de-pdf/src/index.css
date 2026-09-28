@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+  body.dark,
+  body.theme-dark,
+  html.dark,
+  html.dark body {
+    background-color: #18191d;
+    color: #f4f4f5;
+  }
+}
+
+.font-serif-title {
+  font-family: 'IBM Plex Serif', Georgia, serif;
+}
+
+.font-mono-code {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Modern study platform workspace canvas (Clean) */
+.canvas-clean {
+  background-color: #f8fafc;
+  background-image: radial-gradient(#cbd5e1 0.75px, transparent 0.75px);
+  background-size: 24px 24px;
+}
+
+/* Notebook lined paper canvas (Caderno pautado com tons pastéis confortáveis e linhas de caderno) */
+.canvas-notebook {
+  background-color: #f7f4ea;
+  background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 31px, #e0d7c5 31px, #e0d7c5 32px);
+  background-size: 100% 32px;
+  background-attachment: fixed;
+}
+
+/* Dark Mode Canvas: Elegant neutral graphite & charcoal with refined low-contrast focus grid */
+.canvas-dark {
+  background-color: #18191d;
+  background-image: radial-gradient(rgba(161, 161, 170, 0.16) 0.85px, transparent 0.85px);
+  background-size: 24px 24px;
+}
+
+.dark ::selection {
+  background-color: #3f3f46;
+  color: #f4f4f5;
+}
+
+/* Ensure dark mode scrollbars harmonize with neutral graphite theme */
+.dark *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.dark *::-webkit-scrollbar-track {
+  background: #18191d;
+}
+.dark *::-webkit-scrollbar-thumb {
+  background: #3b3e48;
+  border-radius: 9999px;
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* Theme variables for harmonic marks: Acerto (Verde) & Erro (Vermelho/Coral Suave) */
+:root, .theme-clean {
+  --color-hit-solid: #059669;
+  --color-hit-hover: #047857;
+  --color-hit-soft-bg: #ecfdf5;
+  --color-hit-soft-border: #a7f3d0;
+  --color-hit-text: #065f46;
+  --color-hit-text-dark: #022c22;
+
+  --color-miss-solid: #dc2626;
+  --color-miss-hover: #b91c1c;
+  --color-miss-soft-bg: #fef2f2;
+  --color-miss-soft-border: #fecaca;
+  --color-miss-text: #991b1b;
+  --color-miss-text-dark: #450a0a;
+
+  --bg-surface-primary: #ffffff;
+  --bg-surface-secondary: #f8fafc;
+  --border-surface: #e2e8f0;
+  --text-surface-title: #0f172a;
+  --text-surface-body: #334155;
+  --text-surface-muted: #64748b;
+}
+
+.theme-notebook {
+  --color-hit-solid: #387652;
+  --color-hit-hover: #2c5f40;
+  --color-hit-soft-bg: #edf5ee;
+  --color-hit-soft-border: #cbe1d0;
+  --color-hit-text: #245638;
+  --color-hit-text-dark: #163824;
+
+  --color-miss-solid: #b54a42;
+  --color-miss-hover: #9f3c35;
+  --color-miss-soft-bg: #faf1ed;
+  --color-miss-soft-border: #ecd2cc;
+  --color-miss-text: #862d26;
+  --color-miss-text-dark: #581611;
+
+  --bg-surface-primary: #fdfbf7;
+  --bg-surface-secondary: #f6f3ea;
+  --border-surface: #ded7c6;
+  --text-surface-title: #1c2b45;
+  --text-surface-body: #2e3a4e;
+  --text-surface-muted: #6b6255;
+}
+
+.theme-dark {
+  /* Acertos: Tom esmeralda/sálvia equilibrado, nítido e sem ofuscar */
+  --color-hit-solid: #10b981;
+  --color-hit-hover: #059669;
+  --color-hit-soft-bg: rgba(16, 185, 129, 0.12);
+  --color-hit-soft-border: rgba(52, 211, 153, 0.28);
+  --color-hit-text: #6ee7b7;
+  --color-hit-text-dark: #a7f3d0;
+
+  /* Erros: Tom coral/rose suave e aveludado, substituindo o vermelho vivo agressivo */
+  --color-miss-solid: #e05d68;
+  --color-miss-hover: #c94a55;
+  --color-miss-soft-bg: rgba(224, 93, 104, 0.12);
+  --color-miss-soft-border: rgba(244, 114, 126, 0.28);
+  --color-miss-text: #fca5a5;
+  --color-miss-text-dark: #fecdd3;
+
+  /* Paleta geral Neutra Grafite/Cinza escuro (sem tons azuis excessivos) */
+  --bg-surface-primary: #22242a;
+  --bg-surface-secondary: #2a2c34;
+  --border-surface: #3b3e48;
+  --text-surface-title: #f4f4f5;
+  --text-surface-body: #d4d4d8;
+  --text-surface-muted: #a1a1aa;
+}
+
+/* Legacy fallback alias */
+.platform-canvas {
+  background-color: #f8fafc;
+  background-image: radial-gradient(#cbd5e1 0.75px, transparent 0.75px);
+  background-size: 24px 24px;
+}
+
+.paper-pattern {
+  background-color: #f6f3ea;
+  background-image: linear-gradient(#e4ded0 1px, transparent 1px);
+  background-size: 100% 32px;
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
+
