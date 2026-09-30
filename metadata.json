@@ -1,0 +1,8 @@
+{
+  "name": "Remix 8 - Importar PDF com Ia",
+  "description": "Imported from GitHub: thallesfb1/Projeto-Gabarito",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
