@@ -947,6 +947,7 @@ export default function App() {
                   setIsHomeView(false);
                 }}
                 onCreateFirstProva={() => setIsNewProvaModalOpen(true)}
+                onImportPdf={() => setIsPdfImportModalOpen(true)}
                 onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
                 onOpenBackupModal={(tab) => {
                   setBackupInitialTab(tab || 'export');
@@ -1303,11 +1304,14 @@ export default function App() {
       <PdfExamImportModal
         isOpen={isPdfImportModalOpen}
         theme={theme}
-        currentTotalQuestions={simulado ? simulado.totalQuestions : 70}
-        currentExamType={simulado ? simulado.examType : 'multiple_choice'}
-        simuladoTitle={simulado?.title}
+        currentTotalQuestions={isHomeView ? 120 : (simulado ? simulado.totalQuestions : 120)}
+        currentExamType={isHomeView ? 'multiple_choice' : (simulado ? simulado.examType : 'multiple_choice')}
+        simuladoTitle={isHomeView ? undefined : simulado?.title}
         onClose={() => setIsPdfImportModalOpen(false)}
-        onImportComplete={handlePdfImportComplete}
+        onImportComplete={(payload) => {
+          handlePdfImportComplete(payload);
+          if (isHomeView) setIsHomeView(false);
+        }}
         onOpenKeyDrawer={tab => {
           setIsKeyDrawerOpen(true);
           if (tab) setKeyDrawerRequestedTab(tab);

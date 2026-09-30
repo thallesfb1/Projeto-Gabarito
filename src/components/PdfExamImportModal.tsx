@@ -573,42 +573,33 @@ export const PdfExamImportModal: React.FC<PdfExamImportModalProps> = ({
                   )}
                 </div>
 
-                {/* Progress Steps Indicator during processing */}
+                {/* Sleek Progress Bar Indicator during processing */}
                 {isProcessing && (
-                  <div className="space-y-3 p-4 rounded-xl border border-amber-300 bg-amber-50/70 text-xs animate-fadeIn">
-                    <div className="flex items-center justify-between font-mono-code font-bold text-amber-950">
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
-                        Processando Prova com IA...
-                      </span>
-                      <span>Etapa {processStep} de 5</span>
+                  <div className={`p-6 rounded-2xl border flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn ${
+                    isNotebook ? 'bg-[#f4efe3] border-[#387652]/30 text-[#1e402b]' : 'bg-indigo-50 border-indigo-200 text-indigo-900'
+                  }`}>
+                    <div className="relative">
+                      <Sparkles className={`w-8 h-8 absolute -top-2 -right-2 animate-ping opacity-50 ${isNotebook ? 'text-[#387652]' : 'text-indigo-400'}`} />
+                      <Cpu className={`w-12 h-12 animate-pulse ${isNotebook ? 'text-[#387652]' : 'text-indigo-600'}`} />
                     </div>
-
-                    <div className="space-y-1.5 text-[11px] text-amber-900">
-                      <div className="flex items-center gap-2">
-                        <span className={processStep >= 1 ? 'font-bold text-amber-950' : 'text-slate-400'}>
-                          {processStep > 1 ? '✓' : '1.'} Leitura e codificação do PDF
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={processStep >= 2 ? 'font-bold text-amber-950' : 'text-slate-400'}>
-                          {processStep > 2 ? '✓' : '2.'} Processamento e indexação estruturada da prova
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={processStep >= 3 ? 'font-bold text-amber-950' : 'text-slate-400'}>
-                          {processStep > 3 ? '✓' : '3.'} Extração integral de enunciados e alternativas (1 a 70)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={processStep >= 4 ? 'font-bold text-amber-950' : 'text-slate-400'}>
-                          {processStep > 4 ? '✓' : '4.'} Organização didática das questões
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={processStep >= 5 ? 'font-bold text-amber-950' : 'text-slate-400'}>
-                          {processStep > 5 ? '✓' : '5.'} Salvamento seguro no cartão-resposta
-                        </span>
+                    <div className="space-y-1">
+                      <h4 className={`font-bold text-lg ${isNotebook ? 'font-serif-title' : ''}`}>
+                        A Inteligência Artificial está lendo sua prova...
+                      </h4>
+                      <p className={`text-xs ${isNotebook ? 'text-[#2c5c3e]/80' : 'text-indigo-700/80'}`}>
+                        Isso pode levar alguns segundos dependendo do tamanho do PDF.
+                      </p>
+                    </div>
+                    
+                    {/* Animated Progress Bar */}
+                    <div className="w-full max-w-sm h-3 rounded-full bg-black/5 overflow-hidden border border-black/5 mt-2 relative">
+                      <div 
+                        className={`h-full transition-all duration-1000 ease-out rounded-full relative overflow-hidden ${
+                          isNotebook ? 'bg-gradient-to-r from-[#2c5c3e] to-[#387652]' : 'bg-gradient-to-r from-indigo-500 to-purple-600'
+                        }`}
+                        style={{ width: `${Math.max(15, (processStep / 5) * 100)}%` }}
+                      >
+                        <div className="absolute top-0 left-0 w-full h-full bg-white/20 animate-pulse"></div>
                       </div>
                     </div>
                   </div>
