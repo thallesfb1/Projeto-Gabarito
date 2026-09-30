@@ -16,7 +16,8 @@ import { QuickPresetsModal } from './components/QuickPresetsModal';
 import { ParallaxBackground } from './components/ParallaxBackground';
 import { QuestionDetailModal } from './components/QuestionDetailModal';
 import { PdfExamImportModal } from './components/PdfExamImportModal';
-import { AnswerOption, ExamType, FilterMode, SimuladoData, MultiSimuladoStore, AppTheme, SimuladoQuestionItem } from './types';
+import { FlashcardsDrawer } from './components/FlashcardsDrawer';
+import { AnswerOption, ExamType, FilterMode, SimuladoData, MultiSimuladoStore, AppTheme, SimuladoQuestionItem, Flashcard } from './types';
 import { VALID_LETTERS, downloadFile, generateFullReport, computeSimuladoStats } from './utils/parser';
 import {
   loadMultiSimuladoStore,
@@ -27,7 +28,7 @@ import {
   generateSimuladoId,
 } from './utils/provasManager';
 import { saveSnapshotToIndexedDB } from './utils/indexedDbStorage';
-import { FolderKanban, MessageSquare, ExternalLink, Bookmark, Sun, BookOpen } from 'lucide-react';
+import { FolderKanban, MessageSquare, ExternalLink, Bookmark, Sun, BookOpen, Brain, Sparkles } from 'lucide-react';
 
 export default function App() {
   // Multi-exam centralized state with auto-migration from legacy single-exam storage
@@ -648,6 +649,55 @@ export default function App() {
     });
   };
 
+  // Flashcard States
+  const [isFlashcardsDrawerOpen, setIsFlashcardsDrawerOpen] = useState(false);
+  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
+
+  const generateFlashcardsAsync = async (exam: SimuladoData) => {
+    // Only generate if user has not yet generated flashcards for this exam
+    if (exam.flashcards && exam.flashcards.length > 0) return;
+
+    const errorsList = [];
+    for (let i = 0; i < exam.totalQuestions; i++) {
+       const u = exam.userAnswers[i];
+       const k = exam.keyAnswers[i];
+       if (u && k && u !== k) {
+          const q = exam.questions?.[i];
+          if (q && q.statement && (q.subject || q.topic)) {
+             errorsList.push({
+               subject: q.subject,
+               topic: q.topic,
+               statement: q.statement,
+               officialAnswer: k
+             });
+          }
+       }
+    }
+    
+    if (errorsList.length === 0) return;
+    
+    setIsGeneratingFlashcards(true);
+    try {
+      const res = await fetch('/api/gemini/generate-flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ errors: errorsList.slice(0, 15) }) // Max 15 errors to avoid huge payload
+      });
+      const data = await res.json();
+      if (data.success && data.flashcards && data.flashcards.length > 0) {
+         updateActiveSimulado(prev => ({
+           ...prev,
+           flashcards: data.flashcards
+         }));
+         showToast('✨ Seus Flashcards de Revisão estão prontos!');
+      }
+    } catch (e) {
+      console.error('Failed to generate flashcards', e);
+    } finally {
+      setIsGeneratingFlashcards(false);
+    }
+  };
+
   // Run correction
   const handleRunCorrection = () => {
     if (!simulado) return;
@@ -659,22 +709,29 @@ export default function App() {
       return;
     }
 
-    const allQuestionsFilled =
-      simulado.userAnswers.length === simulado.totalQuestions &&
-      simulado.userAnswers.every(a => a !== null && a !== undefined);
+    const userFilledCount = simulado.userAnswers.filter(a => a !== null && a !== undefined).length;
+    const filledPercentage = (userFilledCount / simulado.totalQuestions) * 100;
+    const allQuestionsFilled = userFilledCount === simulado.totalQuestions;
 
-    updateActiveSimulado(prev => ({
-      ...prev,
+    const updatedExam = {
+      ...simulado,
       isCorrected: true,
       isLocked: true,
       isResultOutdated: false,
-    }));
+    };
+
+    updateActiveSimulado(() => updatedExam);
     setFilterMode('all');
     showToast('Simulado corrigido com sucesso!');
 
     // Exibe pop-up de feedback APENAS se todas as questões estiverem preenchidas
     if (allQuestionsFilled) {
       setIsCompletionFeedbackOpen(true);
+    }
+
+    // Aciona a IA de Flashcards em 2º plano se preencheu >= 75%
+    if (filledPercentage >= 75) {
+      generateFlashcardsAsync(updatedExam);
     }
   };
 
@@ -1232,6 +1289,36 @@ export default function App() {
           <span>✓ {toastMessage}</span>
         </div>
       )}
+
+      {/* Flashcards Drawer and Floating Button */}
+      {simulado?.isCorrected && (isGeneratingFlashcards || (simulado.flashcards && simulado.flashcards.length > 0)) && (
+        <button
+          onClick={() => setIsFlashcardsDrawerOpen(true)}
+          className={`fixed right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-2 px-3 py-4 rounded-l-2xl shadow-lg transition-transform hover:-translate-x-1 ${
+            theme === 'notebook' 
+              ? 'bg-[#387652] text-white border border-r-0 border-[#2c5c3e]' 
+              : 'bg-indigo-600 text-white border border-r-0 border-indigo-700'
+          }`}
+          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+        >
+          {isGeneratingFlashcards ? (
+            <Sparkles className="w-5 h-5 animate-pulse mb-2" />
+          ) : (
+            <Brain className="w-5 h-5 mb-2" />
+          )}
+          <span className="font-bold tracking-widest text-xs uppercase">
+            {isGeneratingFlashcards ? 'Analisando...' : 'Flashcards'}
+          </span>
+        </button>
+      )}
+
+      <FlashcardsDrawer
+        isOpen={isFlashcardsDrawerOpen}
+        onClose={() => setIsFlashcardsDrawerOpen(false)}
+        flashcards={simulado?.flashcards || []}
+        isGenerating={isGeneratingFlashcards}
+        theme={theme}
+      />
 
       {/* Confirmation Dialog */}
       {confirmDialog && (

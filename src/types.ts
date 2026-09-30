@@ -17,6 +17,7 @@ export interface SimuladoQuestionItem {
   explanation?: string | null; // Explicação breve da IA (1-2 frases sucintas)
   deepExplanation?: string | null; // Análise pedagógica aprofundada gerada sob demanda
   subject?: string | null; // Assunto ou disciplina (ex: Português, Direito)
+  topic?: string | null; // Tópico específico da matéria (ex: Crase, Atos Administrativos)
   page?: number | null; // Página aproximada no PDF
 }
 
@@ -39,7 +40,16 @@ export interface SimuladoData {
   pdfFileName?: string;
   pdfImportedAt?: string;
   questions?: SimuladoQuestionItem[];
+  flashcards?: Flashcard[];
   [key: string]: any;
+}
+
+export interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+  topic: string;
+  isFlipped?: boolean; // UI state
 }
 
 export interface MultiSimuladoStore {

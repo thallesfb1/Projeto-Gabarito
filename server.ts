@@ -200,8 +200,9 @@ DIRETRIZES DE INDEXAÇÃO LIMPA E BAIXO CONSUMO DE TOKENS:
 4. Extraia rigorosamente TODAS as questões da prova em ordem sequencial (1, 2, 3, 4...). Jamais encerre antes da última questão.
 5. Se uma questão tiver textos de apoio extensos, contextualização ou tabelas/figuras descritas, preserve o texto integral no "statement".
 6. "options": extraia todas as alternativas da questão (A, B, C, D, E para múltipla escolha; ou Certo/Errado para Cebraspe). Cada alternativa contém "letter" e "text".
-7. "subject": matéria ou disciplina identificada no cabeçalho da seção (ex: "Língua Portuguesa", "Raciocínio Lógico Matemático", "Direito Constitucional", "Conhecimentos Específicos", etc.).
-8. "officialKeyList": se e somente se o PDF contiver folha de gabarito oficial impressa pela banca, extraia a lista com as letras ordenadas. Caso contrário, deixe array vazio.`;
+7. "subject": matéria ou disciplina identificada no cabeçalho da seção (ex: "Língua Portuguesa", "Direito Constitucional").
+8. "topic": assunto específico abordado pela questão, extraído ou deduzido com base no enunciado (ex: "Crase", "Atos Administrativos", "Análise Combinatória"). Muito importante para a posterior geração de flashcards de revisão.
+9. "officialKeyList": se e somente se o PDF contiver folha de gabarito oficial impressa pela banca, extraia a lista com as letras ordenadas. Caso contrário, deixe array vazio.`;
 
       const prompt = `Analise este caderno de prova em PDF da primeira à última página.
 Extraia e indexe estritamente todas as questões numeradas sequencialmente (da 1 até a última questão da prova, ex: 1 a 70).
@@ -280,7 +281,11 @@ Apenas indexe os enunciados e alternativas com precisão textual, sem tentar res
                         },
                         subject: {
                           type: Type.STRING,
-                          description: 'Disciplina ou assunto (ex: Português, RLM, Legislação)',
+                          description: 'Disciplina ou matéria (ex: Português, RLM, Legislação)',
+                        },
+                        topic: {
+                          type: Type.STRING,
+                          description: 'Assunto específico abordado na questão (ex: Crase, Atos Administrativos)',
                         },
                         page: {
                           type: Type.INTEGER,
@@ -313,7 +318,7 @@ Apenas indexe os enunciados e alternativas com precisão textual, sem tentar res
                   },
                 },
                 {
-                  text: `${prompt}\nIMPORTANTE: Retorne estritamente um objeto JSON com formato: {"examTitle": "...", "examType": "multiple_choice", "questions": [{"number": 1, "statement": "...", "options": [{"letter": "A", "text": "..."}], "officialAnswer": "A", "explanation": "..."}]}`,
+                  text: `${prompt}\nIMPORTANTE: Retorne estritamente um objeto JSON com formato: {"examTitle": "...", "examType": "multiple_choice", "questions": [{"number": 1, "statement": "...", "options": [{"letter": "A", "text": "..."}], "officialAnswer": "A", "explanation": "...", "subject": "Português", "topic": "Crase"}]}`,
                 },
               ],
             },
@@ -373,6 +378,7 @@ Apenas indexe os enunciados e alternativas com precisão textual, sem tentar res
           officialAnswer,
           explanation: q.explanation ? String(q.explanation).trim() : null,
           subject: q.subject ? String(q.subject).trim() : null,
+          topic: q.topic ? String(q.topic).trim() : null,
           page: typeof q.page === 'number' ? q.page : null,
         };
       });
@@ -472,6 +478,66 @@ Mantenha o tom encorajador, profissional e direto ao ponto.`;
           ? 'O modelo de IA está com alta demanda temporária. Aguarde alguns instantes e tente novamente.'
           : error?.message || 'Erro ao gerar explicação com IA.',
       });
+    }
+  });
+  // API Route: Generate review flashcards based on errors
+  app.post('/api/gemini/generate-flashcards', async (req: Request, res: Response) => {
+    try {
+      const { errors } = req.body;
+      if (!errors || !Array.isArray(errors) || errors.length === 0) {
+        return res.status(400).json({ success: false, error: 'Nenhum erro fornecido para gerar flashcards.' });
+      }
+
+      const ai = getGeminiClient();
+      const prompt = `Atue como um tutor de alta performance.
+O aluno fez um simulado e errou questões nos seguintes tópicos:
+${JSON.stringify(errors.map((e: any) => ({ materia: e.subject, assunto: e.topic, questao: e.statement })), null, 2)}
+
+Crie Flashcards de Estudo Ativo (Frente e Verso) focados ESTRITAMENTE nesses pontos fracos, para que o aluno memorize a regra ou conceito que ele errou.
+
+DIRETRIZES:
+1. Crie exatamente entre 3 e 5 flashcards no total.
+2. Frente (front): Pergunta direta sobre o conceito.
+3. Verso (back): Resposta clara com dica de memorização.
+4. Tópico (topic): O assunto curto.
+
+IMPORTANTE: Retorne ESTRITAMENTE um objeto JSON válido neste formato: {"flashcards": [{"id": "uuid", "front": "...", "back": "...", "topic": "..."}]}`;
+
+      const { response } = await callGeminiWithRetry(ai, {
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              flashcards: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    front: { type: Type.STRING },
+                    back: { type: Type.STRING },
+                    topic: { type: Type.STRING }
+                  },
+                  required: ['id', 'front', 'back', 'topic']
+                }
+              }
+            },
+            required: ['flashcards']
+          }
+        },
+      }, ['gemini-3.8-flash', 'gemini-flash-latest']);
+
+      const responseText = response.text();
+      const cleaned = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const parsed = JSON.parse(cleaned);
+
+      return res.json({ success: true, flashcards: parsed.flashcards || [] });
+    } catch (error: any) {
+      console.error('Erro /generate-flashcards:', error);
+      return res.status(500).json({ success: false, error: 'Erro ao gerar flashcards.' });
     }
   });
 
