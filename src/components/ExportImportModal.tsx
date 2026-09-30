@@ -38,7 +38,7 @@ interface ExportImportModalProps {
   simulado: SimuladoData;
   onUpdateUserAnswers: (answers: (AnswerOption | null)[], newTotal?: number) => void;
   onUpdateKeyAnswers: (answers: (AnswerOption | null)[], newTotal?: number) => void;
-  onOpenBackupModal?: () => void;
+  onOpenBackupModal?: (tab?: 'export' | 'import' | 'storage') => void;
   onOpenPdfImport?: () => void;
   theme?: AppTheme;
 }
@@ -452,7 +452,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 onClick={() => {
                   if (onOpenBackupModal) {
                     onClose();
-                    onOpenBackupModal();
+                    onOpenBackupModal('export');
                   } else {
                     setActiveTab('backup');
                   }

@@ -233,19 +233,17 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       }}
     >
       <div
-        className={`border-2 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-scaleUp transition-colors ${
-          isNotebook
+        className={`border-2 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-scaleUp transition-colors ${isNotebook
             ? 'bg-[#fdfbf7] border-[#ded7c6] text-[#1c2b45]'
             : 'bg-white border-slate-200 text-slate-800'
-        }`}
+          }`}
       >
         {/* Header */}
         <div
-          className={`px-5 py-4 flex items-center justify-between border-b ${
-            isNotebook
+          className={`px-5 py-4 flex items-center justify-between border-b ${isNotebook
               ? 'bg-[#1c2b45] text-white border-[#1c2b45]'
               : 'bg-slate-900 text-white border-slate-800'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-2.5">
             <Database className="w-5 h-5 text-amber-300" />
@@ -265,24 +263,22 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
         {/* Tab Navigation */}
         <div
-          className={`flex border-b text-xs font-mono-code overflow-x-auto select-none ${
-            isNotebook
+          className={`flex border-b text-xs font-mono-code overflow-x-auto select-none ${isNotebook
               ? 'border-[#dedad0] bg-[#f0eee6]'
               : 'border-slate-200 bg-slate-50'
-          }`}
+            }`}
         >
           <button
             type="button"
             onClick={() => setActiveTab('storage')}
-            className={`flex-1 min-w-[150px] flex items-center justify-center gap-1.5 py-3 px-3 font-semibold border-b-2 transition cursor-pointer ${
-              activeTab === 'storage'
+            className={`flex-1 min-w-[150px] flex items-center justify-center gap-1.5 py-3 px-3 font-semibold border-b-2 transition cursor-pointer ${activeTab === 'storage'
                 ? isNotebook
                   ? 'border-[#1c2b45] text-[#1c2b45] bg-[#fdfbf7] font-bold'
                   : 'border-slate-900 text-slate-900 bg-white font-bold'
                 : isNotebook
-                ? 'border-transparent text-[#5b6478] hover:text-[#1c2b45]'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
+                  ? 'border-transparent text-[#5b6478] hover:text-[#1c2b45]'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
           >
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span>IndexedDB & Snapshots</span>
@@ -290,33 +286,31 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('export')}
-            className={`flex-1 min-w-[150px] flex items-center justify-center gap-1.5 py-3 px-3 font-semibold border-b-2 transition cursor-pointer ${
-              activeTab === 'export'
+            className={`flex-1 min-w-[150px] flex items-center justify-center gap-1.5 py-3 px-3 font-semibold border-b-2 transition cursor-pointer ${activeTab === 'export'
                 ? isNotebook
                   ? 'border-[#1c2b45] text-[#1c2b45] bg-[#fdfbf7] font-bold'
                   : 'border-slate-900 text-slate-900 bg-white font-bold'
                 : isNotebook
-                ? 'border-transparent text-[#5b6478] hover:text-[#1c2b45]'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
+                  ? 'border-transparent text-[#5b6478] hover:text-[#1c2b45]'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
           >
-            <Download className="w-4 h-4" />
+            <Upload className="w-4 h-4" />
             <span>Exportar Arquivo</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('import')}
-            className={`flex-1 min-w-[150px] flex items-center justify-center gap-1.5 py-3 px-3 font-semibold border-b-2 transition cursor-pointer ${
-              activeTab === 'import'
+            className={`flex-1 min-w-[150px] flex items-center justify-center gap-1.5 py-3 px-3 font-semibold border-b-2 transition cursor-pointer ${activeTab === 'import'
                 ? isNotebook
                   ? 'border-[#1c2b45] text-[#1c2b45] bg-[#fdfbf7] font-bold'
                   : 'border-slate-900 text-slate-900 bg-white font-bold'
                 : isNotebook
-                ? 'border-transparent text-[#5b6478] hover:text-[#1c2b45]'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
+                  ? 'border-transparent text-[#5b6478] hover:text-[#1c2b45]'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
           >
-            <Upload className="w-4 h-4" />
+            <Download className="w-4 h-4" />
             <span>Importar Arquivo</span>
           </button>
         </div>
@@ -732,11 +726,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
         {/* Footer */}
         <div
-          className={`border-t px-5 py-3 flex items-center justify-between text-xs font-mono-code ${
-            isNotebook
+          className={`border-t px-5 py-3 flex items-center justify-between text-xs font-mono-code ${isNotebook
               ? 'bg-[#f0eee6] border-[#dedad0] text-[#5b6478]'
               : 'bg-slate-50 border-slate-200 text-slate-600'
-          }`}
+            }`}
         >
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
@@ -745,11 +738,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className={`px-4 py-1.5 font-semibold rounded-lg transition cursor-pointer border ${
-              isNotebook
+            className={`px-4 py-1.5 font-semibold rounded-lg transition cursor-pointer border ${isNotebook
                 ? 'bg-white hover:bg-[#eae6dc] text-[#1c2b45] border-[#dedad0]'
                 : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
-            }`}
+              }`}
           >
             Fechar
           </button>

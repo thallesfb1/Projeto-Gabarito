@@ -1079,7 +1079,10 @@ export default function App() {
           onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
           simulado={simulado}
           theme={theme}
-          onOpenBackupModal={() => setIsBackupModalOpen(true)}
+          onOpenBackupModal={(tab) => {
+            setBackupInitialTab(tab || 'export');
+            setIsBackupModalOpen(true);
+          }}
           onOpenPdfImport={() => setIsPdfImportModalOpen(true)}
           onUpdateUserAnswers={(answers, newTotal) => {
             updateActiveSimulado(prev => {

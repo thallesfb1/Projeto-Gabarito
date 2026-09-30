@@ -131,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </h4>
             {isActive && (
               <span className={`shrink-0 text-[10px] uppercase font-mono-code font-bold px-1.5 py-0.5 rounded ${
-                isNotebook ? 'bg-[#1c2b45] text-white' : 'bg-slate-900 text-white'
+                isNotebook ? 'bg-[#2c5c3e] text-white' : 'bg-slate-900 text-white'
               }`}>
                 Ativo
               </span>
@@ -157,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         title={`Prova concluída: ${stats.hits} acertos de ${stats.keyCount} avaliadas (${stats.percentageFormatted}%)`}
                       >
                         {perf.tier === 'high' ? (
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <CheckCircle2 className={`w-3 h-3 ${isNotebook ? 'text-[#387652]' : 'text-emerald-600'} shrink-0`} />
                         ) : perf.tier === 'medium' ? (
                           <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
                         ) : (
@@ -302,10 +302,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onOpenNewProvaModal();
             onCloseMobile();
           }}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-mono-code text-xs font-semibold shadow-xs transition active:scale-[0.99] cursor-pointer bg-slate-900 hover:bg-slate-800 text-white"
+          className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-mono-code text-xs font-semibold shadow-xs transition active:scale-[0.99] cursor-pointer text-white ${
+            isNotebook ? 'bg-[#2c5c3e] hover:bg-[#1e422c]' : 'bg-slate-900 hover:bg-slate-800'
+          }`}
           title="Criar novo cartão-resposta para simulado"
         >
-          <PlusCircle className="w-4 h-4 text-emerald-500" />
+          <PlusCircle className={`w-4 h-4 ${isNotebook ? 'text-[#a2d8a4]' : 'text-emerald-500'}`} />
           <span>+ Criar Cartão-Resposta</span>
         </button>
 
@@ -344,17 +346,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
             className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-mono-code transition cursor-pointer border ${
               isHomeActive
-                ? 'bg-slate-900 text-white border-slate-900 font-semibold shadow-2xs'
+                ? (isNotebook ? 'bg-[#2c5c3e] text-white border-[#2c5c3e] font-semibold shadow-2xs' : 'bg-slate-900 text-white border-slate-900 font-semibold shadow-2xs')
                 : 'bg-slate-50 text-slate-700 border-slate-200 hover:text-slate-900 hover:bg-slate-100'
             }`}
             title="Acessar tela inicial com orientações e funcionamento"
           >
             <div className="flex items-center gap-2">
-              <Home className={`w-3.5 h-3.5 ${isHomeActive ? 'text-emerald-500' : 'text-slate-500'}`} />
+              <Home className={`w-3.5 h-3.5 ${isHomeActive ? (isNotebook ? 'text-[#a2d8a4]' : 'text-emerald-500') : 'text-slate-500'}`} />
               <span>Painel Inicial</span>
             </div>
             {isHomeActive && (
-              <span className="text-[10px] text-emerald-500 font-mono-code font-bold">Ativo</span>
+              <span className={`text-[10px] ${isNotebook ? 'text-[#a2d8a4]' : 'text-emerald-500'} font-mono-code font-bold`}>Ativo</span>
             )}
           </button>
         )}
@@ -522,7 +524,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="w-full flex items-center justify-center gap-1.5 py-0.5 text-[10px] text-center font-mono-code transition cursor-pointer group text-[#5b6478] hover:text-[#1c2b45]"
           title="Armazenamento seguro em IndexedDB com redundância dupla"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform shrink-0" />
+          <span className={`w-1.5 h-1.5 rounded-full ${isNotebook ? 'bg-[#387652]' : 'bg-emerald-500'} group-hover:scale-125 transition-transform shrink-0`} />
           <span>IndexedDB Ativo · Dados Seguros</span>
         </button>
       </div>
@@ -576,10 +578,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={onOpenNewProvaModal}
-                className="p-2 rounded-lg transition shadow-xs cursor-pointer bg-[#1c2b45] text-white hover:bg-[#132038]"
+                className={`p-2 rounded-lg transition shadow-xs cursor-pointer text-white ${isNotebook ? 'bg-[#2c5c3e] hover:bg-[#1e422c]' : 'bg-[#1c2b45] hover:bg-[#132038]'}`}
                 title="Criar Cartão-Resposta"
               >
-                <PlusCircle className="w-4 h-4 text-emerald-600" />
+                <PlusCircle className={`w-4 h-4 ${isNotebook ? 'text-[#a2d8a4]' : 'text-emerald-500'}`} />
               </button>
 
               <div className="w-6 h-px bg-[#dedad0]" />

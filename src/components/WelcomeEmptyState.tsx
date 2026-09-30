@@ -195,10 +195,10 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
               type="button"
               onClick={onCreateFirstProva}
               className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all cursor-pointer text-white ${
-                isDark ? 'bg-[#3b3e48] hover:bg-[#464956] text-white border border-zinc-600' : isNotebook ? 'bg-[#1c2b45] hover:bg-[#132038]' : 'bg-slate-900 hover:bg-slate-800'
+                isDark ? 'bg-[#3b3e48] hover:bg-[#464956] text-white border border-zinc-600' : isNotebook ? 'bg-[#2c5c3e] hover:bg-[#1e422c]' : 'bg-slate-900 hover:bg-slate-800'
               }`}
             >
-              <PlusCircle className="w-4 h-4 text-emerald-400" />
+              <PlusCircle className={`w-4 h-4 ${isNotebook ? 'text-[#a2d8a4]' : 'text-emerald-400'}`} />
               <span>{provasCount > 0 ? '+ Criar Novo Cartão-Resposta' : '+ Criar Cartão-Resposta'}</span>
             </button>
 
@@ -242,7 +242,7 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
             isDark ? 'text-zinc-400' : 'text-slate-500'
           }`}>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <CheckCircle2 className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#387652]' : 'text-emerald-500'}`} />
               <span>Salvamento Instantâneo</span>
             </div>
             <span className="opacity-50">·</span>
@@ -252,7 +252,7 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
             </div>
             <span className="opacity-50">·</span>
             <div className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <Check className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#387652]' : 'text-emerald-400'}`} />
               <span>Sem necessidade de login</span>
             </div>
           </div>

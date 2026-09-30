@@ -240,25 +240,19 @@ export const ParallaxBackground: React.FC<ParallaxBackgroundProps> = ({ theme })
             ))}
           </div>
 
-          {/* Vintage Official Study Rubber Stamp (Top Right) */}
+          {/* Official Study Mode Tag (Top Right) - Refactored to match Clean mode layout */}
           <div
-            className="absolute top-4 sm:top-8 right-3 sm:right-6 lg:right-12 pointer-events-none will-change-transform opacity-65 sm:opacity-85"
+            className="absolute top-4 sm:top-6 right-3 sm:right-6 lg:right-10 opacity-75 sm:opacity-90 text-[#8d5e42] pointer-events-none will-change-transform"
             style={{
-              transform: `translate3d(${mx * -20 + breatheX * 0.6}px, ${my * -16 + sy * -0.06}px, 0) rotate(${-6 + rotAmbient * 0.4}deg)`,
+              transform: `translate3d(${mx * 16}px, ${my * -14 + sy * -0.05}px, 0)`,
             }}
           >
-            <div className="relative border-2 border-dashed border-[#8d5e42] rounded-xl px-3 py-2 text-center text-[#8d5e42] bg-[#fdfaf3]/50 backdrop-blur-[2px] shadow-xs">
-              <div className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest border-b border-[#8d5e42]/40 pb-0.5">
-                Estudo Ativo
-              </div>
-              <div className="text-[10px] sm:text-[11px] font-serif-title font-bold mt-0.5 tracking-wider">
+            <div className="flex items-center gap-1.5 flex-row-reverse bg-[#fdfaf3]/80 p-1.5 rounded-md border border-[#8d5e42]/40 shadow-xs backdrop-blur-sm">
+              <div className="w-4 h-4 bg-[#8d5e42] border border-[#735338] rounded-[2px]" />
+              <div className="w-1.5 h-1.5 bg-[#387652] rounded-full animate-pulse" />
+              <span className="font-mono-code text-[9px] tracking-wider text-[#8d5e42] font-bold uppercase">
                 GABARITO OFICIAL
-              </div>
-              <div className="text-[7px] sm:text-[8px] font-mono-code opacity-85">
-                CONFERÊNCIA & REVISÃO
-              </div>
-              <div className="absolute -top-1.5 -right-1.5 text-[9px] text-[#8d5e42]">★</div>
-              <div className="absolute -bottom-1.5 -left-1.5 text-[9px] text-[#8d5e42]">★</div>
+              </span>
             </div>
           </div>
 
@@ -626,6 +620,124 @@ export const ParallaxBackground: React.FC<ParallaxBackgroundProps> = ({ theme })
               transform: `translate3d(${mx * 28 + breatheX}px, ${my * 26 + sy * -0.09}px, 0)`,
             }}
           />
+        </>
+      )}
+
+      {/* =========================================================
+          LAYER 4: ELEGANT FLOATING GEOMETRIES & GRID PATTERNS
+          ========================================================= */}
+      {isNotebook ? (
+        <>
+          {/* Subtle floating cross pattern (Top Right) */}
+          <div
+            className="hidden lg:grid grid-cols-3 gap-6 absolute top-24 right-[25%] opacity-15 pointer-events-none will-change-transform"
+            style={{
+              transform: `translate3d(${mx * -35 + breatheX * 0.8}px, ${my * -28 + sy * -0.08}px, 0) rotate(${rotAmbient * 0.5}deg)`,
+            }}
+          >
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="relative w-3 h-3 flex items-center justify-center">
+                <div className="absolute w-full h-[1px] bg-[#8d5e42]" />
+                <div className="absolute h-full w-[1px] bg-[#8d5e42]" />
+              </div>
+            ))}
+          </div>
+          
+          {/* Elegant Floating Circle (Center Left) */}
+          <div
+            className="absolute rounded-full border border-[#8d5e42] pointer-events-none will-change-transform opacity-10"
+            style={{
+              top: '45%',
+              left: '10%',
+              width: '180px',
+              height: '180px',
+              transform: `translate3d(${mx * 50 + breatheX * -1.2}px, ${my * 40 + sy * -0.15 + breatheY}px, 0)`,
+            }}
+          />
+
+          {/* Dotted Abstract Line (Bottom Center) */}
+          <div
+            className="absolute bottom-20 left-[40%] opacity-20 pointer-events-none will-change-transform"
+            style={{
+              transform: `translate3d(${mx * 25 + breatheX * 1.5}px, ${my * 15 + sy * -0.05}px, 0)`,
+            }}
+          >
+            <svg width="200" height="20" viewBox="0 0 200 20">
+              <path d="M0,10 Q50,0 100,10 T200,10" fill="none" stroke="#8d5e42" strokeWidth="1" strokeDasharray="4 4" />
+            </svg>
+          </div>
+        </>
+      ) : isDark ? (
+        <>
+          {/* Dark Theme specific floating geometry */}
+          <div
+            className="absolute rounded-full border border-zinc-600/30 pointer-events-none will-change-transform opacity-40"
+            style={{
+              top: '50%',
+              left: '15%',
+              width: '140px',
+              height: '140px',
+              transform: `translate3d(${mx * 45 + breatheX * -1}px, ${my * 35 + sy * -0.12}px, 0)`,
+            }}
+          />
+          <div
+            className="hidden lg:grid grid-cols-4 gap-4 absolute top-1/3 right-1/4 opacity-20 pointer-events-none will-change-transform"
+            style={{
+              transform: `translate3d(${mx * -30 + breatheX}px, ${my * -25 + sy * -0.09}px, 0)`,
+            }}
+          >
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Clean Theme - Tech Geometry - Dots Grid */}
+          <div
+            className="hidden lg:grid grid-cols-5 gap-4 absolute top-1/3 right-1/4 opacity-30 pointer-events-none will-change-transform"
+            style={{
+              transform: `translate3d(${mx * -45 + breatheX * 1.1}px, ${my * -35 + sy * -0.1}px, 0) rotate(${rotAmbient * 0.3}deg)`,
+            }}
+          >
+            {[...Array(20)].map((_, i) => (
+              <div key={i} className="w-1 h-1 rounded-full bg-indigo-400" />
+            ))}
+          </div>
+
+          {/* Glowing Outline Ring (Left Side) */}
+          <div
+            className="absolute rounded-full border border-sky-400/30 pointer-events-none will-change-transform"
+            style={{
+              top: '40%',
+              left: '8%',
+              width: '250px',
+              height: '250px',
+              transform: `translate3d(${mx * 60 + breatheX * -1.5}px, ${my * 50 + sy * -0.18 + breatheY * -1}px, 0)`,
+            }}
+          />
+          <div
+            className="absolute rounded-full border border-indigo-400/20 pointer-events-none will-change-transform"
+            style={{
+              top: '42%',
+              left: '10%',
+              width: '200px',
+              height: '200px',
+              transform: `translate3d(${mx * 40 + breatheX * -1}px, ${my * 30 + sy * -0.12}px, 0)`,
+            }}
+          />
+
+          {/* Abstract Sine Wave (Bottom Area) */}
+          <div
+            className="absolute bottom-32 left-[35%] opacity-25 pointer-events-none will-change-transform"
+            style={{
+              transform: `translate3d(${mx * 35 + breatheX * 2}px, ${my * 20 + sy * -0.06}px, 0)`,
+            }}
+          >
+            <svg width="300" height="40" viewBox="0 0 300 40">
+              <path d="M0,20 Q37.5,0 75,20 T150,20 T225,20 T300,20" fill="none" stroke="#6366f1" strokeWidth="1" strokeDasharray="3 3" />
+            </svg>
+          </div>
         </>
       )}
     </div>
