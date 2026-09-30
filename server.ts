@@ -530,7 +530,7 @@ IMPORTANTE: Retorne ESTRITAMENTE um objeto JSON válido neste formato: {"flashca
         },
       }, ['gemini-3.1-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash']);
 
-      const responseText = response.text();
+      const responseText = response.text || '';
       const cleaned = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
       const parsed = JSON.parse(cleaned);
 
