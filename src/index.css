@@ -122,3 +122,8 @@
 .animate-deal-card { animation: fly-from-button 0.7s cubic-bezier(0.2, 0.9, 0.2, 1.1) forwards; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes swipe-left { to { transform: translateX(-150vw) rotate(-20deg); opacity: 0; } }
+@keyframes swipe-right { to { transform: translateX(150vw) rotate(20deg); opacity: 0; } }
+.animate-swipe-left { animation: swipe-left 0.3s ease-in forwards; }
+.animate-swipe-right { animation: swipe-right 0.3s ease-in forwards; }
