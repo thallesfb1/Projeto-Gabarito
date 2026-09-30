@@ -116,7 +116,7 @@ export const PerformanceDrawer: React.FC<PerformanceDrawerProps> = ({
                 <span
                   className={`text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full border ${
                     isNotebook
-                      ? 'bg-[#eef6f0] text-[#1e4e30] border-[#c2ddc6]'
+                      ? 'bg-[#eef6f0] text-[#8e3703] border-[#c2ddc6]'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   }`}
                 >
@@ -172,7 +172,7 @@ export const PerformanceDrawer: React.FC<PerformanceDrawerProps> = ({
               <span
                 className={`text-xs font-mono-code px-2 py-0.5 rounded-full ${
                   isNotebook
-                    ? 'bg-[#eef6f0] text-[#1e4e30] border border-[#c2ddc6] font-bold'
+                    ? 'bg-[#eef6f0] text-[#8e3703] border border-[#c2ddc6] font-bold'
                     : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold'
                 }`}
               >

@@ -173,9 +173,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Minimalist Simulation Timer */}
           <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-mono-code shadow-xs ${
-            isNotebook ? 'bg-[#2c5c3e] text-amber-50' : 'bg-slate-900 text-white'
+            isNotebook ? 'bg-[#cd5c08] shadow-sm text-amber-50' : 'bg-slate-900 text-white'
           }`}>
-            <Clock className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#a2d8a4]' : 'text-slate-400'}`} />
+            <Clock className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#fceddf]' : 'text-slate-400'}`} />
             <span className="font-semibold tracking-wider">{formatTimer(timeSeconds)}</span>
             <button
               type="button"
@@ -190,7 +190,7 @@ export const Header: React.FC<HeaderProps> = ({
               {isTimerRunning ? (
                 <Pause className="w-3.5 h-3.5 text-amber-400" />
               ) : (
-                <Play className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#a2d8a4]' : 'text-emerald-400'}`} />
+                <Play className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#fceddf]' : 'text-emerald-400'}`} />
               )}
             </button>
             {timeSeconds > 0 && !isTimerRunning && (
@@ -270,7 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={handleSaveTitle}
                 className={`p-2 rounded-lg text-white transition-colors shrink-0 cursor-pointer ${
                   isNotebook
-                    ? 'bg-[#2c5c3e] hover:bg-[#1e422c]'
+                    ? 'bg-[#cd5c08] shadow-sm hover:bg-[#b84f06]'
                     : 'bg-slate-900 hover:bg-slate-800'
                 }`}
                 title="Salvar título"

@@ -510,7 +510,7 @@ export const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({
                   if (isSelected && isOfficialKey) {
                     // User chose correct answer
                     optCardStyle = isNotebook
-                      ? 'bg-[#edf5ee] border-emerald-500 ring-1 ring-emerald-500/20 text-[#1e4e30]'
+                      ? 'bg-[#edf5ee] border-emerald-500 ring-1 ring-emerald-500/20 text-[#8e3703]'
                       : 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500/20 text-emerald-950';
                     bubbleStyle = 'bg-emerald-600 text-white border-emerald-600 font-bold';
                   } else if (isSelected && !isOfficialKey) {
@@ -522,7 +522,7 @@ export const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({
                   } else if (isOfficialKey) {
                     // Correct answer that user didn't choose
                     optCardStyle = isNotebook
-                      ? 'bg-[#eef6f0] border-2 border-emerald-600 font-semibold text-[#1e4e30]'
+                      ? 'bg-[#eef6f0] border-2 border-emerald-600 font-semibold text-[#8e3703]'
                       : 'bg-emerald-50 border-2 border-emerald-600 font-semibold text-emerald-950';
                     bubbleStyle = 'bg-emerald-600 text-white border-emerald-600 font-bold';
                   }

@@ -186,7 +186,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
         )}
         {filterMode === 'errors' && (
           <div className="space-y-2 max-w-md mx-auto">
-            <p className={`font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-[#2f6846]'}`}>🎉 Parabéns! Nenhum erro encontrado.</p>
+            <p className={`font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-[#b84f06]'}`}>🎉 Parabéns! Nenhum erro encontrado.</p>
             <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-[#5b6478]'}`}>Todas as questões com gabarito oficial avaliadas foram respondidas corretamente.</p>
             {onResetFilter && (
               <button
@@ -310,14 +310,18 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
     return (
       <div
         className={`w-full grid ${
-          isTF
-            ? numColumns >= 3
-              ? 'grid-cols-2 max-w-[96px] gap-2'
-              : 'grid-cols-2 max-w-[130px] gap-3'
-            : numColumns >= 3
-            ? 'grid-cols-5 max-w-[160px] gap-1 sm:gap-1.5'
-            : 'grid-cols-5 max-w-[210px] gap-1.5 sm:gap-2'
-        } justify-items-center`}
+            isTF
+              ? isCardMode
+                ? 'grid-cols-2 max-w-[160px] gap-4 sm:gap-6'
+                : numColumns >= 3
+                  ? 'grid-cols-2 max-w-[96px] gap-2'
+                  : 'grid-cols-2 max-w-[130px] gap-3'
+              : isCardMode
+                ? 'grid-cols-5 max-w-[240px] gap-2.5 sm:gap-3'
+                : numColumns >= 3
+                  ? 'grid-cols-5 max-w-[170px] gap-1 sm:gap-1.5'
+                  : 'grid-cols-5 max-w-[220px] gap-1.5 sm:gap-2'
+          } justify-items-center`}
       >
         {availableLetters.map(letter => {
           const isSelected = userAns === letter;
@@ -394,12 +398,12 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
               // This was the correct official answer that the user missed or left blank
               bubbleStyle = isLocked
                 ? isNotebook
-                  ? 'bg-[#eef6f0] text-[#1e4e30] border-2 border-[#2f7446] font-bold shadow-xs cursor-not-allowed'
+                  ? 'bg-[#eef6f0] text-[#8e3703] border-2 border-[#2f7446] font-bold shadow-xs cursor-not-allowed'
                   : isDark
                   ? 'bg-emerald-950/60 text-emerald-300 border-2 border-emerald-400 font-bold shadow-xs cursor-not-allowed'
                   : 'bg-emerald-50 text-emerald-800 border-2 border-emerald-600 font-bold shadow-xs cursor-not-allowed'
                 : isNotebook
-                ? 'bg-[#eef6f0] text-[#1e4e30] border-2 border-[#2f7446] font-bold shadow-xs hover:bg-[#e2efe4] hover:scale-105 cursor-pointer'
+                ? 'bg-[#eef6f0] text-[#8e3703] border-2 border-[#2f7446] font-bold shadow-xs hover:bg-[#e2efe4] hover:scale-105 cursor-pointer'
                 : isDark
                 ? 'bg-emerald-950/60 text-emerald-300 border-2 border-emerald-400 font-bold shadow-xs hover:bg-emerald-900/80 hover:scale-105 cursor-pointer'
                 : 'bg-emerald-50 text-emerald-800 border-2 border-emerald-600 font-bold shadow-xs hover:bg-emerald-100 hover:scale-105 cursor-pointer';
@@ -560,7 +564,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
           style={{
             display: 'grid',
             gridTemplateColumns: `repeat(${columns.length}, minmax(${
-              isTF ? (numColumns >= 4 ? '185px' : '220px') : (numColumns >= 3 ? '245px' : '280px')
+              isTF ? (numColumns >= 4 ? '185px' : '220px') : (numColumns >= 3 ? '265px' : '295px')
             }, 1fr))`,
             gap: '0.875rem',
           }}
@@ -607,14 +611,14 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                     <span className="text-left pl-0.5 w-[38px] shrink-0">Nº</span>
                     <div
                       className={`w-full ${
-                        isTF
-                          ? numColumns >= 3
-                            ? 'max-w-[96px] grid-cols-2 gap-2'
-                            : 'max-w-[130px] grid-cols-2 gap-3'
-                          : numColumns >= 3
-                          ? 'max-w-[160px] grid-cols-5 gap-1 sm:gap-1.5'
-                          : 'max-w-[210px] grid-cols-5 gap-1.5 sm:gap-2'
-                      } mx-auto grid text-center px-0.5 ${isDark ? 'text-zinc-200' : 'text-slate-900'}`}
+                          isTF
+                            ? numColumns >= 3
+                              ? 'max-w-[96px] grid-cols-2 gap-2'
+                              : 'max-w-[130px] grid-cols-2 gap-3'
+                            : numColumns >= 3
+                            ? 'max-w-[170px] grid-cols-5 gap-1 sm:gap-1.5'
+                            : 'max-w-[220px] grid-cols-5 gap-1.5 sm:gap-2'
+                        } mx-auto grid text-center px-0.5 ${isDark ? 'text-zinc-200' : 'text-slate-900'}`}
                     >
                       {availableLetters.map(letter => (
                         <span key={letter}>{letter}</span>

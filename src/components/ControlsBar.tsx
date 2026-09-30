@@ -130,7 +130,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
                       }}
                       className={`px-2 py-1 text-xs font-mono-code rounded transition cursor-pointer ${
                         totalQuestions === p
-                          ? isDark ? 'bg-zinc-200 text-zinc-900 font-bold' : isNotebook ? 'bg-[#2c5c3e] text-white font-bold' : 'bg-slate-900 text-white font-bold'
+                          ? isDark ? 'bg-zinc-200 text-zinc-900 font-bold' : isNotebook ? 'bg-[#cd5c08] shadow-sm text-white font-bold' : 'bg-slate-900 text-white font-bold'
                           : isDark ? 'bg-[#2a2c34] hover:bg-[#343740] text-zinc-200' : isNotebook ? 'bg-white hover:bg-[#f0ece1] text-[#1c2b45]' : 'bg-slate-50 hover:bg-slate-200 text-slate-700'
                       }`}
                     >
@@ -274,7 +274,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
               }`}
               title="Ver e baixar o espelho de correção completo"
             >
-              <FileCheck className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#387652]' : isDark ? 'text-emerald-400' : 'text-emerald-700'}`} />
+              <FileCheck className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#e6721d]' : isDark ? 'text-emerald-400' : 'text-emerald-700'}`} />
               <span className="hidden sm:inline">Espelho</span>
             </button>
           )}
@@ -304,12 +304,12 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
                 isDark
                   ? 'bg-zinc-200 hover:bg-white text-zinc-950 font-bold'
                   : isNotebook
-                  ? 'bg-[#2c5c3e] hover:bg-[#1e422c] text-white'
+                  ? 'bg-[#cd5c08] shadow-sm hover:bg-[#b84f06] text-white'
                   : 'bg-slate-900 hover:bg-slate-800 text-white'
               }`}
               title="Conferir respostas com o gabarito oficial e ver desempenho"
             >
-              <CheckCircle2 className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#a2d8a4]' : 'text-emerald-500'}`} />
+              <CheckCircle2 className={`w-3.5 h-3.5 ${isNotebook ? 'text-[#fceddf]' : 'text-emerald-500'}`} />
               <span>Corrigir Simulado</span>
             </button>
           )}
@@ -351,7 +351,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-[#3b3e48]' : 'bg-slate-200'}`}>
           <div
             className={`h-full transition-all duration-300 rounded-full ${
-              isDark ? 'bg-zinc-300' : isNotebook ? 'bg-[#2c5c3e]' : 'bg-slate-900'
+              isDark ? 'bg-zinc-300' : isNotebook ? 'bg-[#cd5c08] shadow-sm' : 'bg-slate-900'
             }`}
             style={{ width: `${percentage}%` }}
           />

@@ -1336,7 +1336,7 @@ export default function App() {
           onClick={() => setIsFlashcardsDrawerOpen(true)}
           className={`fixed right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-2 px-3 py-4 rounded-l-2xl shadow-lg transition-transform hover:-translate-x-1 ${
             theme === 'notebook' 
-              ? 'bg-[#387652] text-white border border-r-0 border-[#2c5c3e]' 
+              ? 'bg-[#e6721d] text-white border border-r-0 border-[#ad4705]' 
               : 'bg-indigo-600 text-white border border-r-0 border-indigo-700'
           }`}
           style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}

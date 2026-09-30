@@ -102,7 +102,7 @@ export const CompletionFeedbackModal: React.FC<CompletionFeedbackModalProps> = (
                 {simuladoTitle || 'Simulado Atual'}
               </div>
               <div className="text-sm font-bold text-[#1c2b45] dark:text-zinc-100 flex items-center gap-1.5 flex-wrap">
-                <CheckCircle2 className={`w-4 h-4 shrink-0 ${isNotebook ? 'text-[#387652]' : 'text-emerald-500'}`} />
+                <CheckCircle2 className={`w-4 h-4 shrink-0 ${isNotebook ? 'text-[#e6721d]' : 'text-emerald-500'}`} />
                 <span>
                   {hits === 1 ? '1 acerto' : `${hits} acertos`} de {isPartialKey ? `${keyCount} com gabarito` : `${totalQuestions} questões`}
                 </span>

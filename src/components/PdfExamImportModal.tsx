@@ -576,17 +576,17 @@ export const PdfExamImportModal: React.FC<PdfExamImportModalProps> = ({
                 {/* Sleek Progress Bar Indicator during processing */}
                 {isProcessing && (
                   <div className={`p-6 rounded-2xl border flex flex-col items-center justify-center text-center space-y-4 animate-fadeIn ${
-                    isNotebook ? 'bg-[#f4efe3] border-[#387652]/30 text-[#1e402b]' : 'bg-indigo-50 border-indigo-200 text-indigo-900'
+                    isNotebook ? 'bg-[#f4efe3] border-[#e6721d]/30 text-[#6e2802]' : 'bg-indigo-50 border-indigo-200 text-indigo-900'
                   }`}>
                     <div className="relative">
-                      <Sparkles className={`w-8 h-8 absolute -top-2 -right-2 animate-ping opacity-50 ${isNotebook ? 'text-[#387652]' : 'text-indigo-400'}`} />
-                      <Cpu className={`w-12 h-12 animate-pulse ${isNotebook ? 'text-[#387652]' : 'text-indigo-600'}`} />
+                      <Sparkles className={`w-8 h-8 absolute -top-2 -right-2 animate-ping opacity-50 ${isNotebook ? 'text-[#e6721d]' : 'text-indigo-400'}`} />
+                      <Cpu className={`w-12 h-12 animate-pulse ${isNotebook ? 'text-[#e6721d]' : 'text-indigo-600'}`} />
                     </div>
                     <div className="space-y-1">
                       <h4 className={`font-bold text-lg ${isNotebook ? 'font-serif-title' : ''}`}>
                         A Inteligência Artificial está lendo sua prova...
                       </h4>
-                      <p className={`text-xs ${isNotebook ? 'text-[#2c5c3e]/80' : 'text-indigo-700/80'}`}>
+                      <p className={`text-xs ${isNotebook ? 'text-[#ad4705]/80' : 'text-indigo-700/80'}`}>
                         Isso pode levar alguns segundos dependendo do tamanho do PDF.
                       </p>
                     </div>
@@ -595,7 +595,7 @@ export const PdfExamImportModal: React.FC<PdfExamImportModalProps> = ({
                     <div className="w-full max-w-sm h-3 rounded-full bg-black/5 overflow-hidden border border-black/5 mt-2 relative">
                       <div 
                         className={`h-full transition-all duration-1000 ease-out rounded-full relative overflow-hidden ${
-                          isNotebook ? 'bg-gradient-to-r from-[#2c5c3e] to-[#387652]' : 'bg-gradient-to-r from-indigo-500 to-purple-600'
+                          isNotebook ? 'bg-gradient-to-r from-[#ad4705] to-[#e6721d]' : 'bg-gradient-to-r from-indigo-500 to-purple-600'
                         }`}
                         style={{ width: `${Math.max(15, (processStep / 5) * 100)}%` }}
                       >

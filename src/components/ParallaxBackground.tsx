@@ -249,7 +249,7 @@ export const ParallaxBackground: React.FC<ParallaxBackgroundProps> = ({ theme })
           >
             <div className="flex items-center gap-1.5 flex-row-reverse bg-[#fdfaf3]/80 p-1.5 rounded-md border border-[#8d5e42]/40 shadow-xs backdrop-blur-sm">
               <div className="w-4 h-4 bg-[#8d5e42] border border-[#735338] rounded-[2px]" />
-              <div className="w-1.5 h-1.5 bg-[#387652] rounded-full animate-pulse" />
+              <div className="w-1.5 h-1.5 bg-[#e6721d] rounded-full animate-pulse" />
               <span className="font-mono-code text-[9px] tracking-wider text-[#8d5e42] font-bold uppercase">
                 GABARITO OFICIAL
               </span>
@@ -281,7 +281,7 @@ export const ParallaxBackground: React.FC<ParallaxBackgroundProps> = ({ theme })
               transform: `translate3d(${mx * 18}px, ${my * 16 + sy * -0.05}px, 0)`,
             }}
           >
-            <span className="w-2 h-2 rounded-full bg-[#387652] inline-block shadow-2xs" />
+            <span className="w-2 h-2 rounded-full bg-[#e6721d] inline-block shadow-2xs" />
             <span>MODO CADERNO ATIVO • FOCO TOTAL</span>
           </div>
         </>
@@ -533,7 +533,7 @@ export const ParallaxBackground: React.FC<ParallaxBackgroundProps> = ({ theme })
             }}
           />
           <div
-            className="absolute rounded-full bg-[#387652]/45 pointer-events-none will-change-transform shadow-xs"
+            className="absolute rounded-full bg-[#e6721d]/45 pointer-events-none will-change-transform shadow-xs"
             style={{
               top: '75%',
               left: '22%',

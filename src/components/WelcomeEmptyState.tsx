@@ -203,10 +203,10 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
               type="button"
               onClick={onCreateFirstProva}
               className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all cursor-pointer text-white ${
-                isDark ? 'bg-[#3b3e48] hover:bg-[#464956] text-white border border-zinc-600' : isNotebook ? 'bg-[#2c5c3e] hover:bg-[#1e422c]' : 'bg-slate-900 hover:bg-slate-800'
+                isDark ? 'bg-[#3b3e48] hover:bg-[#464956] text-white border border-zinc-600' : isNotebook ? 'bg-[#cd5c08] shadow-sm hover:bg-[#b84f06]' : 'bg-slate-900 hover:bg-slate-800'
               }`}
             >
-              <PlusCircle className={`w-4 h-4 ${isNotebook ? 'text-[#a2d8a4]' : 'text-emerald-400'}`} />
+              <PlusCircle className={`w-4 h-4 ${isNotebook ? 'text-[#fceddf]' : 'text-emerald-400'}`} />
               <span>{provasCount > 0 ? '+ Criar Novo Cartão-Resposta' : '+ Criar Cartão-Resposta'}</span>
             </button>
 
@@ -215,11 +215,11 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
               onClick={onImportPdf}
               className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all cursor-pointer border-2 ${
                 isNotebook
-                  ? 'bg-gradient-to-r from-[#387652]/10 to-[#1e402b]/10 text-[#2c5c3e] border-[#387652]/30 hover:bg-[#387652]/20'
+                  ? 'bg-gradient-to-r from-[#e6721d]/10 to-[#6e2802]/10 text-[#ad4705] border-[#e6721d]/30 hover:bg-[#e6721d]/20'
                   : 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300'
               }`}
             >
-              <Brain className={`w-4 h-4 animate-pulse ${isNotebook ? 'text-[#387652]' : 'text-indigo-600'}`} />
+              <Brain className={`w-4 h-4 animate-pulse ${isNotebook ? 'text-[#e6721d]' : 'text-indigo-600'}`} />
               <span>Ler PDF com IA</span>
             </button>
 

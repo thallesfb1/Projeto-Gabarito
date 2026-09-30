@@ -343,7 +343,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer text-left ${
                 activeTab === 'export-user'
                   ? isNotebook
-                    ? 'bg-[#edf5ee] text-[#163824] border border-[#cbe1d0] shadow-xs ring-1 ring-[#387652]/25 font-bold'
+                    ? 'bg-[#edf5ee] text-[#163824] border border-[#cbe1d0] shadow-xs ring-1 ring-[#e6721d]/25 font-bold'
                     : isDark
                     ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-600/70 shadow-xs ring-1 ring-emerald-500/25 font-bold'
                     : 'bg-white text-emerald-900 border border-emerald-400 shadow-xs ring-1 ring-emerald-500/25 font-bold'
@@ -356,7 +356,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             >
               <Upload className={`w-4 h-4 shrink-0 ${
                 activeTab === 'export-user'
-                  ? isNotebook ? 'text-[#387652]' : isDark ? 'text-emerald-400' : 'text-emerald-600'
+                  ? isNotebook ? 'text-[#e6721d]' : isDark ? 'text-emerald-400' : 'text-emerald-600'
                   : isDark ? 'text-zinc-400' : 'text-emerald-500'
               }`} />
               <span className="truncate">Exportar Respostas</span>
@@ -415,7 +415,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer text-left ${
                 activeTab === 'report'
                   ? isNotebook
-                    ? 'bg-[#edf5ee] text-[#163824] border border-[#cbe1d0] shadow-xs ring-1 ring-[#387652]/25 font-bold'
+                    ? 'bg-[#edf5ee] text-[#163824] border border-[#cbe1d0] shadow-xs ring-1 ring-[#e6721d]/25 font-bold'
                     : isDark
                     ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-600/70 shadow-xs ring-1 ring-emerald-500/25 font-bold'
                     : 'bg-white text-[#1c2b45] border border-slate-400 shadow-xs ring-1 ring-slate-900/10 font-bold'
@@ -428,7 +428,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             >
               <FileCheck className={`w-4 h-4 shrink-0 ${
                 activeTab === 'report'
-                  ? isNotebook ? 'text-[#387652]' : isDark ? 'text-emerald-400' : 'text-[#2f6846]'
+                  ? isNotebook ? 'text-[#e6721d]' : isDark ? 'text-emerald-400' : 'text-[#b84f06]'
                   : isDark ? 'text-zinc-400' : 'text-slate-500'
               }`} />
               <span className="truncate">Espelho & Relatório</span>
@@ -511,7 +511,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   : 'bg-[#eaf4ed] border-[#cbe3cf] text-emerald-950'
               }`}>
                 <Upload className={`w-5 h-5 shrink-0 mt-0.5 ${
-                  isNotebook ? 'text-[#387652]' : isDark ? 'text-emerald-400' : 'text-emerald-700'
+                  isNotebook ? 'text-[#e6721d]' : isDark ? 'text-emerald-400' : 'text-emerald-700'
                 }`} />
                 <div className="text-xs leading-relaxed">
                   <span className="font-semibold">Salvar na pasta do simulado: </span>
@@ -528,7 +528,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   onClick={handleDownloadUserTxt}
                   className={`p-3 rounded-lg text-left transition hover:shadow-sm flex items-start gap-3 group border cursor-pointer ${
                     isNotebook
-                      ? 'bg-white border-[#dedad0] hover:border-[#387652]'
+                      ? 'bg-white border-[#dedad0] hover:border-[#e6721d]'
                       : isDark
                       ? 'bg-[#2a2c34] border-[#3b3e48] hover:border-emerald-500'
                       : 'bg-white border-slate-200 hover:border-emerald-600'
@@ -536,7 +536,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 >
                   <div className={`p-2 rounded transition ${
                     isNotebook
-                      ? 'bg-[#edf5ee] border border-[#cbe1d0] text-[#163824] group-hover:bg-[#387652] group-hover:text-white'
+                      ? 'bg-[#edf5ee] border border-[#cbe1d0] text-[#163824] group-hover:bg-[#e6721d] group-hover:text-white'
                       : isDark
                       ? 'bg-emerald-950/60 border border-emerald-700/50 text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white'
                       : 'bg-emerald-50 border border-emerald-200 text-emerald-800 group-hover:bg-emerald-700 group-hover:text-white'
@@ -563,7 +563,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   onClick={handleDownloadUserJson}
                   className={`p-3 rounded-lg text-left transition hover:shadow-sm flex items-start gap-3 group border cursor-pointer ${
                     isNotebook
-                      ? 'bg-white border-[#dedad0] hover:border-[#387652]'
+                      ? 'bg-white border-[#dedad0] hover:border-[#e6721d]'
                       : isDark
                       ? 'bg-[#2a2c34] border-[#3b3e48] hover:border-emerald-500'
                       : 'bg-white border-slate-200 hover:border-emerald-600'
@@ -571,7 +571,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 >
                   <div className={`p-2 rounded transition ${
                     isNotebook
-                      ? 'bg-[#edf5ee] border border-[#cbe1d0] text-[#163824] group-hover:bg-[#387652] group-hover:text-white'
+                      ? 'bg-[#edf5ee] border border-[#cbe1d0] text-[#163824] group-hover:bg-[#e6721d] group-hover:text-white'
                       : isDark
                       ? 'bg-emerald-950/60 border border-emerald-700/50 text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white'
                       : 'bg-emerald-50 border border-emerald-200 text-emerald-800 group-hover:bg-emerald-700 group-hover:text-white'
@@ -1038,7 +1038,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   onClick={handleDownloadReport}
                   className={`px-4 py-2 font-semibold rounded-lg transition flex items-center gap-2 text-xs text-white cursor-pointer ${
                     isNotebook
-                      ? 'bg-[#387652] hover:bg-[#2c5f40]'
+                      ? 'bg-[#e6721d] hover:bg-[#2c5f40]'
                       : isDark
                       ? 'bg-emerald-600 hover:bg-emerald-500'
                       : 'bg-emerald-700 hover:bg-emerald-800'
