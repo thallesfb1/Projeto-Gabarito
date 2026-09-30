@@ -98,10 +98,21 @@ export const FlashcardsDrawer: React.FC<FlashcardsDrawerProps> = ({
                 <Check className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-sm mb-1">Nenhum flashcard necessário</h3>
-                <p className="text-xs opacity-70 max-w-[250px]">
-                  Você não teve erros suficientes, ou a prova não continha informações de matéria/assunto suficientes para a revisão.
+                <h3 className="font-bold text-sm mb-1">Nenhum flashcard disponível</h3>
+                <p className="text-xs opacity-70 max-w-[250px] mb-4">
+                  Seus flashcards não puderam ser gerados (limite da API atingido ou sem erros suficientes).
                 </p>
+                <button
+                  onClick={() => {
+                    const event = new CustomEvent('retry-flashcards');
+                    window.dispatchEvent(event);
+                  }}
+                  className={`px-4 py-2 rounded-lg font-semibold text-xs transition ${
+                    isNotebook ? 'bg-[#387652] text-white hover:bg-[#2c5c3e]' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  }`}
+                >
+                  Tentar Gerar Novamente
+                </button>
               </div>
             </div>
           ) : (

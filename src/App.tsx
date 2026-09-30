@@ -59,6 +59,16 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    const handleRetry = () => {
+      if (simulado && simulado.isCorrected) {
+        generateFlashcardsAsync(simulado, true);
+      }
+    };
+    window.addEventListener('retry-flashcards', handleRetry);
+    return () => window.removeEventListener('retry-flashcards', handleRetry);
+  }, [simulado]);
+
   // Modals
   const [isNewProvaModalOpen, setIsNewProvaModalOpen] = useState(false);
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
@@ -653,9 +663,9 @@ export default function App() {
   const [isFlashcardsDrawerOpen, setIsFlashcardsDrawerOpen] = useState(false);
   const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
 
-  const generateFlashcardsAsync = async (exam: SimuladoData) => {
-    // Only generate if user has not yet generated flashcards for this exam
-    if (exam.flashcards && exam.flashcards.length > 0) return;
+  const generateFlashcardsAsync = async (exam: SimuladoData, force: boolean = false) => {
+    // Only generate if user has not yet generated flashcards for this exam, unless forced
+    if (exam.flashcards && exam.flashcards.length > 0 && !force) return;
 
     const errorsList = [];
     for (let i = 0; i < exam.totalQuestions; i++) {
@@ -663,10 +673,10 @@ export default function App() {
        const k = exam.keyAnswers[i];
        if (u && k && u !== k) {
           const q = exam.questions?.[i];
-          if (q && q.statement && (q.subject || q.topic)) {
+          if (q && q.statement) {
              errorsList.push({
-               subject: q.subject,
-               topic: q.topic,
+               subject: q.subject || 'Assunto Geral',
+               topic: q.topic || 'Conceito abordado na questão',
                statement: q.statement,
                officialAnswer: k
              });
@@ -674,7 +684,10 @@ export default function App() {
        }
     }
     
-    if (errorsList.length === 0) return;
+    if (errorsList.length === 0) {
+      console.log('Nenhum erro com texto suficiente para gerar flashcards.');
+      return;
+    }
     
     setIsGeneratingFlashcards(true);
     try {
@@ -690,9 +703,12 @@ export default function App() {
            flashcards: data.flashcards
          }));
          showToast('✨ Seus Flashcards de Revisão estão prontos!');
+      } else {
+         showToast('Erro ao gerar flashcards: ' + (data.error || 'Erro desconhecido.'));
       }
     } catch (e) {
       console.error('Failed to generate flashcards', e);
+      showToast('Erro ao conectar com a IA para gerar flashcards. Limite da API atingido?');
     } finally {
       setIsGeneratingFlashcards(false);
     }
@@ -731,7 +747,22 @@ export default function App() {
 
     // Aciona a IA de Flashcards em 2º plano se preencheu >= 75%
     if (filledPercentage >= 75) {
-      generateFlashcardsAsync(updatedExam);
+      if (simulado.flashcards && simulado.flashcards.length > 0) {
+        setConfirmDialog({
+          isOpen: true,
+          title: 'Atualizar Flashcards?',
+          description: 'Você alterou as respostas deste simulado. Deseja que a IA gere novos flashcards baseados nos seus erros atuais? Os flashcards antigos serão apagados.',
+          confirmLabel: 'Sim, atualizar',
+          cancelLabel: 'Não, manter os antigos',
+          isDestructive: false,
+          onConfirm: () => {
+            generateFlashcardsAsync(updatedExam, true);
+            setConfirmDialog(null);
+          },
+        });
+      } else {
+        generateFlashcardsAsync(updatedExam);
+      }
     }
   };
 
@@ -1291,7 +1322,11 @@ export default function App() {
       )}
 
       {/* Flashcards Drawer and Floating Button */}
-      {simulado?.isCorrected && (isGeneratingFlashcards || (simulado.flashcards && simulado.flashcards.length > 0)) && (
+      {simulado?.isCorrected && (() => {
+        const userFilledCount = simulado.userAnswers.filter(a => a !== null && a !== undefined).length;
+        const filledPercentage = (userFilledCount / simulado.totalQuestions) * 100;
+        return filledPercentage >= 75;
+      })() && (
         <button
           onClick={() => setIsFlashcardsDrawerOpen(true)}
           className={`fixed right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-2 px-3 py-4 rounded-l-2xl shadow-lg transition-transform hover:-translate-x-1 ${

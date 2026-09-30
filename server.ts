@@ -34,7 +34,7 @@ function getGeminiClient(): GoogleGenAI {
 async function callGeminiWithRetry(
   ai: GoogleGenAI,
   params: any,
-  models: string[] = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite']
+  models: string[] = ['gemini-3.1-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash']
 ): Promise<{ response: any; usedModel: string }> {
   let lastError: any = null;
 
@@ -175,7 +175,7 @@ async function startServer() {
 
       const generateExplanations = options?.generateExplanations === true;
       const extractKey = options?.extractKey !== false;
-      const preferredModel = options?.model || 'gemini-3.8-flash';
+      const preferredModel = options?.model || 'gemini-3.1-flash';
 
       let candidateModels: string[] = [];
       if (preferredModel === 'gemini-3.1-pro-preview') {
@@ -183,7 +183,7 @@ async function startServer() {
       } else if (preferredModel === 'gemini-flash-latest') {
         candidateModels = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
       } else {
-        candidateModels = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+        candidateModels = ['gemini-3.1-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
       }
 
       const systemInstruction = `Você é um indexador e digitalizador ultra-preciso e econômico de provas de concursos públicos e vestibulares do Brasil (FGV, Cebraspe, FCC, Vunesp, ENEM, etc.).
@@ -528,7 +528,7 @@ IMPORTANTE: Retorne ESTRITAMENTE um objeto JSON válido neste formato: {"flashca
             required: ['flashcards']
           }
         },
-      }, ['gemini-3.8-flash', 'gemini-flash-latest']);
+      }, ['gemini-3.1-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash']);
 
       const responseText = response.text();
       const cleaned = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
