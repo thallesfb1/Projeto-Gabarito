@@ -1323,6 +1323,7 @@ export default function App() {
 
       {/* Flashcards Drawer and Floating Button */}
       {(() => {
+        if (isHomeView) return false;
         if (!simulado?.isCorrected) return false;
         const hasFlashcards = simulado.flashcards && simulado.flashcards.length > 0;
         return hasFlashcards || isGeneratingFlashcards;
