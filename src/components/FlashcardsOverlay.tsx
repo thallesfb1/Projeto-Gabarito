@@ -67,7 +67,7 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
       </div>
 
       {/* Content */}
-      <div className="w-full h-full flex flex-col items-center justify-center pt-16 pb-4 overflow-y-auto overflow-x-hidden">
+      <div className="w-full h-full flex flex-col items-center justify-center pt-16 pb-4 overflow-hidden">
         
         {isGenerating ? (
           <div className="flex flex-col items-center justify-center text-center space-y-6 animate-pulse">
@@ -104,15 +104,15 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
             </button>
           </div>
         ) : (
-          <div className="w-full max-w-6xl flex flex-wrap justify-center items-center gap-6 md:gap-8 px-2 py-8">
+          <div className="w-full flex overflow-x-auto snap-x snap-mandatory items-center gap-6 md:gap-8 px-8 py-8 no-scrollbar scroll-smooth h-full">
             {flashcards.map((fc, idx) => {
               const flipped = flippedCards.has(fc.id);
-              const delay = idx * 150; // Staggered dealing animation
+              const delay = idx * 100;
               
               return (
                 <div 
                   key={fc.id}
-                  className={`relative w-full max-w-[280px] sm:max-w-[320px] h-[350px] sm:h-[400px] perspective-1000 group cursor-pointer transition-all duration-700 opacity-0 translate-y-20 ${
+                  className={`relative shrink-0 snap-center w-[85vw] max-w-[320px] h-[65vh] min-h-[300px] max-h-[450px] perspective-1000 group cursor-pointer transition-all duration-700 opacity-0 translate-x-full ${
                     animateIn ? 'animate-deal-card' : ''
                   }`}
                   style={{ animationFillMode: 'forwards', animationDelay: `${delay}ms` }}
@@ -123,7 +123,7 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
                   }`}>
                     
                     {/* Front: The Question (Stylized Card Cover) */}
-                    <div className={`absolute inset-0 backface-hidden w-full h-full rounded-3xl p-6 flex flex-col justify-between border-2 overflow-hidden ${
+                    <div className={`absolute inset-0 backface-hidden w-full h-full rounded-3xl p-5 sm:p-6 flex flex-col justify-between border-2 overflow-hidden ${
                       isNotebook 
                         ? 'bg-[#fcfbf9] text-[#1c2b45] border-[#dedad0] shadow-[inset_0_0_40px_rgba(0,0,0,0.03)]' 
                         : 'bg-white text-slate-800 border-transparent shadow-[0_10px_40px_rgba(0,0,0,0.1)]'
@@ -132,27 +132,27 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
                       {/* Notebook Binder Holes / Clean Gradient */}
                       {isNotebook && (
                         <div className="absolute left-3 top-0 bottom-0 flex flex-col justify-between py-8 opacity-20">
-                           <div className="w-4 h-4 rounded-full bg-slate-800 shadow-inner"></div>
-                           <div className="w-4 h-4 rounded-full bg-slate-800 shadow-inner"></div>
-                           <div className="w-4 h-4 rounded-full bg-slate-800 shadow-inner"></div>
+                           <div className="w-3 h-3 rounded-full bg-slate-800 shadow-inner"></div>
+                           <div className="w-3 h-3 rounded-full bg-slate-800 shadow-inner"></div>
+                           <div className="w-3 h-3 rounded-full bg-slate-800 shadow-inner"></div>
                         </div>
                       )}
                       {!isNotebook && (
                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
                       )}
 
-                      <div className="relative z-10 flex flex-col h-full pl-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <span className={`text-[10px] sm:text-xs uppercase font-bold px-3 py-1.5 rounded-lg inline-block ${
+                      <div className="relative z-10 flex flex-col h-full pl-5 sm:pl-6">
+                        <div className="flex justify-between items-start mb-3">
+                          <span className={`text-[10px] uppercase font-bold px-3 py-1 rounded-lg inline-block ${
                             isNotebook ? 'bg-[#387652]/10 text-[#387652] font-mono-code border border-[#387652]/20' : 'bg-indigo-50 text-indigo-600'
                           }`}>
                             {fc.topic || 'Conceito'}
                           </span>
-                          <span className="text-slate-300 font-black text-2xl italic opacity-50">0{idx + 1}</span>
+                          <span className="text-slate-300 font-black text-xl italic opacity-50">0{idx + 1}</span>
                         </div>
                         
-                        <div className="flex-1 flex items-center justify-center my-4 overflow-y-auto custom-scrollbar">
-                          <p className={`font-semibold text-base sm:text-lg text-center leading-relaxed ${
+                        <div className="flex-1 flex items-center justify-center my-2 overflow-y-auto no-scrollbar">
+                          <p className={`font-medium text-sm sm:text-base text-center leading-snug ${
                             isNotebook ? 'font-serif text-slate-800' : 'text-slate-700'
                           }`}>
                             {fc.front}
@@ -170,29 +170,29 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
                     </div>
 
                     {/* Back: The Answer */}
-                    <div className={`absolute inset-0 backface-hidden rotate-y-180 w-full h-full rounded-3xl p-6 flex flex-col justify-between border-2 ${
+                    <div className={`absolute inset-0 backface-hidden rotate-y-180 w-full h-full rounded-3xl p-5 sm:p-6 flex flex-col justify-between border-2 ${
                       isNotebook 
                         ? 'bg-[#2c5c3e] text-[#f4efe3] border-[#1e402b] shadow-[inset_0_0_50px_rgba(0,0,0,0.3)]' 
                         : 'bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-transparent'
                     }`}>
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="text-[10px] sm:text-xs uppercase font-bold px-3 py-1.5 rounded-lg inline-block bg-white/20 text-white backdrop-blur-sm">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="text-[10px] uppercase font-bold px-3 py-1 rounded-lg inline-block bg-white/20 text-white backdrop-blur-sm">
                           Resposta & Dica
                         </span>
-                        <Brain className="w-6 h-6 text-white/50" />
+                        <Brain className="w-5 h-5 text-white/50" />
                       </div>
                       
-                      <div className="flex-1 flex items-center justify-center my-4 overflow-y-auto custom-scrollbar">
-                        <p className={`font-medium text-base sm:text-lg text-center leading-relaxed drop-shadow-sm ${
+                      <div className="flex-1 flex items-center justify-center my-2 overflow-y-auto no-scrollbar">
+                        <p className={`font-medium text-sm sm:text-base text-center leading-snug drop-shadow-sm ${
                           isNotebook ? 'font-serif' : ''
                         }`}>
                           {fc.back}
                         </p>
                       </div>
                       
-                      <div className="text-center mt-auto pt-4 border-t border-white/10">
-                        <div className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full text-white/80 bg-white/10">
-                          <RefreshCcw className="w-3.5 h-3.5" /> Voltar
+                      <div className="text-center mt-auto pt-3 border-t border-white/10">
+                        <div className="inline-flex items-center gap-2 text-[10px] font-semibold px-4 py-2 rounded-full text-white/80 bg-white/10 hover:bg-white/20 transition">
+                          <RefreshCcw className="w-3 h-3" /> Voltar
                         </div>
                       </div>
                     </div>
