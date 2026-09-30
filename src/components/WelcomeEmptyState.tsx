@@ -17,6 +17,7 @@ import {
   Calendar,
   Sun,
   Check,
+  Brain,
 } from 'lucide-react';
 import { SimuladoData, AppTheme } from '../types';
 import { computeSimuladoStats, getPerformanceInfo } from '../utils/parser';
@@ -81,6 +82,11 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
       icon: FileText,
       title: 'Leitor Inteligente de Caderno em PDF',
       description: 'Digitalize seu PDF de prova, indexe enunciados e visualize comentários objetivos fundamentados na banca.',
+    },
+    {
+      icon: Brain,
+      title: 'Flashcards com IA (Novo!)',
+      description: 'Ao terminar uma prova, a IA cria flashcards instantâneos dos seus erros para revisar por repetição espaçada.',
     },
     {
       icon: Scale,
@@ -447,7 +453,14 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="space-y-0.5">
-                  <h4 className={`font-semibold text-xs ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}>{h.title}</h4>
+                  <h4 className={`font-semibold text-xs flex items-center gap-1.5 ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}>
+                    {h.title.replace(' (Novo!)', '')}
+                    {h.title.includes('(Novo!)') && (
+                      <span className="bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold animate-pulse">
+                        Novo
+                      </span>
+                    )}
+                  </h4>
                   <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>{h.description}</p>
                 </div>
               </div>

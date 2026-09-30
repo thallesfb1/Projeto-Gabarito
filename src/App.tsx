@@ -1322,10 +1322,10 @@ export default function App() {
       )}
 
       {/* Flashcards Drawer and Floating Button */}
-      {simulado?.isCorrected && (() => {
-        const userFilledCount = simulado.userAnswers.filter(a => a !== null && a !== undefined).length;
-        const filledPercentage = (userFilledCount / simulado.totalQuestions) * 100;
-        return filledPercentage >= 75;
+      {(() => {
+        if (!simulado?.isCorrected) return false;
+        const hasFlashcards = simulado.flashcards && simulado.flashcards.length > 0;
+        return hasFlashcards || isGeneratingFlashcards;
       })() && (
         <button
           onClick={() => setIsFlashcardsDrawerOpen(true)}
