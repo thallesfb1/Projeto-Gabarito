@@ -76,7 +76,7 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
     const delay = isMobileCard ? 0 : idx * 100;
     
     // Dynamic classes based on whether it's mobile or desktop
-    let cardClasses = `relative shrink-0 perspective-1000 group cursor-pointer transition-all duration-700 opacity-0 translate-x-full ${animateIn ? 'animate-deal-card' : ''}`;
+    let cardClasses = `relative shrink-0 perspective-1000 group cursor-pointer transition-all duration-700 opacity-0 ${animateIn ? 'animate-deal-card' : ''}`;
     
     if (isMobileCard) {
        // Mobile sizing: takes almost full width, positioned absolute for stacking
@@ -84,7 +84,7 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
        
        if (mobileLayer === 0) {
          // Top active card
-         cardClasses += ` z-10 ${swipeAnim} ${animateIn && !swipeAnim ? 'opacity-100 translate-x-0' : ''}`;
+         cardClasses += ` z-10 ${swipeAnim} ${animateIn && !swipeAnim ? 'opacity-100' : ''}`;
        } else {
          // Card underneath (next in queue)
          cardClasses += ` z-0 scale-95 translate-y-4 opacity-50`;
@@ -115,14 +115,17 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
           }`}>
             
             {isNotebook && (
-              <div className="absolute left-2 sm:left-3 top-0 bottom-0 flex flex-col justify-between py-6 sm:py-8 opacity-20">
-                 <div className="w-2 sm:w-3 h-2 sm:h-3 rounded-full bg-slate-800 shadow-inner"></div>
-                 <div className="w-2 sm:w-3 h-2 sm:h-3 rounded-full bg-slate-800 shadow-inner"></div>
-                 <div className="w-2 sm:w-3 h-2 sm:h-3 rounded-full bg-slate-800 shadow-inner"></div>
-              </div>
+              <>
+                <div className="absolute top-0 left-0 w-full h-1.5 sm:h-2 bg-gradient-to-r from-[#387652] to-[#1e402b]" />
+                <div className="absolute left-2 sm:left-3 top-0 bottom-0 flex flex-col justify-between py-6 sm:py-8 opacity-20">
+                   <div className="w-2 sm:w-3 h-2 sm:h-3 rounded-full bg-slate-800 shadow-inner"></div>
+                   <div className="w-2 sm:w-3 h-2 sm:h-3 rounded-full bg-slate-800 shadow-inner"></div>
+                   <div className="w-2 sm:w-3 h-2 sm:h-3 rounded-full bg-slate-800 shadow-inner"></div>
+                </div>
+              </>
             )}
             {!isNotebook && (
-              <div className="absolute top-0 left-0 w-full h-1.5 sm:h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
+              <div className="absolute top-0 left-0 w-full h-1.5 sm:h-2 bg-gradient-to-r from-sky-400 to-blue-600" />
             )}
 
             <div className="relative z-10 flex flex-col h-full pl-4 sm:pl-5">
@@ -161,8 +164,8 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
           {/* Back: The Answer */}
           <div className={`absolute inset-0 backface-hidden rotate-y-180 w-full h-full rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col justify-between border-2 ${
             isNotebook 
-              ? 'bg-[#2c5c3e] text-[#f4efe3] border-[#1e402b] shadow-[inset_0_0_50px_rgba(0,0,0,0.3)]' 
-              : 'bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-transparent'
+              ? 'bg-gradient-to-br from-[#2c5c3e] to-[#1a3824] text-[#f4efe3] border-[#1e402b] shadow-[inset_0_0_50px_rgba(0,0,0,0.3)]' 
+              : 'bg-gradient-to-br from-blue-600 to-sky-700 text-white border-transparent'
           }`}>
             <div className="flex justify-between items-start mb-2">
               <span className="text-[8px] sm:text-[10px] uppercase font-bold px-2 py-1 rounded-md inline-block bg-white/20 text-white backdrop-blur-sm">
@@ -258,10 +261,10 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
             </button>
           </div>
         ) : (
-          <div className="w-full max-w-6xl flex items-center justify-center h-full">
+          <div className="w-full max-w-[900px] mx-auto flex items-center justify-center h-full">
             
             {/* Desktop View: Grid (hidden on mobile) */}
-            <div className="hidden md:flex w-full h-full flex-wrap justify-center items-center content-center gap-4 lg:gap-6">
+            <div className="hidden md:flex w-full h-full flex-wrap justify-center items-center content-center gap-4 lg:gap-6 mx-auto">
               {flashcards.map((fc, idx) => renderCard(fc, idx, false))}
             </div>
 
