@@ -16,7 +16,7 @@ import { QuickPresetsModal } from './components/QuickPresetsModal';
 import { ParallaxBackground } from './components/ParallaxBackground';
 import { QuestionDetailModal } from './components/QuestionDetailModal';
 import { PdfExamImportModal } from './components/PdfExamImportModal';
-import { FlashcardsDrawer } from './components/FlashcardsDrawer';
+import { FlashcardsOverlay } from './components/FlashcardsOverlay';
 import { AnswerOption, ExamType, FilterMode, SimuladoData, MultiSimuladoStore, AppTheme, SimuladoQuestionItem, Flashcard } from './types';
 import { VALID_LETTERS, downloadFile, generateFullReport, computeSimuladoStats } from './utils/parser';
 import {
@@ -1347,7 +1347,7 @@ export default function App() {
         </button>
       )}
 
-      <FlashcardsDrawer
+      <FlashcardsOverlay
         isOpen={isFlashcardsDrawerOpen}
         onClose={() => setIsFlashcardsDrawerOpen(false)}
         flashcards={simulado?.flashcards || []}
