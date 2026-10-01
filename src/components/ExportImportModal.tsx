@@ -485,7 +485,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         {/* Modal Body */}
         <div className="p-3 sm:p-4 overflow-y-auto flex-1 space-y-3 text-sm">
           {/* AI PDF Import Banner */}
-          {onOpenPdfImport && (
+          {onOpenPdfImport && (activeTab === 'key' || activeTab === 'import-user') && (
             <div className="p-3 rounded-xl border border-amber-300 bg-amber-50/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs animate-fadeIn">
               <div className="flex items-center gap-2.5 text-amber-950">
                 <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
@@ -1015,6 +1015,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 <OfficialKeyImporter
                   totalQuestions={totalQuestions}
                   currentKeyAnswers={keyAnswers}
+                  currentUserAnswers={userAnswers}
                   examType={simulado.examType}
                   theme={theme}
                   onConfirmKey={newKey => {

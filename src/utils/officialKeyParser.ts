@@ -514,17 +514,54 @@ function buildResultFromMap(
 }
 
 /**
+ * Helper para gerar respostas com ~70% de acerto caso um target (gabarito ou cartão) seja fornecido.
+ */
+function getRealisticOption(
+  index: number,
+  examType: ExamType,
+  targetAnswers?: (AnswerOption | null)[]
+): string {
+  const isTF = examType === 'true_false';
+  const optionsMC = ['A', 'B', 'C', 'D', 'E'];
+  const optionsTF = ['V', 'F'];
+
+  const hasTarget = targetAnswers && targetAnswers.some(a => a !== null);
+  const targetAns = hasTarget ? targetAnswers![index] : null;
+
+  if (!hasTarget || !targetAns) {
+    if (isTF) {
+      return (index % 3 === 0) ? 'F' : 'V';
+    }
+    return optionsMC[(index + (index % 3)) % 5];
+  }
+
+  // 70% chance of being correct
+  const isCorrect = Math.random() < 0.7;
+
+  if (isTF) {
+    const correctChar = (String(targetAns) === 'Certo' || targetAns === 'V') ? 'V' : 'F';
+    const wrongChar = correctChar === 'V' ? 'F' : 'V';
+    return isCorrect ? correctChar : wrongChar;
+  } else {
+    const correctChar = targetAns as string;
+    if (isCorrect) {
+      return correctChar;
+    } else {
+      const wrongOptions = optionsMC.filter(o => o !== correctChar);
+      return wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+    }
+  }
+}
+
+/**
  * Geradores de exemplos de teste para a interface do usuário
  */
-export function generateSamplePairsText(total: number = 70, examType: ExamType = 'multiple_choice'): string {
+export function generateSamplePairsText(total: number = 70, examType: ExamType = 'multiple_choice', targetAnswers?: (AnswerOption | null)[]): string {
   const isTF = examType === 'true_false';
-  const sampleLetters: AnswerOption[] = isTF ? ['V', 'F'] : ['A', 'B', 'C', 'D', 'E'];
   const pairs: string[] = [];
   const limit = total;
   for (let i = 1; i <= limit; i++) {
-    const letter = isTF
-      ? (i % 3 === 0 ? 'F' : 'V')
-      : sampleLetters[(i - 1 + (i % 3)) % 5];
+    const letter = getRealisticOption(i - 1, examType, targetAnswers);
     if (isTF) {
       pairs.push(`${i}${letter}`);
     } else {
@@ -539,9 +576,8 @@ export function generateSamplePairsText(total: number = 70, examType: ExamType =
   return lines.join('\n');
 }
 
-export function generateSampleTableText(total: number = 70, examType: ExamType = 'multiple_choice'): string {
+export function generateSampleTableText(total: number = 70, examType: ExamType = 'multiple_choice', targetAnswers?: (AnswerOption | null)[]): string {
   const isTF = examType === 'true_false';
-  const sampleLetters: AnswerOption[] = isTF ? ['V', 'F'] : ['A', 'B', 'C', 'D', 'E'];
   const blockSize = 10;
   const count = total;
   const blocks: string[] = [];
@@ -553,9 +589,7 @@ export function generateSampleTableText(total: number = 70, examType: ExamType =
 
     for (let q = start; q <= end; q++) {
       nums.push(String(q).padStart(2, '0'));
-      const letter = isTF
-        ? (q % 2 === 0 ? 'V' : 'F')
-        : sampleLetters[(q + 1) % 5];
+      const letter = getRealisticOption(q - 1, examType, targetAnswers);
       letters.push(letter);
     }
 
@@ -566,15 +600,11 @@ export function generateSampleTableText(total: number = 70, examType: ExamType =
   return blocks.join('\n');
 }
 
-export function generateSampleSequenceText(total: number = 70, examType: ExamType = 'multiple_choice'): string {
-  const isTF = examType === 'true_false';
-  const sampleLetters: AnswerOption[] = isTF ? ['V', 'F'] : ['A', 'B', 'C', 'D', 'E'];
+export function generateSampleSequenceText(total: number = 70, examType: ExamType = 'multiple_choice', targetAnswers?: (AnswerOption | null)[]): string {
   const count = total;
   const result: string[] = [];
   for (let i = 0; i < count; i++) {
-    const letter = isTF
-      ? (i % 2 === 0 ? 'V' : 'F')
-      : sampleLetters[(i + (i % 2)) % 5];
+    const letter = getRealisticOption(i, examType, targetAnswers);
     result.push(letter);
   }
   return result.join('');

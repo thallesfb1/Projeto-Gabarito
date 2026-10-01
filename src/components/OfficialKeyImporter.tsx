@@ -30,6 +30,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 interface OfficialKeyImporterProps {
   totalQuestions: number;
   currentKeyAnswers: (AnswerOption | null)[];
+  currentUserAnswers?: (AnswerOption | null)[];
   onConfirmKey: (newKey: (AnswerOption | null)[]) => void;
   onCancel?: () => void;
   isDrawerMode?: boolean;
@@ -40,6 +41,7 @@ interface OfficialKeyImporterProps {
 export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
   totalQuestions,
   currentKeyAnswers,
+  currentUserAnswers,
   onConfirmKey,
   onCancel,
   isDrawerMode = false,
@@ -112,11 +114,11 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
     setErrorMessage(null);
     let sample = '';
     if (type === 'pairs') {
-      sample = generateSamplePairsText(totalQuestions, examType);
+      sample = generateSamplePairsText(totalQuestions, examType, currentUserAnswers);
     } else if (type === 'table') {
-      sample = generateSampleTableText(totalQuestions, examType);
+      sample = generateSampleTableText(totalQuestions, examType, currentUserAnswers);
     } else {
-      sample = generateSampleSequenceText(totalQuestions, examType);
+      sample = generateSampleSequenceText(totalQuestions, examType, currentUserAnswers);
     }
     setPastedText(sample);
   };
