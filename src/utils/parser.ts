@@ -529,3 +529,58 @@ export function generateSampleSequence(count: number, examType: ExamType = 'mult
   }
   return result.slice(0, count);
 }
+
+/**
+ * Generates a realistic test sequence of answers (~70% correct) based on the official key.
+ * If no key is provided, falls back to generateSampleSequence.
+ */
+export function generateRealisticTestSequence(
+  count: number,
+  examType: ExamType = 'multiple_choice',
+  keyAnswers?: (AnswerOption | null)[]
+): string {
+  if (count <= 0) return '';
+
+  const hasKey = keyAnswers && keyAnswers.some(a => a !== null);
+  if (!hasKey) {
+    return generateSampleSequence(count, examType);
+  }
+
+  let res = '';
+  const optionsMC = ['A', 'B', 'C', 'D', 'E'];
+  const optionsTF = ['V', 'F'];
+
+  for (let i = 0; i < count; i++) {
+    const keyAns = keyAnswers![i];
+    
+    // If no key for this question, just guess randomly
+    if (!keyAns) {
+      if (examType === 'true_false') {
+        res += optionsTF[Math.floor(Math.random() * optionsTF.length)];
+      } else {
+        res += optionsMC[Math.floor(Math.random() * optionsMC.length)];
+      }
+      continue;
+    }
+
+    // ~70% chance of being correct
+    const isCorrect = Math.random() < 0.7;
+
+    if (examType === 'true_false') {
+      const correctChar = keyAns === 'V' ? 'V' : 'F';
+      const wrongChar = correctChar === 'V' ? 'F' : 'V';
+      res += isCorrect ? correctChar : wrongChar;
+    } else {
+      const correctChar = keyAns as string;
+      if (isCorrect) {
+        res += correctChar;
+      } else {
+        // Pick a random wrong answer
+        const wrongOptions = optionsMC.filter(o => o !== correctChar);
+        res += wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+      }
+    }
+  }
+
+  return res;
+}

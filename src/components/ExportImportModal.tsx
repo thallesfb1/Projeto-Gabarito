@@ -26,6 +26,7 @@ import {
   downloadFile,
   copyTextToClipboard,
   generateSampleSequence,
+  generateRealisticTestSequence,
 } from '../utils/parser';
 import { OfficialKeyImporter } from './OfficialKeyImporter';
 
@@ -254,53 +255,61 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn ${isDark ? 'dark' : ''}`}>
-      <div className={`rounded-xl shadow-2xl w-full max-w-4xl lg:max-w-5xl max-h-[92vh] flex flex-col overflow-hidden transition-colors ${
+      <div className={`rounded-2xl shadow-2xl w-full max-w-4xl lg:max-w-5xl max-h-[92vh] flex flex-col overflow-hidden transition-all duration-300 transform scale-100 ${
         isNotebook
-          ? 'bg-[#fdfbf7] border-2 border-[#1c2b45] text-[#1c2b45]'
+          ? 'bg-[#fcfbf9] border-2 border-[#dedad0] text-[#1c2b45]'
           : isDark
-          ? 'bg-[#22242a] border-2 border-[#3b3e48] text-zinc-100'
-          : 'bg-[#fcfbf9] border-2 border-slate-900 text-slate-900'
+          ? 'bg-[#1e1f24] border border-[#3b3e48] text-zinc-100'
+          : 'bg-white border border-slate-200 text-slate-900'
       }`}>
         {/* Modal Header */}
-        <div className={`px-4 sm:px-6 py-3.5 flex items-center justify-between border-b transition-colors ${
+        <div className={`px-5 sm:px-6 py-4 flex items-center justify-between border-b transition-colors ${
           isNotebook
-            ? 'bg-[#1c2b45] border-[#1c2b45] text-white'
+            ? 'bg-gradient-to-r from-[#f5f0e3] to-[#faf8f4] border-[#dedad0]'
             : isDark
-            ? 'bg-[#18191d] border-[#3b3e48] text-white'
-            : 'bg-slate-900 border-slate-800 text-white'
+            ? 'bg-[#18191d] border-[#3b3e48]'
+            : 'bg-slate-50 border-slate-200'
         }`}>
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`p-1.5 rounded-lg shrink-0 ${isDark ? 'bg-zinc-800 text-amber-400' : 'bg-white/10 text-amber-300'}`}>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`p-2 rounded-xl shrink-0 shadow-sm ${
+              isNotebook ? 'bg-white text-[#e6721d] border border-[#dedad0]' : isDark ? 'bg-zinc-800 text-amber-400' : 'bg-white text-emerald-600 border border-slate-200'
+            }`}>
               <FolderDown className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="font-serif-title italic font-semibold text-lg sm:text-xl truncate text-white">
+              <h2 className={`font-bold text-lg sm:text-xl truncate ${
+                isNotebook ? 'font-serif text-[#1c2b45]' : isDark ? 'text-white' : 'text-slate-900'
+              }`}>
                 Central de Exportação e Gabarito
               </h2>
-              <p className="text-xs text-slate-300 dark:text-zinc-400 font-mono-code truncate">
-                Simulado: <span className="text-white font-semibold">{title}</span> ({totalQuestions} questões)
+              <p className={`text-xs font-mono-code truncate mt-0.5 ${
+                isNotebook ? 'text-[#6b6255]' : isDark ? 'text-zinc-400' : 'text-slate-500'
+              }`}>
+                Simulado: <span className="font-semibold">{title}</span> ({totalQuestions} questões)
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition cursor-pointer shrink-0 ml-2"
+            className={`p-2 rounded-full transition cursor-pointer shrink-0 ml-2 ${
+              isNotebook ? 'hover:bg-[#ede7d8] text-[#1c2b45]/60 hover:text-[#1c2b45]' : isDark ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+            }`}
             title="Fechar"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Primary Functional Tabs - Responsive Grid without horizontal scroll cramping */}
-        <div className={`p-2 sm:p-3 border-b transition-colors ${
+        {/* Primary Functional Tabs - Responsive Grid */}
+        <div className={`p-3 sm:p-4 border-b transition-colors ${
           isNotebook
-            ? 'bg-[#f5f0e3] border-[#ded7c6]'
+            ? 'bg-[#fcfbf9] border-[#dedad0]'
             : isDark
             ? 'bg-[#18191d] border-[#3b3e48]'
-            : 'bg-[#f3f1ea] border-[#dedad0]'
+            : 'bg-white border-slate-200'
         }`}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {/* Tab 1: Import Answers */}
             <button
               id="modal-tab-import-user"
@@ -800,21 +809,24 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                       type="button"
                       onClick={() => {
                         setImportText(
-                          isTF
-                            ? generateSampleNumberedVOF(totalQuestions)
-                            : generateSampleSequence(totalQuestions, 'multiple_choice')
+                          generateRealisticTestSequence(totalQuestions, simulado.examType, simulado.keyAnswers)
                         );
                       }}
-                      className={`text-[11px] font-mono-code underline cursor-pointer ${
-                        isDark ? 'text-zinc-400 hover:text-zinc-100' : isNotebook ? 'text-[#5b6478] hover:text-[#1c2b45]' : 'text-slate-500 hover:text-slate-900'
+                      className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded shadow-2xs transition border cursor-pointer ${
+                        isNotebook
+                          ? 'bg-amber-100/50 border-amber-200 text-amber-900 hover:bg-amber-100 hover:border-amber-300'
+                          : isDark
+                          ? 'bg-emerald-900/30 border-emerald-700/50 text-emerald-300 hover:bg-emerald-900/50'
+                          : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300'
                       }`}
                       title={
                         isTF
-                          ? `Inserir exemplo numerado VOF (1V, 2V, 3F, 4V...) de ${totalQuestions} questões`
-                          : `Inserir sequência modelo de ${totalQuestions} questões para teste`
+                          ? `Inserir sequência V/F com ~70% de acertos baseada no gabarito oficial (ou aleatória se não houver gabarito)`
+                          : `Inserir sequência com ~70% de acertos baseada no gabarito oficial (ou aleatória se não houver gabarito)`
                       }
                     >
-                      {isTF ? `Inserir teste V/F (1V, 2V, 3F...)` : `Inserir teste (${totalQuestions} questões)`}
+                      <Sparkles className="w-3 h-3 shrink-0" />
+                      <span>{isTF ? `Inserir teste V/F (70% acertos)` : `Teste: ${totalQuestions} Q. (70% acertos)`}</span>
                     </button>
                     {importText && (
                       <button
@@ -1088,23 +1100,23 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className={`border-t px-5 py-3 flex items-center justify-between text-xs transition-colors flex-wrap gap-2 ${
+        <div className={`border-t px-5 py-4 flex items-center justify-between text-xs transition-colors flex-wrap gap-3 ${
           isNotebook
-            ? 'bg-[#f5f0e3] border-[#ded7c6] text-[#6b6255]'
+            ? 'bg-[#f5f0e3] border-[#dedad0] text-[#6b6255]'
             : isDark
             ? 'bg-[#18191d] border-[#3b3e48] text-zinc-400'
-            : 'bg-slate-100 border-slate-200 text-slate-600'
+            : 'bg-slate-50 border-slate-200 text-slate-600'
         }`}>
-          <span>Todas as alterações confirmadas são salvas automaticamente na memória deste navegador.</span>
+          <span className="font-medium">Todas as alterações confirmadas são salvas automaticamente na memória deste navegador.</span>
           <button
             type="button"
             onClick={onClose}
-            className={`px-4 py-1.5 rounded font-semibold transition border cursor-pointer ${
+            className={`px-5 py-2 rounded-lg font-bold transition border cursor-pointer ${
               isNotebook
-                ? 'bg-white border-[#1c2b45] text-[#1c2b45] hover:bg-[#1c2b45] hover:text-white'
+                ? 'bg-white border-[#dedad0] text-[#1c2b45] hover:bg-[#ede7d8]'
                 : isDark
                 ? 'bg-[#2a2c34] border-[#3b3e48] text-zinc-200 hover:bg-zinc-100 hover:text-zinc-950'
-                : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-900 hover:text-white'
+                : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
             }`}
           >
             Fechar
