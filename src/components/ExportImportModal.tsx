@@ -255,7 +255,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn ${isDark ? 'dark' : ''}`}>
-      <div className={`rounded-2xl shadow-2xl w-full max-w-4xl lg:max-w-5xl max-h-[92vh] flex flex-col overflow-hidden transition-all duration-300 transform scale-100 ${
+      <div className={`rounded-xl shadow-2xl w-full max-w-4xl lg:max-w-5xl max-h-[92vh] flex flex-col overflow-hidden transition-all duration-300 transform scale-100 ${
         isNotebook
           ? 'bg-[#fcfbf9] border-2 border-[#dedad0] text-[#1c2b45]'
           : isDark
@@ -263,7 +263,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           : 'bg-white border border-slate-200 text-slate-900'
       }`}>
         {/* Modal Header */}
-        <div className={`px-5 sm:px-6 py-4 flex items-center justify-between border-b transition-colors ${
+        <div className={`px-4 sm:px-5 py-3 flex items-center justify-between border-b transition-colors ${
           isNotebook
             ? 'bg-gradient-to-r from-[#f5f0e3] to-[#faf8f4] border-[#dedad0]'
             : isDark
@@ -271,18 +271,18 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             : 'bg-slate-50 border-slate-200'
         }`}>
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`p-2 rounded-xl shrink-0 shadow-sm ${
+            <div className={`p-1.5 rounded-lg shrink-0 shadow-sm ${
               isNotebook ? 'bg-white text-[#e6721d] border border-[#dedad0]' : isDark ? 'bg-zinc-800 text-amber-400' : 'bg-white text-emerald-600 border border-slate-200'
             }`}>
               <FolderDown className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h2 className={`font-bold text-lg sm:text-xl truncate ${
+              <h2 className={`font-bold text-base sm:text-lg truncate ${
                 isNotebook ? 'font-serif text-[#1c2b45]' : isDark ? 'text-white' : 'text-slate-900'
               }`}>
                 Central de Exportação e Gabarito
               </h2>
-              <p className={`text-xs font-mono-code truncate mt-0.5 ${
+              <p className={`text-[11px] font-mono-code truncate ${
                 isNotebook ? 'text-[#6b6255]' : isDark ? 'text-zinc-400' : 'text-slate-500'
               }`}>
                 Simulado: <span className="font-semibold">{title}</span> ({totalQuestions} questões)
@@ -292,7 +292,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className={`p-2 rounded-full transition cursor-pointer shrink-0 ml-2 ${
+            className={`p-1.5 rounded-full transition cursor-pointer shrink-0 ml-2 ${
               isNotebook ? 'hover:bg-[#ede7d8] text-[#1c2b45]/60 hover:text-[#1c2b45]' : isDark ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-slate-200 text-slate-400 hover:text-slate-700'
             }`}
             title="Fechar"
@@ -302,14 +302,14 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         </div>
 
         {/* Primary Functional Tabs - Responsive Grid */}
-        <div className={`p-3 sm:p-4 border-b transition-colors ${
+        <div className={`p-2 sm:p-3 border-b transition-colors ${
           isNotebook
             ? 'bg-[#fcfbf9] border-[#dedad0]'
             : isDark
             ? 'bg-[#18191d] border-[#3b3e48]'
             : 'bg-white border-slate-200'
         }`}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
             {/* Tab 1: Import Answers */}
             <button
               id="modal-tab-import-user"
@@ -483,7 +483,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-3.5 sm:p-5 overflow-y-auto flex-1 space-y-4 text-sm">
+        <div className="p-3 sm:p-4 overflow-y-auto flex-1 space-y-3 text-sm">
           {/* AI PDF Import Banner */}
           {onOpenPdfImport && (
             <div className="p-3 rounded-xl border border-amber-300 bg-amber-50/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs animate-fadeIn">
@@ -633,7 +633,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                       )}
                     </button>
                   </div>
-                  <div className={`p-3 rounded-md font-mono-code text-xs break-words select-all max-h-24 overflow-y-auto border ${
+                  <div className={`p-2.5 rounded-md font-mono-code text-xs break-words select-all max-h-16 overflow-y-auto border ${
                     isNotebook
                       ? 'bg-white border-[#dedad0] text-[#1c2b45]'
                       : isDark
@@ -678,7 +678,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   </button>
                 </div>
 
-                <div className={`p-3 rounded-md font-mono-code text-xs break-all select-all max-h-24 overflow-y-auto border ${
+                <div className={`p-2.5 rounded-md font-mono-code text-xs break-all select-all max-h-16 overflow-y-auto border ${
                   isNotebook
                     ? 'bg-white border-[#dedad0] text-[#1c2b45]'
                     : isDark
@@ -719,7 +719,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                     )}
                   </button>
                 </div>
-                <div className={`p-2.5 rounded-md font-mono-code text-xs break-words select-all border ${
+                <div className={`p-2.5 rounded-md font-mono-code text-xs break-words select-all max-h-16 overflow-y-auto border ${
                   isNotebook
                     ? 'bg-white border-[#dedad0] text-[#1c2b45]'
                     : isDark
@@ -931,7 +931,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 onClick={handleProcessImport}
                 className={`w-full py-2.5 px-4 font-semibold rounded-lg transition flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer shadow-sm ${
                   isNotebook
-                    ? 'bg-[#1c2b45] text-white hover:bg-[#132038]'
+                    ? 'bg-[#e6721d] text-white hover:bg-[#c96216]'
                     : isDark
                     ? 'bg-zinc-200 text-zinc-950 font-bold hover:bg-white'
                     : 'bg-slate-900 text-white hover:bg-slate-800'
@@ -1050,7 +1050,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   onClick={handleDownloadReport}
                   className={`px-4 py-2 font-semibold rounded-lg transition flex items-center gap-2 text-xs text-white cursor-pointer ${
                     isNotebook
-                      ? 'bg-[#e6721d] hover:bg-[#2c5f40]'
+                      ? 'bg-[#e6721d] hover:bg-[#c96216]'
                       : isDark
                       ? 'bg-emerald-600 hover:bg-emerald-500'
                       : 'bg-emerald-700 hover:bg-emerald-800'
@@ -1086,7 +1086,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               </div>
 
               {/* Preview */}
-              <div className={`p-3 rounded-md font-mono-code text-[11px] max-h-60 overflow-y-auto whitespace-pre-wrap leading-tight border ${
+              <div className={`p-3 rounded-md font-mono-code text-[11px] max-h-48 overflow-y-auto whitespace-pre-wrap leading-tight border ${
                 isNotebook
                   ? 'bg-white border-[#dedad0] text-[#1c2b45]'
                   : isDark
@@ -1100,7 +1100,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className={`border-t px-5 py-4 flex items-center justify-between text-xs transition-colors flex-wrap gap-3 ${
+        <div className={`border-t px-4 py-3 flex items-center justify-between text-xs transition-colors flex-wrap gap-2 ${
           isNotebook
             ? 'bg-[#f5f0e3] border-[#dedad0] text-[#6b6255]'
             : isDark
@@ -1111,7 +1111,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className={`px-5 py-2 rounded-lg font-bold transition border cursor-pointer ${
+            className={`px-4 py-1.5 rounded-lg font-bold transition border cursor-pointer ${
               isNotebook
                 ? 'bg-white border-[#dedad0] text-[#1c2b45] hover:bg-[#ede7d8]'
                 : isDark

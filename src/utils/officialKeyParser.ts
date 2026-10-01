@@ -520,7 +520,7 @@ export function generateSamplePairsText(total: number = 70, examType: ExamType =
   const isTF = examType === 'true_false';
   const sampleLetters: AnswerOption[] = isTF ? ['V', 'F'] : ['A', 'B', 'C', 'D', 'E'];
   const pairs: string[] = [];
-  const limit = Math.min(total, 50);
+  const limit = total;
   for (let i = 1; i <= limit; i++) {
     const letter = isTF
       ? (i % 3 === 0 ? 'F' : 'V')
@@ -543,7 +543,7 @@ export function generateSampleTableText(total: number = 70, examType: ExamType =
   const isTF = examType === 'true_false';
   const sampleLetters: AnswerOption[] = isTF ? ['V', 'F'] : ['A', 'B', 'C', 'D', 'E'];
   const blockSize = 10;
-  const count = Math.min(total, 40);
+  const count = total;
   const blocks: string[] = [];
 
   for (let start = 1; start <= count; start += blockSize) {
@@ -569,7 +569,7 @@ export function generateSampleTableText(total: number = 70, examType: ExamType =
 export function generateSampleSequenceText(total: number = 70, examType: ExamType = 'multiple_choice'): string {
   const isTF = examType === 'true_false';
   const sampleLetters: AnswerOption[] = isTF ? ['V', 'F'] : ['A', 'B', 'C', 'D', 'E'];
-  const count = Math.min(total, 70);
+  const count = total;
   const result: string[] = [];
   for (let i = 0; i < count; i++) {
     const letter = isTF
