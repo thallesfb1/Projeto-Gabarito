@@ -1329,24 +1329,30 @@ export default function App() {
       {(() => {
         if (isHomeView) return false;
         if (!simulado?.isCorrected) return false;
-        const hasFlashcards = simulado.flashcards && simulado.flashcards.length > 0;
-        return hasFlashcards || isGeneratingFlashcards;
+        return true;
       })() && (
         <button
           onClick={() => setIsFlashcardsDrawerOpen(true)}
           className={`fixed right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-2 px-3 py-4 rounded-l-2xl shadow-lg transition-transform hover:-translate-x-1 ${
-            theme === 'notebook' 
-              ? 'bg-[#e6721d] text-white border border-r-0 border-[#ad4705]' 
-              : 'bg-indigo-600 text-white border border-r-0 border-indigo-700'
+            (() => {
+              const hasStatements = simulado?.questions?.some(q => q.statement?.trim().length > 0) ?? false;
+              if (!hasStatements) {
+                 return 'bg-slate-600 text-slate-200 border border-r-0 border-slate-700 opacity-90';
+              }
+              return theme === 'notebook' 
+                ? 'bg-[#e6721d] text-white border border-r-0 border-[#ad4705]' 
+                : 'bg-indigo-600 text-white border border-r-0 border-indigo-700';
+            })()
           }`}
           style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          title="Flashcards de Revisão com IA"
         >
           {isGeneratingFlashcards ? (
             <Sparkles className="w-5 h-5 animate-pulse mb-2" />
           ) : (
-            <Brain className="w-5 h-5 mb-2" />
+            <Brain className={`w-5 h-5 mb-2 ${!(simulado?.questions?.some(q => q.statement?.trim().length > 0)) ? 'opacity-60' : ''}`} />
           )}
-          <span className="font-bold tracking-widest text-xs uppercase">
+          <span className={`font-bold tracking-widest text-xs uppercase ${!(simulado?.questions?.some(q => q.statement?.trim().length > 0)) ? 'opacity-80 text-[10px]' : ''}`}>
             {isGeneratingFlashcards ? 'Analisando...' : 'Flashcards'}
           </span>
         </button>
@@ -1358,6 +1364,7 @@ export default function App() {
         flashcards={simulado?.flashcards || []}
         isGenerating={isGeneratingFlashcards}
         theme={theme}
+        hasStatements={simulado?.questions?.some(q => q.statement?.trim().length > 0) ?? false}
       />
 
       {/* Confirmation Dialog */}

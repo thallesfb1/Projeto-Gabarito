@@ -8,6 +8,7 @@ interface FlashcardsOverlayProps {
   flashcards: Flashcard[];
   isGenerating: boolean;
   theme?: AppTheme;
+  hasStatements?: boolean;
 }
 
 export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
@@ -16,6 +17,7 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
   flashcards,
   isGenerating,
   theme = 'clean',
+  hasStatements = true,
 }) => {
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
   const [animateIn, setAnimateIn] = useState(false);
@@ -243,26 +245,50 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
           </div>
         ) : flashcards.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center space-y-6">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl ${
-              isNotebook ? 'bg-[#f4efe3] text-[#e6721d]' : 'bg-white text-emerald-600'
-            }`}>
-              <Check className="w-10 h-10" />
-            </div>
-            <h3 className="font-bold text-2xl text-white drop-shadow-md">Nenhum Flashcard!</h3>
-            <p className="text-sm text-white/80 max-w-sm">
-              Infelizmente não foi possível gerar os flashcards.
-            </p>
-            <button
-              onClick={() => {
-                const event = new CustomEvent('retry-flashcards');
-                window.dispatchEvent(event);
-              }}
-              className={`mt-4 px-6 py-3 rounded-xl font-bold text-sm shadow-xl transition transform hover:scale-105 ${
-                isNotebook ? 'bg-[#e6721d] text-white hover:bg-[#cd5c08] shadow-sm' : 'bg-indigo-600 text-white hover:bg-indigo-500'
-              }`}
-            >
-              Tentar Novamente
-            </button>
+            {!hasStatements ? (
+              <>
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl ${
+                  isNotebook ? 'bg-[#f4efe3] text-[#e6721d]' : 'bg-white text-indigo-600'
+                }`}>
+                  <Brain className="w-10 h-10" />
+                </div>
+                <h3 className="font-bold text-2xl text-white drop-shadow-md">Prova Manual</h3>
+                <p className="text-sm text-white/90 max-w-sm font-medium">
+                  Para criar flashcards dos seus erros com Inteligência Artificial, adicione o caderno de questões (PDF) desta prova.
+                </p>
+                <button
+                  onClick={onClose}
+                  className={`mt-4 px-6 py-3 rounded-xl font-bold text-sm shadow-xl transition transform hover:scale-105 ${
+                    isNotebook ? 'bg-[#e6721d] text-white hover:bg-[#cd5c08]' : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                  }`}
+                >
+                  Entendi
+                </button>
+              </>
+            ) : (
+              <>
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl ${
+                  isNotebook ? 'bg-[#f4efe3] text-[#e6721d]' : 'bg-white text-emerald-600'
+                }`}>
+                  <Check className="w-10 h-10" />
+                </div>
+                <h3 className="font-bold text-2xl text-white drop-shadow-md">Nenhum Flashcard!</h3>
+                <p className="text-sm text-white/80 max-w-sm">
+                  Infelizmente não foi possível gerar os flashcards.
+                </p>
+                <button
+                  onClick={() => {
+                    const event = new CustomEvent('retry-flashcards');
+                    window.dispatchEvent(event);
+                  }}
+                  className={`mt-4 px-6 py-3 rounded-xl font-bold text-sm shadow-xl transition transform hover:scale-105 ${
+                    isNotebook ? 'bg-[#e6721d] text-white hover:bg-[#cd5c08] shadow-sm' : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                  }`}
+                >
+                  Tentar Novamente
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div onClick={handleBackgroundClick} className="w-full max-w-[900px] mx-auto flex items-center justify-center h-full">
