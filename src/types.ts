@@ -50,6 +50,8 @@ export interface Flashcard {
   back: string;
   topic: string;
   isFlipped?: boolean; // UI state
+  sourceQuestionNumber?: number; // Para voltar à questão de origem
+  reviewStatus?: 'pending' | 'learned'; // Lista de revisões
 }
 
 export interface MultiSimuladoStore {

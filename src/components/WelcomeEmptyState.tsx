@@ -18,6 +18,7 @@ import {
   Sun,
   Check,
   Brain,
+  Sparkles
 } from 'lucide-react';
 import { SimuladoData, AppTheme } from '../types';
 import { computeSimuladoStats, getPerformanceInfo } from '../utils/parser';
@@ -34,6 +35,7 @@ interface WelcomeEmptyStateProps {
   onImportPdf: () => void;
   onOpenPresetsModal: () => void;
   onOpenBackupModal: (tab?: 'export' | 'import') => void;
+  onLoadDemo?: () => void;
 }
 
 export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
@@ -48,6 +50,7 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
   onImportPdf,
   onOpenPresetsModal,
   onOpenBackupModal,
+  onLoadDemo,
 }) => {
   const isNotebook = theme === 'notebook';
   const isDark = false;
@@ -239,6 +242,21 @@ export const WelcomeEmptyState: React.FC<WelcomeEmptyStateProps> = ({
               <Zap className="w-4 h-4 text-amber-500" />
               <span>Modelos por Banca</span>
             </button>
+
+            {onLoadDemo && (
+              <button
+                type="button"
+                onClick={onLoadDemo}
+                className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm shadow-2xs transition cursor-pointer border border-dashed ${
+                  isNotebook
+                    ? 'hover:bg-amber-50/50 text-[#854d0e] border-[#854d0e]/40'
+                    : 'hover:bg-emerald-50 text-emerald-700 border-emerald-300'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Testar Prova de Demo</span>
+              </button>
+            )}
 
             <button
               id="btn-welcome-import-backup-quick"

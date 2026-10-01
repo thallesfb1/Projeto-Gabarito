@@ -19,6 +19,7 @@ import { PdfExamImportModal } from './components/PdfExamImportModal';
 import { FlashcardsOverlay } from './components/FlashcardsOverlay';
 import { AnswerOption, ExamType, FilterMode, SimuladoData, MultiSimuladoStore, AppTheme, SimuladoQuestionItem, Flashcard } from './types';
 import { VALID_LETTERS, downloadFile, generateFullReport, computeSimuladoStats } from './utils/parser';
+import { createDemoSimulado } from './utils/demoGenerator';
 import {
   loadMultiSimuladoStore,
   saveMultiSimuladoStore,
@@ -452,6 +453,18 @@ export default function App() {
     setActiveQuestionIndex(0);
     setFilterMode('all');
     showToast(`Cartão-resposta "${newProva.title}" criado com sucesso!`);
+  };
+
+  const handleLoadDemo = () => {
+    const demo = createDemoSimulado();
+    setStore(prev => ({
+      ...prev,
+      activeId: demo.id,
+      provas: [demo, ...prev.provas],
+    }));
+    setIsHomeView(false);
+    setActiveQuestionIndex(0);
+    showToast(`Prova demonstrativa carregada com sucesso!`);
   };
 
   // Duplicate prova
@@ -953,6 +966,7 @@ export default function App() {
                   setBackupInitialTab(tab || 'export');
                   setIsBackupModalOpen(true);
                 }}
+                onLoadDemo={handleLoadDemo}
               />
             </div>
           ) : (
@@ -1365,6 +1379,25 @@ export default function App() {
         isGenerating={isGeneratingFlashcards}
         theme={theme}
         hasStatements={simulado?.questions?.some(q => q.statement?.trim().length > 0) ?? false}
+        onLoadDemo={handleLoadDemo}
+        onUpdateFlashcard={(id, updates) => {
+          if (!simulado) return;
+          updateActiveSimulado(prev => ({
+            ...prev,
+            flashcards: prev.flashcards?.map(f => f.id === id ? { ...f, ...updates } : f)
+          }));
+        }}
+        onDeleteFlashcard={id => {
+          if (!simulado) return;
+          updateActiveSimulado(prev => ({
+            ...prev,
+            flashcards: prev.flashcards?.filter(f => f.id !== id)
+          }));
+        }}
+        onGoToQuestion={index => {
+          setActiveQuestionIndex(index);
+          setIsFlashcardsDrawerOpen(false);
+        }}
       />
 
       {/* Confirmation Dialog */}

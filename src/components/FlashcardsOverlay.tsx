@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, RefreshCcw, Sparkles, Brain, Check, ChevronRight } from 'lucide-react';
+import { X, RefreshCcw, Sparkles, Brain, Check, ChevronRight, Edit3, Save, ExternalLink, CheckCircle2, Circle } from 'lucide-react';
 import { Flashcard, AppTheme } from '../types';
 
 interface FlashcardsOverlayProps {
@@ -9,6 +9,10 @@ interface FlashcardsOverlayProps {
   isGenerating: boolean;
   theme?: AppTheme;
   hasStatements?: boolean;
+  onUpdateFlashcard?: (id: string, updates: Partial<Flashcard>) => void;
+  onDeleteFlashcard?: (id: string) => void;
+  onLoadDemo?: () => void;
+  onGoToQuestion?: (questionIndex: number) => void;
 }
 
 export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
@@ -18,12 +22,39 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
   isGenerating,
   theme = 'clean',
   hasStatements = true,
+  onUpdateFlashcard,
+  onDeleteFlashcard,
+  onLoadDemo,
+  onGoToQuestion,
 }) => {
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
   const [animateIn, setAnimateIn] = useState(false);
   const [mobileActiveIndex, setMobileActiveIndex] = useState(0);
   const [swipeAnim, setSwipeAnim] = useState('');
   const touchStartX = useRef<number>(0);
+  
+  // Editing state
+  const [editingCard, setEditingCard] = useState<{ id: string; side: 'front' | 'back'; text: string } | null>(null);
+
+  const startEditing = (e: React.MouseEvent, fc: Flashcard, side: 'front' | 'back') => {
+    e.stopPropagation();
+    setEditingCard({ id: fc.id, side, text: side === 'front' ? fc.front : fc.back });
+  };
+
+  const saveEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (editingCard && onUpdateFlashcard) {
+      onUpdateFlashcard(editingCard.id, { [editingCard.side]: editingCard.text });
+    }
+    setEditingCard(null);
+  };
+
+  const toggleReviewStatus = (e: React.MouseEvent, fc: Flashcard) => {
+    e.stopPropagation();
+    if (onUpdateFlashcard) {
+      onUpdateFlashcard(fc.id, { reviewStatus: fc.reviewStatus === 'learned' ? 'pending' : 'learned' });
+    }
+  };
 
   useEffect(() => {
     if (isOpen && !isGenerating && flashcards.length > 0) {
@@ -144,20 +175,53 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
                 <span className="text-slate-300 font-black text-lg sm:text-xl italic opacity-50 leading-none">0{idx + 1}</span>
               </div>
               
-              <div className="flex-1 flex items-center justify-center my-2 overflow-y-auto no-scrollbar pointer-events-none">
-                <p className={`font-medium text-xs sm:text-sm text-center leading-snug ${
-                  isNotebook ? 'font-serif text-slate-800' : 'text-slate-700'
-                }`}>
-                  {fc.front}
-                </p>
+              <div className="flex-1 flex flex-col justify-center my-2 overflow-y-auto no-scrollbar pointer-events-auto">
+                {editingCard?.id === fc.id && editingCard?.side === 'front' ? (
+                  <div className="w-full h-full flex flex-col pointer-events-auto" onClick={e => e.stopPropagation()}>
+                    <textarea
+                      value={editingCard.text}
+                      onChange={e => setEditingCard({ ...editingCard, text: e.target.value })}
+                      className="w-full h-full p-2 text-xs sm:text-sm font-medium bg-white/50 border border-slate-200 rounded resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                    />
+                    <button onClick={saveEditing} className="mt-2 self-end p-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200">
+                      <Save className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative group/edit">
+                    <p className={`font-medium text-xs sm:text-sm text-center leading-snug ${
+                      isNotebook ? 'font-serif text-slate-800' : 'text-slate-700'
+                    }`}>
+                      {fc.front}
+                    </p>
+                    {onUpdateFlashcard && (
+                      <button onClick={e => startEditing(e, fc, 'front')} className="absolute -top-2 -right-2 p-1.5 rounded-full bg-slate-100 text-slate-500 opacity-0 group-hover/edit:opacity-100 transition-opacity">
+                        <Edit3 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               
-              <div className="text-center mt-auto pt-2 sm:pt-3 border-t border-slate-100 flex justify-between items-center">
-                <div className={`inline-flex items-center gap-1.5 sm:gap-2 text-[10px] font-semibold px-3 py-1.5 rounded-full transition-all ${
+              <div className="mt-auto pt-2 sm:pt-3 border-t border-slate-100 flex justify-between items-center relative z-10 pointer-events-auto">
+                <div className={`inline-flex items-center gap-1.5 sm:gap-2 text-[10px] font-semibold px-3 py-1.5 rounded-full transition-all cursor-pointer hover:opacity-80 ${
                   isNotebook ? 'bg-[#e6721d]/5 text-[#e6721d]' : 'bg-slate-50 text-slate-500'
                 }`}>
-                  <RefreshCcw className="w-3 h-3" /> Virar
+                  <RefreshCcw className="w-3 h-3 pointer-events-none" /> Virar
                 </div>
+                
+                {fc.sourceQuestionNumber && (
+                  <button 
+                    title={`Questão de origem: ${fc.sourceQuestionNumber}`}
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400 bg-slate-50 px-2 py-1 rounded-full cursor-pointer hover:bg-slate-200 transition-colors"
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (onGoToQuestion) onGoToQuestion(fc.sourceQuestionNumber! - 1);
+                    }}
+                  >
+                    Q{fc.sourceQuestionNumber} <ExternalLink className="w-3 h-3" />
+                  </button>
+                )}
                 {isMobileCard && mobileLayer === 0 && (
                   <div className="text-[9px] uppercase tracking-wider font-bold text-slate-400 flex items-center animate-pulse">
                     Deslize <ChevronRight className="w-3 h-3 ml-1" />
@@ -180,18 +244,53 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
               <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-white/50" />
             </div>
             
-            <div className="flex-1 flex items-center justify-center my-2 overflow-y-auto no-scrollbar pointer-events-none">
-              <p className={`font-medium text-xs sm:text-sm text-center leading-snug drop-shadow-sm ${
-                isNotebook ? 'font-serif' : ''
-              }`}>
-                {fc.back}
-              </p>
+            <div className="flex-1 flex flex-col justify-center my-2 overflow-y-auto no-scrollbar pointer-events-auto">
+              {editingCard?.id === fc.id && editingCard?.side === 'back' ? (
+                <div className="w-full h-full flex flex-col pointer-events-auto" onClick={e => e.stopPropagation()}>
+                  <textarea
+                    value={editingCard.text}
+                    onChange={e => setEditingCard({ ...editingCard, text: e.target.value })}
+                    className="w-full h-full p-2 text-xs sm:text-sm font-medium bg-white/20 text-white border border-white/30 rounded resize-none focus:outline-none focus:ring-1 focus:ring-white placeholder-white/50"
+                  />
+                  <button onClick={saveEditing} className="mt-2 self-end p-1.5 bg-white/20 text-white rounded-lg hover:bg-white/30">
+                    <Save className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative group/edit">
+                  <p className={`font-medium text-xs sm:text-sm text-center leading-snug drop-shadow-sm ${
+                    isNotebook ? 'font-serif' : ''
+                  }`}>
+                    {fc.back}
+                  </p>
+                  {onUpdateFlashcard && (
+                    <button onClick={e => startEditing(e, fc, 'back')} className="absolute -top-2 -right-2 p-1.5 rounded-full bg-white/20 text-white opacity-0 group-hover/edit:opacity-100 transition-opacity">
+                      <Edit3 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             
-            <div className="text-center mt-auto pt-2 sm:pt-3 border-t border-white/10 flex justify-between items-center">
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 text-[10px] font-semibold px-3 py-1.5 rounded-full text-white/80 bg-white/10">
-                <RefreshCcw className="w-3 h-3" /> Voltar
+            <div className="mt-auto pt-2 sm:pt-3 border-t border-white/10 flex justify-between items-center relative z-10 pointer-events-auto">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 text-[10px] font-semibold px-3 py-1.5 rounded-full text-white/80 bg-white/10 hover:bg-white/20 transition-colors cursor-pointer">
+                <RefreshCcw className="w-3 h-3 pointer-events-none" /> Voltar
               </div>
+              
+              {onUpdateFlashcard && (
+                <button 
+                  onClick={e => toggleReviewStatus(e, fc)}
+                  className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full border transition-all ${
+                    fc.reviewStatus === 'learned' 
+                      ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30' 
+                      : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
+                  }`}
+                  title={fc.reviewStatus === 'learned' ? 'Marcar para revisar' : 'Marcar como aprendido'}
+                >
+                  {fc.reviewStatus === 'learned' ? <CheckCircle2 className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
+                  {fc.reviewStatus === 'learned' ? 'Aprendido' : 'Pendente'}
+                </button>
+              )}
               {isMobileCard && mobileLayer === 0 && (
                 <div className="text-[9px] uppercase tracking-wider font-bold text-white/50 flex items-center animate-pulse">
                   Deslize <ChevronRight className="w-3 h-3 ml-1" />
@@ -256,14 +355,29 @@ export const FlashcardsOverlay: React.FC<FlashcardsOverlayProps> = ({
                 <p className="text-sm text-white/90 max-w-sm font-medium">
                   Para criar flashcards dos seus erros com Inteligência Artificial, adicione o caderno de questões (PDF) desta prova.
                 </p>
-                <button
-                  onClick={onClose}
-                  className={`mt-4 px-6 py-3 rounded-xl font-bold text-sm shadow-xl transition transform hover:scale-105 ${
-                    isNotebook ? 'bg-[#e6721d] text-white hover:bg-[#cd5c08]' : 'bg-indigo-600 text-white hover:bg-indigo-500'
-                  }`}
-                >
-                  Entendi
-                </button>
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={onClose}
+                    className={`px-6 py-3 rounded-xl font-bold text-sm shadow-xl transition transform hover:scale-105 ${
+                      isNotebook ? 'bg-[#e6721d] text-white hover:bg-[#cd5c08]' : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                    }`}
+                  >
+                    Entendi
+                  </button>
+                  {onLoadDemo && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onLoadDemo();
+                      }}
+                      className={`px-6 py-3 rounded-xl font-bold text-sm shadow-xl transition transform hover:scale-105 flex items-center gap-2 ${
+                        isNotebook ? 'bg-[#f4efe3] text-[#e6721d] hover:bg-[#eae4d4]' : 'bg-white text-indigo-600 hover:bg-indigo-50'
+                      }`}
+                    >
+                      <Sparkles className="w-4 h-4" /> Ver Demonstração
+                    </button>
+                  )}
+                </div>
               </>
             ) : (
               <>
