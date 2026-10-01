@@ -14,8 +14,11 @@ import {
   Calendar,
   Sun,
   BookOpen,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 import { AppTheme } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
   title: string;
@@ -45,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
   onGoHome,
   provasCount = 1,
 }) => {
+  const { user, signInWithGoogle, signOut } = useAuth();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(title);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -241,6 +245,31 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">Feedback</span>
             <ExternalLink className="w-3 h-3 opacity-60" aria-hidden="true" />
           </a>
+
+          {/* Supabase Authentication */}
+          {user ? (
+            <button
+              onClick={signOut}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer border ${
+                isNotebook
+                  ? 'bg-[#f5f0e4] hover:bg-[#ebe4d4] text-[#1c2b45] border-[#ded7c6]'
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+              }`}
+              title={`Logado como ${user.email}`}
+            >
+              <img src={user.user_metadata?.avatar_url} alt="Avatar" className="w-4 h-4 rounded-full" />
+              <span className="hidden sm:inline text-ellipsis overflow-hidden max-w-[80px] whitespace-nowrap">{user.user_metadata?.name || 'Sair'}</span>
+              <LogOut className="w-3.5 h-3.5 ml-1 opacity-50" />
+            </button>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer border bg-indigo-600 hover:bg-indigo-700 text-white border-transparent shadow-sm"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Entrar com Google</span>
+            </button>
+          )}
         </div>
       </div>
 
