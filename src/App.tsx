@@ -29,11 +29,35 @@ import {
   generateSimuladoId,
 } from './utils/provasManager';
 import { saveSnapshotToIndexedDB } from './utils/indexedDbStorage';
-import { FolderKanban, MessageSquare, ExternalLink, Bookmark, Sun, BookOpen, Brain, Sparkles } from 'lucide-react';
+import { fetchProvasFromSupabase, saveProvaToSupabase, deleteProvaFromSupabase } from './utils/supabaseStorage';
+import { useAuth } from './contexts/AuthContext';
+import { FolderKanban, MessageSquare, ExternalLink, Bookmark, Sun, BookOpen, Brain, Sparkles, Cloud } from 'lucide-react';
 
 export default function App() {
+  const { user } = useAuth();
+  const [isSyncing, setIsSyncing] = useState(false);
+
   // Multi-exam centralized state with auto-migration from legacy single-exam storage
   const [store, setStore] = useState<MultiSimuladoStore>(() => loadMultiSimuladoStore());
+
+  useEffect(() => {
+    if (user) {
+      setIsSyncing(true);
+      fetchProvasFromSupabase(user.id).then(provas => {
+        if (provas.length > 0) {
+          setStore(prev => {
+            const newStore = { ...prev, provas };
+            // Optional: determine activeId based on latest or leave existing
+            if (!provas.find(p => p.id === prev.activeId)) {
+              newStore.activeId = provas[0].id;
+            }
+            return newStore;
+          });
+        }
+        setIsSyncing(false);
+      });
+    }
+  }, [user]);
 
   // Active simulado derived from store (null if no exams yet)
   const simulado: SimuladoData | null =
@@ -103,7 +127,18 @@ export default function App() {
   // Auto-save multi-exam store to IndexedDB & LocalStorage on any state modification
   useEffect(() => {
     saveMultiSimuladoStore(store);
-  }, [store]);
+    
+    // Sync to Supabase with debounce if user is logged in
+    if (user && store.activeId) {
+      const activeProva = store.provas.find(p => p.id === store.activeId);
+      if (activeProva) {
+        const timeout = setTimeout(() => {
+          saveProvaToSupabase(user.id, activeProva).catch(console.error);
+        }, 2000);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [store, user]);
 
   // Synchronize on startup: recover from IndexedDB if localStorage was cleared
   useEffect(() => {
@@ -510,6 +545,10 @@ export default function App() {
       onConfirm: () => {
         // Save safety snapshot in IndexedDB before deleting
         saveSnapshotToIndexedDB(store, `Antes de excluir "${prova.title}"`).catch(() => {});
+
+        if (user) {
+          deleteProvaFromSupabase(user.id, prova.id).catch(console.error);
+        }
 
         setStore(prev => {
           const remaining = prev.provas.filter(p => p.id !== prova.id);
