@@ -33,6 +33,16 @@ export interface ExamMetadata {
   sourceLabel?: string;
 }
 
+export interface SourceDocument {
+  path: string;
+  ownerId: string;
+  name: string;
+  mime: string;
+  size: number;
+  kind: 'exam' | 'key';
+  createdAt: string;
+}
+
 export interface SimuladoData {
   id: string;
   title: string;
@@ -54,6 +64,7 @@ export interface SimuladoData {
   reviewedQuestionIndexes?: number[];
   extractedQuestions?: ExtractedQuestion[];
   sourceFileName?: string;
+  sourceDocuments?: SourceDocument[];
   exampleData?: { user?: boolean; key?: boolean };
   [key: string]: any;
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FileText, Image, Sparkles, X, LoaderCircle } from 'lucide-react';
+import { FileText, Image, Sparkles, X, LoaderCircle, FolderOpen, CheckCircle2, Cloud, Trash2 } from 'lucide-react';
 import { ModalLayer } from './ModalLayer';
 import { AIExtraction, ExtractionMode, validateAIFile, validateAIExtraction, answersFromExtraction } from '../utils/aiExtraction';
 import { extractWithAI } from '../utils/aiClient';
@@ -12,8 +12,8 @@ interface Props {
   onSignIn?: () => Promise<void>;
   simulado: SimuladoData | null;
   onClose: () => void;
-  onCreate: (result: AIExtraction, fileName: string) => Promise<void>;
-  onKey: (result: AIExtraction) => Promise<void>;
+  onCreate: (result: AIExtraction, file: File) => Promise<void>;
+  onKey: (result: AIExtraction, file: File) => Promise<void>;
 }
 export function AIImportModal({ initialMode, simulado, onClose, onCreate, onKey, signedIn, onSignIn }: Props) {
   const [mode, setMode] = useState(initialMode);
@@ -22,7 +22,9 @@ export function AIImportModal({ initialMode, simulado, onClose, onCreate, onKey,
   const [result, setResult] = useState<AIExtraction | null>(null);
   const [busy, setBusy] = useState<'extract' | 'apply' | null>(null);
   const [error, setError] = useState('');
-  const [consent, setConsent] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const dragDepth = useRef(0);
   const [reviewed, setReviewed] = useState(false);
   const [versionHint, setVersionHint] = useState('');
   const controller = useRef<AbortController | null>(null);
@@ -51,12 +53,12 @@ export function AIImportModal({ initialMode, simulado, onClose, onCreate, onKey,
   const apply = () => run('apply', async () => {
     if (!result || !file || !reviewed) return;
     const validated = validateAIExtraction(result, mode);
-    if (mode === 'exam') await onCreate(validated, file.name);
+    if (mode === 'exam') await onCreate(validated, file);
     else {
       if (!simulado) throw new Error('Crie ou selecione uma prova antes de importar o gabarito.');
       if (validated.examType !== (simulado.examType || 'multiple_choice')) throw new Error('O tipo do gabarito é diferente do cartão selecionado.');
       answersFromExtraction(validated, simulado.totalQuestions);
-      await onKey(validated);
+      await onKey(validated, file);
     }
     onClose();
   });
@@ -67,10 +69,25 @@ export function AIImportModal({ initialMode, simulado, onClose, onCreate, onKey,
         <div className="flex flex-wrap gap-2"><button className={`secondary-action ${mode === 'exam' ? 'ai-selected' : ''}`} disabled={Boolean(busy)} aria-pressed={mode === 'exam'} onClick={()=>changeMode('exam')}><FileText className="w-4 h-4"/>Ler prova em PDF</button><button className={`secondary-action ${mode === 'key' ? 'ai-selected' : ''}`} disabled={Boolean(busy)} aria-pressed={mode === 'key'} onClick={()=>changeMode('key')}><Image className="w-4 h-4"/>Ler gabarito em imagem</button></div>
         {!result && <>
           {onSignIn && !signedIn && <div className="ai-warning rounded-xl p-4 space-y-3"><p className="text-sm">Entre na sua conta para ler arquivos com IA e salvar suas provas.</p><button className="google-button" disabled={Boolean(busy)} onClick={() => run('extract', async () => { await onSignIn(); })}><GoogleIcon />Entrar com Google</button></div>}
-          <div className="rounded-xl border border-dashed p-5 space-y-3"><label htmlFor="ai-file" className="block font-semibold">{mode === 'exam' ? 'Selecione a prova em PDF' : 'Selecione a imagem ou o PDF do gabarito oficial'}</label><input id="ai-file" type="file" disabled={Boolean(busy)} accept={mode === 'exam' ? 'application/pdf' : 'application/pdf,image/png,image/jpeg,image/webp'} onChange={e=>{selectFile(e.target.files?.[0]);e.target.value='';}} className="block max-w-full text-sm"/><p className="text-xs opacity-70">Até 10 MB e 200 questões. {mode === 'exam' ? 'A leitura cria uma nova prova com os enunciados; suas provas atuais são preservadas.' : `Destino: ${simulado?.title || 'nenhuma prova selecionada'}. O gabarito será conferido antes de substituir o atual.`}</p>{file && <p className="text-sm font-semibold">{file.name} · {(file.size /1024/1024).toFixed(2)} MB</p>}</div>
+          {mode === 'key' && !simulado && <p className="ai-warning rounded-xl p-3 text-sm">Para vincular o gabarito, crie ou selecione um cartão-resposta antes de iniciar a leitura.</p>}
+          <div className="ai-upload-panel">
+            <input ref={fileInput} id="ai-file" aria-label={mode === 'exam' ? 'Selecione a prova em PDF' : 'Selecione a imagem ou o PDF do gabarito oficial'} type="file" className="sr-only" disabled={Boolean(busy)} accept={mode === 'exam' ? 'application/pdf' : 'application/pdf,image/png,image/jpeg,image/webp'} onChange={e=>{selectFile(e.target.files?.[0]);e.target.value='';}} />
+            <button type="button" className="ai-dropzone" data-dragging={dragging} data-selected={Boolean(file)} disabled={Boolean(busy)} onClick={()=>fileInput.current?.click()}
+              onDragEnter={e=>{e.preventDefault();if(!busy){dragDepth.current++;setDragging(true);}}}
+              onDragOver={e=>{e.preventDefault();e.dataTransfer.dropEffect=busy?'none':'copy';}}
+              onDragLeave={e=>{e.preventDefault();dragDepth.current=Math.max(0,dragDepth.current-1);if(!dragDepth.current)setDragging(false);}}
+              onDrop={e=>{e.preventDefault();dragDepth.current=0;setDragging(false);if(busy)return;if(e.dataTransfer.files.length!==1){setError('Arraste apenas um arquivo por leitura.');return;}selectFile(e.dataTransfer.files[0]);}}>
+              <span className="ai-drop-icon">{file ? <CheckCircle2 /> : mode==='exam'?<FileText />:<Image />}</span>
+              <strong>{dragging?'Solte seu arquivo aqui':file?file.name:mode==='exam'?'Arraste sua prova em PDF':'Arraste a imagem do gabarito'}</strong>
+              <span>{file? (file.size/1024/1024).toFixed(2)+' MB · pronto para leitura' : 'ou escolha um arquivo no seu dispositivo'}</span>
+              <span className="ai-browse"><FolderOpen className="w-4 h-4"/>{file?'Trocar arquivo':'Selecionar arquivo'}</span>
+              <small>{mode==='exam'?'PDF':'PNG, JPEG, WebP ou PDF'} · até 10 MB · até 200 questões</small>
+            </button>
+            {file && <div className="ai-file-summary"><span>{file.type.startsWith('image/')?<img src={previewURL} alt="Prévia do gabarito selecionado"/>:<FileText className="w-8 h-8"/>}<span><strong>{file.name}</strong><small>{mode==='exam'?'Uma nova prova será criada após sua conferência.':'Gabarito para: '+(simulado?.title||'selecione uma prova')}</small></span></span><button type="button" className="account-icon-button" disabled={Boolean(busy)} aria-label="Remover arquivo selecionado" onClick={()=>selectFile()}><Trash2 className="w-4 h-4"/></button></div>}
+            <p className="ai-storage-note"><Cloud className="w-4 h-4"/><span>Ao solicitar a leitura, o arquivo é enviado ao serviço de IA. Ao confirmar a importação, o original fica salvo de forma privada na sua conta.</span></p>
+          </div>
           {mode === 'key' && <label className="block text-sm font-semibold">Versão ou cor do caderno (opcional)<input value={versionHint} maxLength={160} disabled={Boolean(busy)} onChange={e=>setVersionHint(e.target.value)} placeholder="Ex.: caderno azul, prova tipo 1" className="block w-full rounded-lg border p-2.5 mt-2"/></label>}
-          <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={consent} disabled={Boolean(busy)} onChange={e=>setConsent(e.target.checked)} className="mt-1"/><span>Enviar este arquivo ao serviço de IA para leitura. Os arquivos não são guardados pelo servidor da aplicação.</span></label>
-          <button className="primary-action" disabled={Boolean(busy) || !file || (Boolean(onSignIn) && !signedIn) || !consent || (mode === 'key' && !simulado)} onClick={()=>run('extract',async signal=>{if(file){const extracted=await extractWithAI(file,mode,signal,versionHint);if(!signal.aborted){setResult(extracted);setReviewed(false);}}})}><Sparkles className="w-4 h-4"/>Extrair e conferir</button>
+          <button className="primary-action" disabled={Boolean(busy) || !file || (Boolean(onSignIn) && !signedIn) || (mode === 'key' && !simulado)} onClick={()=>run('extract',async signal=>{if(file){const extracted=await extractWithAI(file,mode,signal,versionHint);if(!signal.aborted){setResult(extracted);setReviewed(false);}}})}><Sparkles className="w-4 h-4"/>Extrair e conferir</button>
         </>}
         {busy && <div className="flex items-center gap-3 rounded-xl border p-4" role="status"><LoaderCircle className="w-5 h-5 animate-spin"/><span>{busy === 'extract' ? 'Lendo o arquivo. Isso pode levar até dois minutos…' : 'Preservando os dados e importando…'}</span>{busy !== 'apply' && <button className="text-action ml-auto" onClick={()=>controller.current?.abort()}>Cancelar</button>}</div>}
         {error && <p className="ai-error rounded-xl p-3 text-sm" role="alert">{error}</p>}

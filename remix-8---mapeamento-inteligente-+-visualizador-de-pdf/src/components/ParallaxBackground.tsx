@@ -26,8 +26,8 @@ export const ParallaxBackground: React.FC<ParallaxBackgroundProps> = ({ theme })
     motionQuery.addEventListener('change', handleMotionChange);
 
     // On mobile devices, do not run parallax animation to optimize performance
-    if (window.innerWidth < 768) {
-      return;
+    if (window.innerWidth < 768 || motionQuery.matches) {
+      return () => motionQuery.removeEventListener('change', handleMotionChange);
     }
 
     let animationFrameId: number;
@@ -50,8 +50,12 @@ export const ParallaxBackground: React.FC<ParallaxBackgroundProps> = ({ theme })
       targetScrollY = window.scrollY || window.pageYOffset;
     };
 
-    // Smooth lerp loop with ambient harmonic breathing
+    let lastFrame = 0;
+    // Limit decorative updates to 30fps while keeping interaction smooth.
     const loop = (timestamp: number) => {
+      animationFrameId = requestAnimationFrame(loop);
+      if (timestamp - lastFrame < 1000 / 30) return;
+      lastFrame = timestamp;
       const elapsed = (timestamp - startTime) / 1000;
 
       // Smooth interpolation for mouse coordinates
@@ -66,7 +70,6 @@ export const ParallaxBackground: React.FC<ParallaxBackgroundProps> = ({ theme })
         time: elapsed,
       });
 
-      animationFrameId = requestAnimationFrame(loop);
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -79,7 +82,7 @@ export const ParallaxBackground: React.FC<ParallaxBackgroundProps> = ({ theme })
       motionQuery.removeEventListener('change', handleMotionChange);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [reducedMotion]);
 
   // Parallax offsets (if reduced motion, lock to neutral)
   const mx = reducedMotion ? 0 : coords.x;

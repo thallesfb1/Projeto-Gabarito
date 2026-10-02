@@ -1,3 +1,6 @@
+import { uploadOriginalFile } from './utils/sourceDocuments';
+import { SourceDocuments } from './components/SourceDocuments';
+import { ParallaxBackground } from './components/ParallaxBackground';
 import { applyAnswerImport, generateExamplePair } from './utils/exampleData';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
@@ -730,14 +733,14 @@ export default function App() {
   );
 
   return (
-    <div className={`min-h-screen ${
+    <div className={`workspace-canvas min-h-screen ${
       theme === 'notebook'
         ? 'canvas-notebook theme-notebook text-[#1c2b45]'
         : theme === 'dark'
         ? 'canvas-dark theme-dark text-zinc-100 dark'
         : 'canvas-clean theme-clean text-[#1c2b45]'
     } py-4 px-2 sm:px-4 flex justify-center selection:bg-slate-900 selection:text-white dark:selection:bg-zinc-700 dark:selection:text-zinc-100 transition-colors duration-200 relative`}>
-      {/* Dynamic Interactive Parallax Depth Background */}
+      <ParallaxBackground theme={theme} />
 
       <div className="w-full max-w-7xl relative z-10">
         <AccountBar workspace={workspace} theme={theme} onThemeChange={handleThemeChange} onAI={() => setAiMode('exam')} onMenu={() => setIsMobileSidebarOpen(true)} onHome={() => setWorkspaceView('home')} onBackup={() => { setBackupInitialTab('export'); setIsBackupModalOpen(true); }} />
@@ -968,6 +971,7 @@ export default function App() {
                 theme={theme}
               />
 
+              {Boolean(simulado.sourceDocuments?.length) && <SourceDocuments key={scope + simulado.id} documents={simulado.sourceDocuments || []} />}
               {Boolean(simulado.extractedQuestions?.length) && <ExamReader key={simulado.id} simulado={simulado} index={activeQuestionIndex || 0} onNavigate={setActiveQuestionIndex} onAnswer={handleSelectAnswer} />}
 
               {/* Score Performance Panel (Shown when corrected) */}
@@ -1125,20 +1129,26 @@ export default function App() {
       {/* Export / Import Modal for Individual Exam */}
       <React.Suspense fallback={<div className="fixed inset-0 bg-black/50 z-[100] grid place-items-center text-white" role="status">Abrindo painel…</div>}>
       {aiMode && isStorageReady && <AIImportModal initialMode={aiMode} simulado={simulado} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onClose={() => setAiMode(null)}
-        onCreate={async (result: AIExtraction, fileName: string) => {
+        onCreate={async (result: AIExtraction, file: File) => {
+          const account = scope;
           const proof = createNewSimulado(result.title, result.totalQuestions, store.provas.length, result.examType);
-          proof.extractedQuestions = result.questions; proof.sourceFileName = fileName; proof.notes = result.warnings.join('\n');
+          const original = await uploadOriginalFile(file, proof.id, 'exam');
+          if (currentScope.current !== account) throw new Error('A conta mudou. Abra novamente a importação.');
+          proof.extractedQuestions = result.questions; proof.sourceFileName = file.name; proof.sourceDocuments = [original]; proof.notes = result.warnings.join('\n');
           setStore(previous => ({ ...previous, activeId: proof.id, provas: [...previous.provas, proof] }));
           setWorkspaceView('exam'); setActiveQuestionIndex(0); setFilterMode('all'); setIsKeyDrawerOpen(false);
           showToast('Prova criada com os enunciados conferidos.');
         }}
-        onKey={async result => {
+        onKey={async (result, file) => {
           if (!simulado) throw new Error('Selecione uma prova.');
           const answers = answersFromExtraction(result, simulado.totalQuestions);
           const snapshot = await saveSnapshotToIndexedDB(store, 'Antes de importar gabarito por IA', scope);
           if (!snapshot) throw new Error('Não foi possível preservar o gabarito atual. Exporte um backup antes de importar.');
           if (currentScope.current !== scope) throw new Error('A conta mudou durante a importação. Abra novamente a prova desejada.');
-          setStore(previous => ({ ...previous, provas: previous.provas.map(proof => proof.id === simulado.id ? { ...proof, keyAnswers: answers, exampleData: { ...proof.exampleData, key: false }, reviewedQuestionIndexes: [], isCorrected: false, isLocked: false, isResultOutdated: false, updatedAt: new Date().toISOString() } : proof) }));
+          if ((simulado.sourceDocuments || []).length >= 100) throw new Error('Esta prova já possui 100 originais salvos. Crie outro cartão para guardar mais arquivos.');
+          const original = await uploadOriginalFile(file, simulado.id, 'key');
+          if (currentScope.current !== scope) throw new Error('A conta mudou durante o salvamento. Abra novamente a importação.');
+          setStore(previous => ({ ...previous, provas: previous.provas.map(proof => proof.id === simulado.id ? { ...proof, sourceDocuments: [...(proof.sourceDocuments || []), original], keyAnswers: answers, exampleData: { ...proof.exampleData, key: false }, reviewedQuestionIndexes: [], isCorrected: false, isLocked: false, isResultOutdated: false, updatedAt: new Date().toISOString() } : proof) }));
           setFilterMode('all'); showToast('Gabarito conferido importado. Corrija a prova para atualizar o resultado.');
         }} />}
       {simulado && (
