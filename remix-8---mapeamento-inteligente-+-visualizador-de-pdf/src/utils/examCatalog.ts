@@ -235,7 +235,7 @@ export function aggregateSubjectPerformance(
   const aggregate = new Map<string, AggregatedSubjectPerformance>();
 
   provas
-    .filter(prova => prova.isCorrected && prova.subjectRanges?.length)
+    .filter(prova => prova.isCorrected && !prova.isResultOutdated && prova.subjectRanges?.length)
     .forEach(prova => {
       calculateSubjectPerformance(prova).forEach(subject => {
         const key = subject.name.trim().toLocaleLowerCase('pt-BR');
@@ -264,7 +264,7 @@ export function buildReviewQueue(provas: SimuladoData[]): ReviewQueueItem[] {
   const items: ReviewQueueItem[] = [];
 
   provas.forEach(simulado => {
-    if (!simulado.isCorrected) return;
+    if (!simulado.isCorrected || simulado.isResultOutdated) return;
     const reviewed = new Set(simulado.reviewedQuestionIndexes || []);
     for (let index = 0; index < simulado.totalQuestions; index += 1) {
       const userAnswer = simulado.userAnswers[index] ?? null;

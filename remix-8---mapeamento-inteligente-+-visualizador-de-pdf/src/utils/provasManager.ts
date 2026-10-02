@@ -1,5 +1,6 @@
 import { SimuladoData, MultiSimuladoStore, FullBackupData, AnswerOption, ExamType } from '../types';
 import { parseAnswers, downloadFile } from './parser';
+import { MAX_IMPORT_BYTES, MAX_QUESTIONS, normalizeTotal, resizeAnswers, validIndexes, sanitizeExtractedQuestions } from './validation';
 import {
   saveStoreToIndexedDB,
   loadStoreFromIndexedDB,
@@ -10,6 +11,15 @@ import {
 export const STORAGE_MULTI_KEY = 'gabarito-multi-v1';
 export const STORAGE_LEGACY_V2 = 'gabarito-simulado-v2';
 export const STORAGE_LEGACY_V1 = 'gabarito-state';
+
+function readStoredJSON(key: string): any {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 // 70 questions sample official key for initial default exam
 const INITIAL_70_KEY =
@@ -30,7 +40,7 @@ export function createNewSimulado(
 ): SimuladoData {
   const finalTitle = title?.trim() || `Cartão-Resposta ${existingCount + 1}`;
   const now = new Date().toISOString();
-  const validTotal = Math.max(1, Math.min(200, totalQuestions));
+  const validTotal = Math.min(200, normalizeTotal(totalQuestions));
 
   return {
     id: generateSimuladoId(),
@@ -79,8 +89,9 @@ export function duplicateSimulado(source: SimuladoData): SimuladoData {
  * and preserving any unknown custom attributes for full backwards compatibility.
  */
 export function sanitizeSimulado(item: any, fallbackIndex: number = 1): SimuladoData {
-  const tot = typeof item?.totalQuestions === 'number' && item.totalQuestions > 0 ? item.totalQuestions : 70;
-  const validOptions = ['A', 'B', 'C', 'D', 'E', 'V', 'F'];
+  const tot = normalizeTotal(item?.totalQuestions ?? item?.total);
+  const examType: ExamType = item?.examType === 'true_false' ? 'true_false' : 'multiple_choice';
+  const validOptions = examType === 'true_false' ? ['V', 'F', 'C', 'E'] : ['A', 'B', 'C', 'D', 'E'];
   const userAnswers: (AnswerOption | null)[] = Array.isArray(item?.userAnswers)
     ? item.userAnswers.map((ans: any) => (typeof ans === 'string' && validOptions.includes(ans.toUpperCase()) ? (ans.toUpperCase() as AnswerOption) : null))
     : new Array(tot).fill(null);
@@ -105,8 +116,8 @@ export function sanitizeSimulado(item: any, fallbackIndex: number = 1): Simulado
         .map((range: any, index: number) => ({
           id: typeof range.id === 'string' && range.id ? range.id : `subject_${Date.now()}_${index}`,
           name: range.name.trim() || `Disciplina ${index + 1}`,
-          start: Math.max(1, Math.min(tot, Number(range.start) || 1)),
-          end: Math.max(1, Math.min(tot, Number(range.end) || tot)),
+          start: Math.min(tot, normalizeTotal(Number(range.start), 1)),
+          end: Math.min(tot, normalizeTotal(Number(range.end), tot)),
           color: ['slate', 'amber', 'emerald', 'blue', 'violet', 'rose', 'cyan'].includes(range.color)
             ? range.color
             : 'slate',
@@ -130,13 +141,13 @@ export function sanitizeSimulado(item: any, fallbackIndex: number = 1): Simulado
     createdAt: typeof item?.createdAt === 'string' ? item.createdAt : (item?.criadaEm || now),
     updatedAt: typeof item?.updatedAt === 'string' ? item.updatedAt : (item?.atualizadaEm || now),
     totalQuestions: tot,
-    userAnswers: userAnswers.slice(0, tot),
-    keyAnswers: keyAnswers.slice(0, tot),
-    flaggedQuestions: Array.isArray(item?.flaggedQuestions) ? item.flaggedQuestions.filter((idx: any) => typeof idx === 'number') : [],
+    userAnswers: resizeAnswers(userAnswers, tot, examType),
+    keyAnswers: resizeAnswers(keyAnswers, tot, examType),
+    flaggedQuestions: validIndexes(item?.flaggedQuestions, tot),
     isCorrected,
     isLocked,
     isResultOutdated,
-    timeSpentSeconds: typeof item?.timeSpentSeconds === 'number' ? item.timeSpentSeconds : 0,
+    timeSpentSeconds: typeof item?.timeSpentSeconds === 'number' && Number.isFinite(item.timeSpentSeconds) ? Math.max(0, Math.floor(item.timeSpentSeconds)) : 0,
     notes: typeof item?.notes === 'string' ? item.notes : '',
     examType: item?.examType === 'true_false' ? 'true_false' : 'multiple_choice',
     subjectRanges,
@@ -144,23 +155,25 @@ export function sanitizeSimulado(item: any, fallbackIndex: number = 1): Simulado
       item?.examMetadata && typeof item.examMetadata === 'object'
         ? { ...item.examMetadata }
         : undefined,
-    reviewedQuestionIndexes,
+    reviewedQuestionIndexes: validIndexes(reviewedQuestionIndexes, tot),
+    ...(Array.isArray(item?.extractedQuestions) ? { extractedQuestions: sanitizeExtractedQuestions(item.extractedQuestions, tot, examType) } : {}),
+    sourceFileName: typeof item?.sourceFileName === 'string' ? item.sourceFileName.slice(0, 240) : undefined,
   };
 }
 
 /**
  * Loads the multi-exam store from localStorage, handling automatic backwards-compatible migration.
  */
-export function loadMultiSimuladoStore(): MultiSimuladoStore {
+export function loadMultiSimuladoStore(scope = 'guest'): MultiSimuladoStore {
   try {
     // 1. Try reading modern multi-exam store
-    const savedMulti = localStorage.getItem(STORAGE_MULTI_KEY);
+    const savedMulti = readStoredJSON(scope === 'guest' ? STORAGE_MULTI_KEY : `${STORAGE_MULTI_KEY}:${scope}`);
     if (savedMulti) {
-      const parsed = JSON.parse(savedMulti);
-      if (parsed && Array.isArray(parsed.provas) && parsed.provas.length > 0) {
+      const parsed = savedMulti;
+      if (parsed && Array.isArray(parsed.provas)) {
         const sanitizedProvas = parsed.provas.map((p: any, idx: number) => sanitizeSimulado(p, idx + 1));
         const activeExists = sanitizedProvas.some((p: SimuladoData) => p.id === parsed.activeId);
-        const activeId = activeExists ? parsed.activeId : sanitizedProvas[0].id;
+        const activeId = activeExists ? parsed.activeId : sanitizedProvas[0]?.id || '';
         return {
           version: 3,
           activeId,
@@ -169,29 +182,30 @@ export function loadMultiSimuladoStore(): MultiSimuladoStore {
       }
     }
 
+    if (scope !== 'guest') return { version: 3, activeId: '', provas: [] };
+
     // 2. Migration from v2 single-simulado store (STORAGE_LEGACY_V2)
-    const legacyV2Raw = localStorage.getItem(STORAGE_LEGACY_V2);
+    const legacyV2Raw = readStoredJSON(STORAGE_LEGACY_V2);
     if (legacyV2Raw) {
-      const parsedV2 = JSON.parse(legacyV2Raw);
+      const parsedV2 = legacyV2Raw;
       if (parsedV2 && Array.isArray(parsedV2.userAnswers)) {
         const migrated = sanitizeSimulado(parsedV2, 1);
         migrated.title = parsedV2.title || 'Simulado Principal';
         const newStore: MultiSimuladoStore = {
           version: 3,
           activeId: migrated.id,
-          provas: [migrated],
+          provas: [sanitizeSimulado(migrated)],
         };
-        saveMultiSimuladoStore(newStore);
         return newStore;
       }
     }
 
     // 3. Migration from v1 oldest legacy state (STORAGE_LEGACY_V1)
-    const legacyV1Raw = localStorage.getItem(STORAGE_LEGACY_V1);
+    const legacyV1Raw = readStoredJSON(STORAGE_LEGACY_V1);
     if (legacyV1Raw) {
-      const legacyV1 = JSON.parse(legacyV1Raw);
+      const legacyV1 = legacyV1Raw;
       if (legacyV1 && Array.isArray(legacyV1.userAnswers)) {
-        const tot = legacyV1.total || 70;
+        const tot = normalizeTotal(legacyV1.total);
         const migrated: SimuladoData = {
           id: generateSimuladoId(),
           title: 'Simulado Concurso (Restaurado)',
@@ -208,9 +222,8 @@ export function loadMultiSimuladoStore(): MultiSimuladoStore {
         const newStore: MultiSimuladoStore = {
           version: 3,
           activeId: migrated.id,
-          provas: [migrated],
+          provas: [sanitizeSimulado(migrated)],
         };
-        saveMultiSimuladoStore(newStore);
         return newStore;
       }
     }
@@ -268,29 +281,32 @@ export function createDemoSimulado(): SimuladoData {
  * 2. Mirror LocalStorage (instant sync fallback)
  * 3. Optional automatic safety snapshot in IndexedDB
  */
-export function saveMultiSimuladoStore(store: MultiSimuladoStore, snapshotReason?: string): void {
+export async function saveMultiSimuladoStore(store: MultiSimuladoStore, snapshotReason?: string, scope = 'guest'): Promise<boolean> {
+  let mirrorSaved = false;
   // 1. Mirror to localStorage
   try {
-    localStorage.setItem(STORAGE_MULTI_KEY, JSON.stringify(store));
+    localStorage.setItem(scope === 'guest' ? STORAGE_MULTI_KEY : `${STORAGE_MULTI_KEY}:${scope}`, JSON.stringify(store));
+    mirrorSaved = true;
     const activeProva = store.provas.find(p => p.id === store.activeId) || store.provas[0];
-    if (activeProva) {
+    if (scope !== 'guest') {
+      // Keep the legacy guest backup separate from signed-in workspaces.
+    } else if (activeProva) {
       localStorage.setItem(STORAGE_LEGACY_V2, JSON.stringify(activeProva));
     } else {
       localStorage.removeItem(STORAGE_LEGACY_V2);
     }
   } catch (err) {
-    console.warn('LocalStorage cheio ou indisponível; o IndexedDB garantirá a persistência:', err);
+    console.warn('LocalStorage indisponível. Tentando salvar no IndexedDB:', err);
   }
 
   // 2. Primary asynchronous persistence to IndexedDB
-  saveStoreToIndexedDB(store).catch(err => {
-    console.warn('Aviso ao sincronizar com IndexedDB:', err);
-  });
+  const databaseSaved = await saveStoreToIndexedDB(store, scope);
 
   // 3. Optional safety snapshot
   if (snapshotReason && store.provas.length > 0) {
-    saveSnapshotToIndexedDB(store, snapshotReason).catch(() => {});
+    await saveSnapshotToIndexedDB(store, snapshotReason, scope);
   }
+  return databaseSaved || mirrorSaved;
 }
 
 /**
@@ -298,13 +314,14 @@ export function saveMultiSimuladoStore(store: MultiSimuladoStore, snapshotReason
  * Protects against accidental cache wipes by restoring from IndexedDB if localStorage was cleared.
  */
 export async function syncStoreWithIndexedDB(
-  currentStore: MultiSimuladoStore
+  currentStore: MultiSimuladoStore,
+  scope = 'guest'
 ): Promise<{ store: MultiSimuladoStore; updated: boolean; reason?: string }> {
   // Proactively request persistent storage from browser
   requestPersistentStorage().catch(() => {});
 
   try {
-    const idbStore = await loadStoreFromIndexedDB();
+    const idbStore = await loadStoreFromIndexedDB(scope);
 
     // Case 1: IndexedDB has data
     if (idbStore && Array.isArray(idbStore.provas) && idbStore.provas.length > 0) {
@@ -319,14 +336,14 @@ export async function syncStoreWithIndexedDB(
 
       // If localStore was completely empty (e.g. user cleaned browser cache or private window closed),
       // rescue from IndexedDB!
-      if (currentStore.provas.length === 0) {
-        saveMultiSimuladoStore(validIdbStore);
+      if (currentStore.provas.length === 0 && !Array.isArray(readStoredJSON(scope === 'guest' ? STORAGE_MULTI_KEY : `${STORAGE_MULTI_KEY}:${scope}`)?.provas)) {
         return {
           store: validIdbStore,
           updated: true,
           reason: 'Recuperado com sucesso do IndexedDB (armazenamento seguro)',
         };
       }
+      if (currentStore.provas.length === 0) return { store: currentStore, updated: false };
 
       // If localStore has fewer exams than IndexedDB, or if IndexedDB has newer timestamps
       const latestLocalTime = Math.max(
@@ -339,7 +356,6 @@ export async function syncStoreWithIndexedDB(
       );
 
       if (latestIdbTime > latestLocalTime && validIdbStore.provas.length >= currentStore.provas.length) {
-        saveMultiSimuladoStore(validIdbStore);
         return {
           store: validIdbStore,
           updated: true,
@@ -348,14 +364,11 @@ export async function syncStoreWithIndexedDB(
       }
 
       // Otherwise local is current, guarantee IndexedDB is up to date
-      await saveStoreToIndexedDB(currentStore);
       return { store: currentStore, updated: false };
     }
 
     // Case 2: IndexedDB is empty, but local has data (first time upgrade)
     if (currentStore.provas.length > 0) {
-      await saveStoreToIndexedDB(currentStore);
-      await saveSnapshotToIndexedDB(currentStore, 'Migração Inicial');
       return { store: currentStore, updated: false };
     }
   } catch (err) {
@@ -394,6 +407,9 @@ export function validateAndParseBackup(rawText: string): {
 } {
   try {
     const trimmed = rawText.trim();
+    if (new Blob([rawText]).size > MAX_IMPORT_BYTES) {
+      return { valid: false, error: 'O backup excede o limite de 10 MB.' };
+    }
     if (!trimmed) {
       return { valid: false, error: 'O arquivo está vazio.' };
     }
@@ -425,7 +441,19 @@ export function validateAndParseBackup(rawText: string): {
       };
     }
 
-    const sanitizedProvas = rawList.map((p, idx) => sanitizeSimulado(p, idx + 1));
+    if (rawList.length > 1000 || rawList.some(p => !p || typeof p !== 'object' || Array.isArray(p) || !Array.isArray(p.userAnswers))) {
+      return { valid: false, error: 'O backup deve conter provas com listas de respostas válidas (máximo de 1.000 provas).' };
+    }
+    if (rawList.some(p => p.totalQuestions !== undefined && (!Number.isInteger(p.totalQuestions) || p.totalQuestions < 1 || p.totalQuestions > MAX_QUESTIONS))) {
+      return { valid: false, error: `Quantidade de questões inválida. Use um inteiro entre 1 e ${MAX_QUESTIONS}.` };
+    }
+    const seen = new Set<string>();
+    const sanitizedProvas = rawList.map((p, idx) => {
+      const prova = sanitizeSimulado(p, idx + 1);
+      if (seen.has(prova.id)) prova.id = generateSimuladoId();
+      seen.add(prova.id);
+      return prova;
+    });
     const finalActiveId = sanitizedProvas.some(p => p.id === activeId) ? activeId : sanitizedProvas[0].id;
 
     return {

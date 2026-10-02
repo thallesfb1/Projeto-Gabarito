@@ -1,3 +1,4 @@
+import { ModalLayer } from './ModalLayer';
 import React, { useEffect } from 'react';
 import { MessageSquare, ExternalLink, CheckCircle2, Sparkles, X, ArrowRight, Award } from 'lucide-react';
 import { AppTheme } from '../types';
@@ -54,7 +55,7 @@ export const CompletionFeedbackModal: React.FC<CompletionFeedbackModalProps> = (
   };
 
   return (
-    <div
+    <ModalLayer label="Resultado da correção" onClose={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/55 backdrop-blur-xs animate-fadeIn"
       role="dialog"
       aria-modal="true"
@@ -170,6 +171,6 @@ export const CompletionFeedbackModal: React.FC<CompletionFeedbackModalProps> = (
           <span>Você também pode acessar o botão de feedback a qualquer momento no menu superior.</span>
         </div>
       </div>
-    </div>
+    </ModalLayer>
   );
 };

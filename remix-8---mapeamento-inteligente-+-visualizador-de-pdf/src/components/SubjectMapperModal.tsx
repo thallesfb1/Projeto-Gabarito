@@ -1,3 +1,4 @@
+import { ModalLayer } from './ModalLayer';
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Layers3, Plus, Save, Trash2, WandSparkles, X } from 'lucide-react';
 import { AppTheme, SubjectColor, SubjectRange } from '../types';
@@ -42,6 +43,7 @@ export const SubjectMapperModal: React.FC<SubjectMapperModalProps> = ({
   const error = useMemo(() => {
     if (!ranges.length) return 'Adicione pelo menos uma disciplina.';
     for (const range of ranges) {
+      if (!Number.isInteger(range.start) || !Number.isInteger(range.end)) return 'Use números inteiros nos intervalos de questões.';
       if (!range.name.trim()) return 'Todas as disciplinas precisam de um nome.';
       if (range.start < 1 || range.end > totalQuestions || range.start > range.end) {
         return `Os intervalos devem estar entre 1 e ${totalQuestions} e começar antes de terminar.`;
@@ -80,7 +82,7 @@ export const SubjectMapperModal: React.FC<SubjectMapperModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-xs animate-fadeIn">
+    <ModalLayer label="Mapa de disciplinas" onClose={onClose} className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-xs animate-fadeIn">
       <div className={`w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-2xl border-2 shadow-2xl flex flex-col ${
         isDark
           ? 'bg-[#22242a] border-[#3b3e48] text-zinc-100'
@@ -233,6 +235,6 @@ export const SubjectMapperModal: React.FC<SubjectMapperModalProps> = ({
           </div>
         </footer>
       </div>
-    </div>
+    </ModalLayer>
   );
 };

@@ -75,13 +75,16 @@ export function getIndexedDB(): Promise<IDBDatabase | null> {
     }
   });
 
-  return dbInitPromise;
+  return dbInitPromise.then(db => {
+    if (!db) dbInitPromise = null;
+    return db;
+  });
 }
 
 /**
  * Saves the multi-exam store into IndexedDB.
  */
-export async function saveStoreToIndexedDB(store: MultiSimuladoStore): Promise<boolean> {
+export async function saveStoreToIndexedDB(store: MultiSimuladoStore, scope = 'guest'): Promise<boolean> {
   try {
     const db = await getIndexedDB();
     if (!db) return false;
@@ -90,13 +93,14 @@ export async function saveStoreToIndexedDB(store: MultiSimuladoStore): Promise<b
       const tx = db.transaction([STORE_STATE], 'readwrite');
       const os = tx.objectStore(STORE_STATE);
       const record = {
-        key: STATE_KEY_MAIN,
+        key: scope === 'guest' ? STATE_KEY_MAIN : `account:${scope}`,
         value: store,
         updatedAt: new Date().toISOString(),
       };
       const req = os.put(record);
 
-      req.onsuccess = () => resolve(true);
+      tx.oncomplete = () => resolve(true);
+      tx.onabort = () => resolve(false);
       req.onerror = () => resolve(false);
       tx.onerror = () => resolve(false);
     });
@@ -109,7 +113,7 @@ export async function saveStoreToIndexedDB(store: MultiSimuladoStore): Promise<b
 /**
  * Loads the multi-exam store from IndexedDB.
  */
-export async function loadStoreFromIndexedDB(): Promise<MultiSimuladoStore | null> {
+export async function loadStoreFromIndexedDB(scope = 'guest'): Promise<MultiSimuladoStore | null> {
   try {
     const db = await getIndexedDB();
     if (!db) return null;
@@ -117,7 +121,7 @@ export async function loadStoreFromIndexedDB(): Promise<MultiSimuladoStore | nul
     return new Promise(resolve => {
       const tx = db.transaction([STORE_STATE], 'readonly');
       const os = tx.objectStore(STORE_STATE);
-      const req = os.get(STATE_KEY_MAIN);
+      const req = os.get(scope === 'guest' ? STATE_KEY_MAIN : `account:${scope}`);
 
       req.onsuccess = () => {
         const result = req.result;
@@ -142,7 +146,8 @@ export async function loadStoreFromIndexedDB(): Promise<MultiSimuladoStore | nul
  */
 export async function saveSnapshotToIndexedDB(
   store: MultiSimuladoStore,
-  reason: string = 'Automático'
+  reason: string = 'Automático',
+  scope = 'guest'
 ): Promise<StorageSnapshot | null> {
   try {
     const db = await getIndexedDB();
@@ -154,6 +159,7 @@ export async function saveSnapshotToIndexedDB(
       reason,
       examCount: store.provas.length,
       data: JSON.parse(JSON.stringify(store)),
+      scope,
     };
 
     return new Promise(resolve => {
@@ -166,7 +172,7 @@ export async function saveSnapshotToIndexedDB(
         try {
           const allReq = os.getAll();
           allReq.onsuccess = () => {
-            const all: StorageSnapshot[] = allReq.result || [];
+            const all: StorageSnapshot[] = (allReq.result || []).filter((item: StorageSnapshot) => (item.scope || 'guest') === scope);
             if (all.length > MAX_SNAPSHOTS) {
               all.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
               const toDelete = all.slice(0, all.length - MAX_SNAPSHOTS);
@@ -178,9 +184,10 @@ export async function saveSnapshotToIndexedDB(
         } catch {
           // Non-critical pruning error
         }
-        resolve(snapshot);
       };
 
+      tx.oncomplete = () => resolve(snapshot);
+      tx.onabort = () => resolve(null);
       req.onerror = () => resolve(null);
       tx.onerror = () => resolve(null);
     });
@@ -193,7 +200,7 @@ export async function saveSnapshotToIndexedDB(
 /**
  * Retrieves all stored snapshots sorted from newest to oldest.
  */
-export async function getSnapshotsFromIndexedDB(): Promise<StorageSnapshot[]> {
+export async function getSnapshotsFromIndexedDB(scope = 'guest'): Promise<StorageSnapshot[]> {
   try {
     const db = await getIndexedDB();
     if (!db) return [];
@@ -204,7 +211,7 @@ export async function getSnapshotsFromIndexedDB(): Promise<StorageSnapshot[]> {
       const req = os.getAll();
 
       req.onsuccess = () => {
-        const list: StorageSnapshot[] = req.result || [];
+        const list: StorageSnapshot[] = (req.result || []).filter((snapshot: StorageSnapshot) => (snapshot.scope || 'guest') === scope);
         list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         resolve(list);
       };
@@ -231,7 +238,8 @@ export async function deleteSnapshotFromIndexedDB(id: string): Promise<boolean> 
       const os = tx.objectStore(STORE_SNAPSHOTS);
       const req = os.delete(id);
 
-      req.onsuccess = () => resolve(true);
+      tx.oncomplete = () => resolve(true);
+      tx.onabort = () => resolve(false);
       req.onerror = () => resolve(false);
       tx.onerror = () => resolve(false);
     });
@@ -244,7 +252,7 @@ export async function deleteSnapshotFromIndexedDB(id: string): Promise<boolean> 
 /**
  * Clears all saved snapshots.
  */
-export async function clearAllSnapshots(): Promise<boolean> {
+export async function clearAllSnapshots(scope = 'guest'): Promise<boolean> {
   try {
     const db = await getIndexedDB();
     if (!db) return false;
@@ -252,9 +260,15 @@ export async function clearAllSnapshots(): Promise<boolean> {
     return new Promise(resolve => {
       const tx = db.transaction([STORE_SNAPSHOTS], 'readwrite');
       const os = tx.objectStore(STORE_SNAPSHOTS);
-      const req = os.clear();
+      const req = os.getAll();
+      req.onsuccess = () => {
+        for (const snapshot of req.result as StorageSnapshot[]) {
+          if ((snapshot.scope || 'guest') === scope) os.delete(snapshot.id);
+        }
+      };
 
-      req.onsuccess = () => resolve(true);
+      tx.oncomplete = () => resolve(true);
+      tx.onabort = () => resolve(false);
       req.onerror = () => resolve(false);
       tx.onerror = () => resolve(false);
     });

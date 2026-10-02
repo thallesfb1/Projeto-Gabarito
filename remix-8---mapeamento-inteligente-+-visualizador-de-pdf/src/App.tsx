@@ -1,58 +1,71 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { ControlsBar } from './components/ControlsBar';
 import { ScorePanel } from './components/ScorePanel';
 import { QuestionGrid } from './components/QuestionGrid';
 import { OfficialKeyDrawer } from './components/OfficialKeyDrawer';
-import { ExportImportModal, ModalTab } from './components/ExportImportModal';
+import type { ModalTab } from './components/ExportImportModal';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { Sidebar } from './components/Sidebar';
 import { NewSimuladoModal } from './components/NewSimuladoModal';
 import { RenameSimuladoModal } from './components/RenameSimuladoModal';
-import { BackupModal } from './components/BackupModal';
 import { WelcomeEmptyState } from './components/WelcomeEmptyState';
 import { CompletionFeedbackModal } from './components/CompletionFeedbackModal';
-import { QuickPresetsModal } from './components/QuickPresetsModal';
-import { ParallaxBackground } from './components/ParallaxBackground';
-import { ExamLibrary } from './components/ExamLibrary';
-import { StudyInsights } from './components/StudyInsights';
 import { SubjectMapperModal } from './components/SubjectMapperModal';
 import { AnswerOption, ExamType, FilterMode, SimuladoData, MultiSimuladoStore, AppTheme, SubjectRange } from './types';
 import { VALID_LETTERS, downloadFile, generateFullReport, computeSimuladoStats } from './utils/parser';
 import {
-  loadMultiSimuladoStore,
-  saveMultiSimuladoStore,
-  syncStoreWithIndexedDB,
   createNewSimulado,
   duplicateSimulado,
   generateSimuladoId,
 } from './utils/provasManager';
 import { saveSnapshotToIndexedDB } from './utils/indexedDbStorage';
 import { ExamBlueprint, materializeSubjectRanges, metadataFromBlueprint } from './utils/examCatalog';
+import { normalizeTotal, resizeAnswers } from './utils/validation';
+import { useWorkspace } from './hooks/useWorkspace';
+import { AccountBar } from './components/AccountBar';
+import { ExamReader } from './components/ExamReader';
+import { AIExtraction, answersFromExtraction } from './utils/aiExtraction';
 import { FolderKanban, MessageSquare, ExternalLink, Bookmark, Sun, BookOpen, Moon } from 'lucide-react';
+
+const ExamLibrary = React.lazy(() => import('./components/ExamLibrary').then(module => ({ default: module.ExamLibrary })));
+const StudyInsights = React.lazy(() => import('./components/StudyInsights').then(module => ({ default: module.StudyInsights })));
+const BackupModal = React.lazy(() => import('./components/BackupModal').then(module => ({ default: module.BackupModal })));
+const ExportImportModal = React.lazy(() => import('./components/ExportImportModal').then(module => ({ default: module.ExportImportModal })));
+const QuickPresetsModal = React.lazy(() => import('./components/QuickPresetsModal').then(module => ({ default: module.QuickPresetsModal })));
+const AIImportModal = React.lazy(() => import('./components/AIImportModal').then(module => ({ default: module.AIImportModal })));
 
 export default function App() {
   // Multi-exam centralized state with auto-migration from legacy single-exam storage
-  const [store, setStore] = useState<MultiSimuladoStore>(() => loadMultiSimuladoStore());
+  const workspace = useWorkspace();
+  const { store, setStore, isStorageReady, saveStatus, scope } = workspace;
+  const currentScope = useRef(scope);
+  currentScope.current = scope;
 
   // Active simulado derived from store (null if no exams yet)
   const simulado: SimuladoData | null =
     store.provas.find(p => p.id === store.activeId) || store.provas[0] || null;
+  const currentProvaId = useRef(simulado?.id);
+  currentProvaId.current = simulado?.id;
 
   // Visual Theme state (clean, notebook pastel or dark mode)
   const [theme, setTheme] = useState<AppTheme>(() => {
-    const saved = localStorage.getItem('gabarito_pro_theme');
+    let saved: string | null = null;
+    try { saved = localStorage.getItem('gabarito_pro_theme'); } catch { /* Storage may be blocked. */ }
     if (saved === 'notebook' || saved === 'clean' || saved === 'dark') return saved;
     return 'clean';
   });
 
   const handleThemeChange = (newTheme: AppTheme) => {
     setTheme(newTheme);
-    localStorage.setItem('gabarito_pro_theme', newTheme);
+    try { localStorage.setItem('gabarito_pro_theme', newTheme); } catch { /* Theme still works in memory. */ }
   };
 
   // Synchronize dark class on document element for tailwind and sub-elements
   useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.classList.remove('theme-clean', 'theme-notebook', 'theme-dark');
+    document.documentElement.classList.add(`theme-${theme}`);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -71,10 +84,11 @@ export default function App() {
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [backupInitialTab, setBackupInitialTab] = useState<'export' | 'import' | 'storage'>('storage');
   const [isCompletionFeedbackOpen, setIsCompletionFeedbackOpen] = useState(false);
-  const [workspaceView, setWorkspaceView] = useState<'exam' | 'home' | 'library' | 'insights'>('exam');
+  const [workspaceView, setWorkspaceView] = useState<'exam' | 'home' | 'library' | 'insights'>('home');
   const isHomeView = workspaceView === 'home';
   const setIsHomeView = (show: boolean) => setWorkspaceView(show ? 'home' : 'exam');
   const [mapperProvaId, setMapperProvaId] = useState<string | null>(null);
+  const [aiMode, setAiMode] = useState<'exam' | 'key' | null>(null);
 
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number | null>(0);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
@@ -96,32 +110,16 @@ export default function App() {
     onConfirm: () => void;
   } | null>(null);
 
-  // Auto-save multi-exam store to IndexedDB & LocalStorage on any state modification
   useEffect(() => {
-    saveMultiSimuladoStore(store);
-  }, [store]);
-
-  // Synchronize on startup: recover from IndexedDB if localStorage was cleared
-  useEffect(() => {
-    syncStoreWithIndexedDB(store).then(result => {
-      if (result.updated) {
-        setStore(result.store);
-        if (result.reason) {
-          showToast(result.reason);
-        }
-      }
-    });
-  }, []);
-
-  // Periodic automatic safety snapshot in IndexedDB every 10 minutes
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (store.provas.length > 0) {
-        saveSnapshotToIndexedDB(store, 'Ponto Automático').catch(() => {});
-      }
-    }, 10 * 60 * 1000);
-    return () => clearInterval(timer);
-  }, [store]);
+    setWorkspaceView('home');
+    setIsKeyDrawerOpen(false);
+    setActiveQuestionIndex(0);
+    setFilterMode('all');
+    setIsBackupModalOpen(false);
+    setMapperProvaId(null);
+      setAiMode(null);
+    setModalState(previous => ({ ...previous, isOpen: false }));
+  }, [scope]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -150,15 +148,17 @@ export default function App() {
   // Keyboard navigation & quick answers for active exam
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!simulado) return;
+      if (!simulado || !isStorageReady || workspaceView !== 'exam' || isKeyDrawerOpen || e.ctrlKey || e.metaKey || e.altKey || e.isComposing || e.repeat) return;
 
       // If user is in an input or textarea or any modal is open, ignore global shortcuts
       if (
-        modalState.isOpen ||
+        modalState.isOpen || aiMode !== null ||
         isNewProvaModalOpen ||
         renameModalProva !== null ||
         isBackupModalOpen ||
         confirmDialog !== null ||
+        isPresetsModalOpen || mapperProvaId !== null || isCompletionFeedbackOpen ||
+        (e.target instanceof HTMLElement && Boolean(e.target.closest('[role="dialog"], select, [contenteditable="true"]'))) ||
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
       ) {
@@ -175,7 +175,7 @@ export default function App() {
         if (keyUpper === 'V' || keyUpper === 'C') matchedAnswer = 'V';
         else if (keyUpper === 'F' || keyUpper === 'E') matchedAnswer = 'F';
       } else {
-        if (VALID_LETTERS.includes(keyUpper as AnswerOption)) {
+        if (['A', 'B', 'C', 'D', 'E'].includes(keyUpper)) {
           matchedAnswer = keyUpper as AnswerOption;
         }
       }
@@ -193,6 +193,7 @@ export default function App() {
           return {
             ...prev,
             userAnswers: nextAnswers,
+            reviewedQuestionIndexes: (prev.reviewedQuestionIndexes || []).filter(index => index !== currentIdx),
             isResultOutdated: prev.isCorrected ? true : prev.isResultOutdated,
           };
         });
@@ -216,6 +217,7 @@ export default function App() {
           return {
             ...prev,
             userAnswers: nextAnswers,
+            reviewedQuestionIndexes: (prev.reviewedQuestionIndexes || []).filter(index => index !== currentIdx),
             isResultOutdated: prev.isCorrected ? true : prev.isResultOutdated,
           };
         });
@@ -253,11 +255,12 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+    workspaceView, isStorageReady, isKeyDrawerOpen, isPresetsModalOpen, mapperProvaId, isCompletionFeedbackOpen, aiMode,
     activeQuestionIndex,
     simulado?.totalQuestions,
     simulado?.isCorrected,
     simulado?.isLocked,
-    simulado?.examType,
+    simulado?.examType, simulado?.id,
     modalState.isOpen,
     isNewProvaModalOpen,
     renameModalProva,
@@ -306,6 +309,9 @@ export default function App() {
 
   // Switch active prova
   const handleSelectProva = (id: string) => {
+    setWorkspaceView('exam');
+    setIsKeyDrawerOpen(false);
+    setIsMobileSidebarOpen(false);
     setIsHomeView(false);
     if (id === store.activeId) return;
     setStore(prev => ({ ...prev, activeId: id }));
@@ -427,12 +433,14 @@ export default function App() {
     setConfirmDialog({
       isOpen: true,
       title: 'Excluir Prova',
-      description: `Deseja realmente excluir a prova "${prova.title}"? Todas as marcações e o gabarito serão removidos permanentemente deste navegador.`,
+      description: `Excluir a prova "${prova.title}" deste espaço de estudos${workspace.session ? ' e da conta sincronizada' : ''}? Uma cópia será preservada nos pontos de restauração.`,
       confirmLabel: 'Sim, Excluir',
       isDestructive: true,
-      onConfirm: () => {
+      onConfirm: async () => {
         // Save safety snapshot in IndexedDB before deleting
-        saveSnapshotToIndexedDB(store, `Antes de excluir "${prova.title}"`).catch(() => {});
+        const snapshot = await saveSnapshotToIndexedDB(store, `Antes de excluir "${prova.title}"`, scope);
+        if (!snapshot) { showToast('Não foi possível criar uma cópia de segurança. Exporte um backup antes de excluir.'); return; }
+        if (currentScope.current !== scope) return;
 
         setStore(prev => {
           const remaining = prev.provas.filter(p => p.id !== prova.id);
@@ -473,10 +481,7 @@ export default function App() {
 
   // Restore full backup (replace or merge)
   const handleRestoreBackup = (importedProvas: SimuladoData[], mode: 'replace' | 'merge') => {
-    if (store.provas.length > 0) {
-      saveSnapshotToIndexedDB(store, 'Antes de Restaurar Backup').catch(() => {});
-    }
-
+    if (currentScope.current !== scope) return;
     if (mode === 'replace') {
       const firstId = importedProvas[0]?.id || '';
       setStore({
@@ -502,9 +507,11 @@ export default function App() {
           } else {
             merged.push(p);
           }
+          existingIds.add(p.id);
         }
         return {
           ...prev,
+          activeId: prev.activeId || merged[0]?.id || '',
           provas: merged,
         };
       });
@@ -515,7 +522,9 @@ export default function App() {
   // Update total questions for active exam
   const handleTotalQuestionsChange = (newTotal: number) => {
     if (!simulado) return;
-    const validTotal = Math.max(1, Math.min(200, newTotal));
+    const validTotal = Math.min(200, normalizeTotal(newTotal));
+    if (validTotal === simulado.totalQuestions) return;
+    const apply = () => {
     updateActiveSimulado(prev => {
       const newUser = new Array(validTotal).fill(null);
       const newKey = new Array(validTotal).fill(null);
@@ -544,6 +553,15 @@ export default function App() {
     if (activeQuestionIndex && activeQuestionIndex >= validTotal) {
       setActiveQuestionIndex(validTotal - 1);
     }
+    };
+    if (validTotal < simulado.totalQuestions && (simulado.userAnswers.slice(validTotal).some(Boolean) || simulado.keyAnswers.slice(validTotal).some(Boolean) || simulado.subjectRanges?.some(range => range.end > validTotal))) {
+      setConfirmDialog({ isOpen: true, title: 'Reduzir o cartão-resposta?', description: `As questões após a ${validTotal} serão removidas, incluindo suas marcações, gabarito e disciplinas. Uma cópia será salva antes da alteração.`, confirmLabel: 'Reduzir cartão', onConfirm: async () => {
+        const snapshot = await saveSnapshotToIndexedDB(store, 'Antes de reduzir questões', scope);
+        if (!snapshot) { showToast('Não foi possível criar uma cópia. Exporte um backup antes de reduzir.'); return; }
+        if (currentScope.current !== scope || currentProvaId.current !== simulado.id) return;
+        apply(); setConfirmDialog(null);
+      } });
+    } else apply();
   };
 
   // Clear user markings with reliable in-app confirmation
@@ -556,11 +574,15 @@ export default function App() {
       confirmLabel: 'Sim, Limpar',
       cancelLabel: 'Cancelar',
       isDestructive: true,
-      onConfirm: () => {
+      onConfirm: async () => {
+        const snapshot = await saveSnapshotToIndexedDB(store, 'Antes de limpar marcações', scope);
+        if (!snapshot) { showToast('Exporte um backup: não foi possível preservar as marcações.'); return; }
+        if (currentScope.current !== scope || currentProvaId.current !== simulado.id) return;
         updateActiveSimulado(prev => ({
           ...prev,
           userAnswers: new Array(prev.totalQuestions).fill(null),
           flaggedQuestions: [],
+          reviewedQuestionIndexes: [],
           isCorrected: false,
           isLocked: false,
           isResultOutdated: false,
@@ -581,7 +603,10 @@ export default function App() {
       confirmLabel: 'Reiniciar Prova',
       cancelLabel: 'Cancelar',
       isDestructive: true,
-      onConfirm: () => {
+      onConfirm: async () => {
+        const snapshot = await saveSnapshotToIndexedDB(store, 'Antes de reiniciar a prova', scope);
+        if (!snapshot) { showToast('Exporte um backup: não foi possível preservar a prova.'); return; }
+        if (currentScope.current !== scope || currentProvaId.current !== simulado.id) return;
         const resetTotal = simulado.totalQuestions || 70;
         updateActiveSimulado(prev => ({
           ...prev,
@@ -592,6 +617,7 @@ export default function App() {
           isLocked: false,
           isResultOutdated: false,
           timeSpentSeconds: 0,
+          reviewedQuestionIndexes: [],
           notes: '',
         }));
         setActiveQuestionIndex(0);
@@ -689,6 +715,14 @@ export default function App() {
     showToast('Relatório baixado para a sua pasta!');
   };
 
+  if (!isStorageReady) return (
+    <div className="workspace-loading" role="status" aria-live="polite">
+      <BookOpen className="w-9 h-9" />
+      <h1>Preparando seu espaço de estudos</h1>
+      <p>Recuperando suas provas e verificando o salvamento.</p>
+    </div>
+  );
+
   return (
     <div className={`min-h-screen ${
       theme === 'notebook'
@@ -698,9 +732,10 @@ export default function App() {
         : 'canvas-clean theme-clean text-[#1c2b45]'
     } py-4 px-2 sm:px-4 flex justify-center selection:bg-slate-900 selection:text-white dark:selection:bg-zinc-700 dark:selection:text-zinc-100 transition-colors duration-200 relative`}>
       {/* Dynamic Interactive Parallax Depth Background */}
-      <ParallaxBackground theme={theme} />
 
-      <div className="w-full max-w-7xl flex flex-col md:flex-row gap-4 sm:gap-6 items-start justify-center relative z-10">
+      <div className="w-full max-w-7xl relative z-10">
+        <AccountBar workspace={workspace} theme={theme} onThemeChange={handleThemeChange} onAI={() => setAiMode('exam')} onMenu={() => setIsMobileSidebarOpen(true)} onHome={() => setWorkspaceView('home')} onBackup={() => { setBackupInitialTab('export'); setIsBackupModalOpen(true); }} />
+        <div className="flex flex-col md:flex-row gap-4 sm:gap-6 items-start justify-center">
         {/* Sidebar with saved exams list */}
         <Sidebar
           provas={store.provas}
@@ -733,6 +768,7 @@ export default function App() {
 
         {/* Main Exam Paper or Empty Welcome Container */}
         <div className="flex-1 w-full min-w-0 max-w-5xl">
+          <React.Suspense fallback={<div className="p-8 text-center text-sm" role="status">Carregando seu espaço de estudos…</div>}>
           {workspaceView === 'library' ? (
             <ExamLibrary
               theme={theme}
@@ -859,6 +895,7 @@ export default function App() {
                 onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
                 onOpenLibrary={() => setWorkspaceView('library')}
                 onOpenInsights={() => setWorkspaceView('insights')}
+                onOpenAI={() => setAiMode('exam')}
                 onOpenBackupModal={(tab) => {
                   setBackupInitialTab(tab || 'export');
                   setIsBackupModalOpen(true);
@@ -875,6 +912,7 @@ export default function App() {
             }`}>
               {/* Header with Title, Date, Simulation Timer & Provas toggle button */}
               <Header
+                key={simulado.id}
                 title={simulado.title}
                 onTitleChange={newTitle => updateActiveSimulado(prev => ({ ...prev, title: newTitle }))}
                 date={simulado.date}
@@ -920,8 +958,11 @@ export default function App() {
                 isExportModalOpen={modalState.isOpen}
                 subjectRangeCount={simulado.subjectRanges?.length || 0}
                 onOpenSubjectMapper={() => setMapperProvaId(simulado.id)}
+                onOpenAI={() => setAiMode('key')}
                 theme={theme}
               />
+
+              {Boolean(simulado.extractedQuestions?.length) && <ExamReader key={simulado.id} simulado={simulado} index={activeQuestionIndex || 0} onNavigate={setActiveQuestionIndex} onAnswer={handleSelectAnswer} />}
 
               {/* Score Performance Panel (Shown when corrected) */}
               {simulado.isCorrected && (
@@ -960,6 +1001,7 @@ export default function App() {
                   updateActiveSimulado(prev => ({
                     ...prev,
                     keyAnswers: newKey,
+                    reviewedQuestionIndexes: [],
                     isCorrected: false, // Invalidate previous correction immediately
                     isLocked: false,
                     isResultOutdated: false,
@@ -982,6 +1024,7 @@ export default function App() {
                       updateActiveSimulado(prev => ({
                         ...prev,
                         keyAnswers: new Array(prev.totalQuestions).fill(null),
+                        reviewedQuestionIndexes: [],
                         isCorrected: false, // Invalidate previous correction immediately
                         isLocked: false,
                         isResultOutdated: false,
@@ -1024,7 +1067,7 @@ export default function App() {
               }`}>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  <span>Gabarito Pro · {store.provas.length === 1 ? '1 simulado salvo' : `${store.provas.length} simulados salvos`} com IndexedDB seguro</span>
+                  <span role="status">{saveStatus === 'error' ? 'Não foi possível salvar. Exporte um backup antes de sair.' : saveStatus === 'saving' ? 'Salvando alterações…' : `Gabarito Pro · ${store.provas.length} ${store.provas.length === 1 ? 'simulado salvo' : 'simulados salvos'} neste navegador`}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -1074,10 +1117,30 @@ export default function App() {
               </footer>
             </div>
           )}
+          </React.Suspense>
         </div>
       </div>
 
+      </div>
       {/* Export / Import Modal for Individual Exam */}
+      <React.Suspense fallback={<div className="fixed inset-0 bg-black/50 z-[100] grid place-items-center text-white" role="status">Abrindo painel…</div>}>
+      {aiMode && isStorageReady && <AIImportModal initialMode={aiMode} simulado={simulado} onClose={() => setAiMode(null)}
+        onCreate={async (result: AIExtraction, fileName: string) => {
+          const proof = createNewSimulado(result.title, result.totalQuestions, store.provas.length, result.examType);
+          proof.extractedQuestions = result.questions; proof.sourceFileName = fileName; proof.notes = result.warnings.join('\n');
+          setStore(previous => ({ ...previous, activeId: proof.id, provas: [...previous.provas, proof] }));
+          setWorkspaceView('exam'); setActiveQuestionIndex(0); setFilterMode('all'); setIsKeyDrawerOpen(false);
+          showToast('Prova criada com os enunciados conferidos.');
+        }}
+        onKey={async result => {
+          if (!simulado) throw new Error('Selecione uma prova.');
+          const answers = answersFromExtraction(result, simulado.totalQuestions);
+          const snapshot = await saveSnapshotToIndexedDB(store, 'Antes de importar gabarito por IA', scope);
+          if (!snapshot) throw new Error('Não foi possível preservar o gabarito atual. Exporte um backup antes de importar.');
+          if (currentScope.current !== scope) throw new Error('A conta mudou durante a importação. Abra novamente a prova desejada.');
+          setStore(previous => ({ ...previous, provas: previous.provas.map(proof => proof.id === simulado.id ? { ...proof, keyAnswers: answers, reviewedQuestionIndexes: [], isCorrected: false, isLocked: false, isResultOutdated: false, updatedAt: new Date().toISOString() } : proof) }));
+          setFilterMode('all'); showToast('Gabarito conferido importado. Corrija a prova para atualizar o resultado.');
+        }} />}
       {simulado && (
         <ExportImportModal
           isOpen={modalState.isOpen}
@@ -1092,7 +1155,9 @@ export default function App() {
               return {
                 ...prev,
                 totalQuestions: finalTotal,
-                userAnswers: answers,
+                userAnswers: resizeAnswers(answers, finalTotal, prev.examType),
+                keyAnswers: resizeAnswers(prev.keyAnswers, finalTotal, prev.examType),
+                reviewedQuestionIndexes: [],
                 isCorrected: false,
                 isLocked: false,
                 isResultOutdated: false,
@@ -1107,7 +1172,9 @@ export default function App() {
               return {
                 ...prev,
                 totalQuestions: finalTotal,
-                keyAnswers: answers,
+                keyAnswers: resizeAnswers(answers, finalTotal, prev.examType),
+                userAnswers: resizeAnswers(prev.userAnswers, finalTotal, prev.examType),
+                reviewedQuestionIndexes: [],
                 isCorrected: false,
                 isLocked: false,
                 isResultOutdated: false,
@@ -1160,10 +1227,12 @@ export default function App() {
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}
         store={store}
+        scope={scope}
         onRestoreBackup={handleRestoreBackup}
         onShowToast={showToast}
         initialTab={backupInitialTab}
       />
+      </React.Suspense>
 
       {/* Completion Feedback Modal (appears only when correcting with 100% of questions filled) */}
       {simulado && (

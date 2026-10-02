@@ -1,5 +1,6 @@
 import { AnswerOption, ExamType } from '../types';
-import { VALID_LETTERS_MC, VALID_LETTERS_TF } from './parser';
+import { VALID_LETTERS_MC, VALID_LETTERS_TF, parseAnswers } from './parser';
+import { MAX_IMPORT_BYTES } from './validation';
 
 export type KeyFormatType = 'pairs' | 'table_blocks' | 'sequence' | 'json';
 
@@ -170,7 +171,7 @@ export function tryParseTableBlocks(
   return {
     parsed,
     warnings,
-    matched: matchedBlocksCount > 0 && parsed.size >= 3,
+    matched: matchedBlocksCount > 0 && parsed.size >= 1,
   };
 }
 
@@ -197,7 +198,7 @@ function tryParsePairs(
 
   const matches = [...text.matchAll(pairRegex)];
 
-  if (matches.length >= 2) {
+  if (matches.length >= 1) {
     for (const m of matches) {
       const qNum = parseInt(m[1], 10);
       const letter = normalizeLetter(m[2], examType);
@@ -209,7 +210,7 @@ function tryParsePairs(
     }
     return {
       parsed,
-      matched: parsed.size >= 2,
+      matched: parsed.size >= 1,
     };
   }
 
@@ -278,16 +279,7 @@ function parseContinuousSequence(
   outOfBounds: { number: number; letter: AnswerOption }[];
 } {
   const cleaned = cleanHeaderAndWords(text, examType);
-  const letters: AnswerOption[] = [];
-  const letterRegex = examType === 'true_false' ? /[VvFfCcEe]/g : /[A-Ea-e]/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = letterRegex.exec(cleaned)) !== null) {
-    const l = normalizeLetter(match[0], examType);
-    if (l) {
-      letters.push(l);
-    }
-  }
+  const letters = parseAnswers(cleaned, examType, 'key').results;
 
   const answers: (AnswerOption | null)[] = new Array(totalQuestions).fill(null);
   const outOfBounds: { number: number; letter: AnswerOption }[] = [];
@@ -297,7 +289,7 @@ function parseContinuousSequence(
     if (qNum <= totalQuestions) {
       answers[i] = letters[i];
     } else {
-      outOfBounds.push({ number: qNum, letter: letters[i] });
+      if (letters[i]) outOfBounds.push({ number: qNum, letter: letters[i]! });
     }
   }
 
@@ -341,6 +333,13 @@ export function parseOfficialKey(
   const warnings: KeyWarning[] = [];
 
   // 1. Auditoria de múltiplos cadernos / tipos de prova no texto
+  if (/^[\[{]/.test(trimmed) || new Blob([rawText]).size > MAX_IMPORT_BYTES) {
+    const parsed = parseAnswers(trimmed, examType, 'key');
+    const map = new Map<number, AnswerOption[]>();
+    parsed.results.forEach((answer, index) => { if (answer) map.set(index + 1, [answer]); });
+    if (parsed.error) warnings.push({ type: 'info', message: parsed.error });
+    return buildResultFromMap('json', 'Arquivo JSON', rawText, map, totalQuestions, warnings);
+  }
   if (detectMultipleNotebooks(trimmed)) {
     warnings.push({
       type: 'multiple_notebooks',

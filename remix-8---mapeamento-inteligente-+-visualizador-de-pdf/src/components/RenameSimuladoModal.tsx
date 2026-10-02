@@ -1,3 +1,4 @@
+import { ModalLayer } from './ModalLayer';
 import React, { useState, useEffect, useRef } from 'react';
 import { Edit3, X, Check } from 'lucide-react';
 
@@ -41,7 +42,7 @@ export const RenameSimuladoModal: React.FC<RenameSimuladoModalProps> = ({
   };
 
   return (
-    <div
+    <ModalLayer label="Renomear cartão-resposta" onClose={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#1c2b45]/60 backdrop-blur-xs animate-fadeIn"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
@@ -101,6 +102,6 @@ export const RenameSimuladoModal: React.FC<RenameSimuladoModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </ModalLayer>
   );
 };

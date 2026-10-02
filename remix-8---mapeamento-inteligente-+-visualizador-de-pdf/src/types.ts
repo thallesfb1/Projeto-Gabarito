@@ -6,6 +6,14 @@ export type AnswerOption = 'A' | 'B' | 'C' | 'D' | 'E' | 'V' | 'F';
 
 export type SubjectColor = 'slate' | 'amber' | 'emerald' | 'blue' | 'violet' | 'rose' | 'cyan';
 
+export interface ExtractedQuestion {
+  number: number;
+  statement: string;
+  options: { label: AnswerOption; text: string }[];
+  subject?: string;
+  page?: number;
+}
+
 export interface SubjectRange {
   id: string;
   name: string;
@@ -44,6 +52,8 @@ export interface SimuladoData {
   subjectRanges?: SubjectRange[];
   examMetadata?: ExamMetadata;
   reviewedQuestionIndexes?: number[];
+  extractedQuestions?: ExtractedQuestion[];
+  sourceFileName?: string;
   [key: string]: any;
 }
 
@@ -62,6 +72,7 @@ export interface FullBackupData {
 }
 
 export interface StorageSnapshot {
+  scope?: string;
   id: string;
   timestamp: string;
   reason: string;
@@ -99,6 +110,7 @@ export interface SimuladoStats {
 }
 
 export interface ParseResult {
+  error?: string;
   results: (AnswerOption | null)[];
   count: number;
   mode: 'sequence' | 'numbered' | 'json';

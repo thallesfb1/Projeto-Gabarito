@@ -1,3 +1,4 @@
+import { ModalLayer } from './ModalLayer';
 import React, { useState, useRef } from 'react';
 import {
   X,
@@ -28,6 +29,7 @@ import {
   generateSampleSequence,
 } from '../utils/parser';
 import { OfficialKeyImporter } from './OfficialKeyImporter';
+import { MAX_IMPORT_BYTES } from '../utils/validation';
 
 export type ModalTab = 'export-user' | 'import-user' | 'key' | 'report' | 'backup';
 
@@ -144,12 +146,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     const payload = {
       app: 'gabarito-de-simulados',
       version: '1.0',
-      title,
-      date,
-      examType: simulado.examType,
-      totalQuestions,
-      userAnswers,
-      keyAnswers,
+      ...simulado,
       exportedAt: new Date().toISOString(),
     };
     downloadFile(
@@ -174,7 +171,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       return;
     }
 
-    const parsed = parseAnswers(importText, simulado.examType);
+    const parsed = parseAnswers(importText, simulado.examType, importTarget);
+    if (parsed.error) {
+      setImportStatus({ success: false, message: parsed.error });
+      return;
+    }
     if (parsed.count === 0) {
       setImportStatus({
         success: false,
@@ -189,7 +190,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       ? Math.max(parsed.impliedTotal, totalQuestions)
       : totalQuestions;
 
-    const targetList = importTarget === 'user' ? [...userAnswers] : [...keyAnswers];
+    const targetList = importMode === 'replace' ? new Array(targetCount).fill(null) : importTarget === 'user' ? [...userAnswers] : [...keyAnswers];
 
     // Resize array if needed
     while (targetList.length < targetCount) {
@@ -229,6 +230,8 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = '';
+    if (file.size > MAX_IMPORT_BYTES) { setImportStatus({ success: false, message: 'Selecione um arquivo de até 10 MB.' }); return; }
 
     const reader = new FileReader();
     reader.onload = event => {
@@ -251,7 +254,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn ${isDark ? 'dark' : ''}`}>
+    <ModalLayer label="Importar e exportar respostas" onClose={onClose} className={`fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn ${isDark ? 'dark' : ''}`}>
       <div className={`rounded-xl shadow-2xl w-full max-w-4xl lg:max-w-5xl max-h-[92vh] flex flex-col overflow-hidden transition-colors ${
         isNotebook
           ? 'bg-[#fdfbf7] border-2 border-[#1c2b45] text-[#1c2b45]'
@@ -1084,6 +1087,6 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </ModalLayer>
   );
 };

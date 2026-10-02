@@ -648,7 +648,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           title="Armazenamento seguro em IndexedDB com redundância dupla"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform shrink-0" />
-          <span>IndexedDB Ativo · Dados Seguros</span>
+          <span>Armazenamento & recuperação</span>
         </button>
       </div>
     </div>
@@ -677,7 +677,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:block shrink-0 sticky top-4 h-[calc(100vh-2rem)] max-h-[calc(100vh-2rem)] transition-all duration-200 ease-in-out ${
+        className={`workspace-sidebar hidden md:block shrink-0 sticky top-4 h-[calc(100vh-2rem)] max-h-[calc(100vh-2rem)] transition-all duration-200 ease-in-out ${
           isOpen ? 'w-72' : 'w-12'
         }`}
       >

@@ -1,3 +1,4 @@
+import { ModalLayer } from './ModalLayer';
 import React, { useState, useEffect, useRef } from 'react';
 import { PlusCircle, X, Check, HelpCircle, CheckCircle2 } from 'lucide-react';
 import { ExamType } from '../types';
@@ -47,7 +48,7 @@ export const NewSimuladoModal: React.FC<NewSimuladoModalProps> = ({
   const presetTotals = [30, 50, 60, 70, 90, 100, 120];
 
   return (
-    <div
+    <ModalLayer label="Criar cartão-resposta" onClose={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#1c2b45]/60 backdrop-blur-xs animate-fadeIn"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
@@ -220,6 +221,6 @@ export const NewSimuladoModal: React.FC<NewSimuladoModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </ModalLayer>
   );
 };

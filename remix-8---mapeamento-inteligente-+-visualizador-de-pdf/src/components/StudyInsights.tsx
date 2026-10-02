@@ -50,7 +50,7 @@ export const StudyInsights: React.FC<StudyInsightsProps> = ({
   const isDark = theme === 'dark';
   const isNotebook = theme === 'notebook';
 
-  const corrected = useMemo(() => provas.filter(prova => prova.isCorrected), [provas]);
+  const corrected = useMemo(() => provas.filter(prova => prova.isCorrected && !prova.isResultOutdated), [provas]);
   const subjects = useMemo(() => aggregateSubjectPerformance(provas), [provas]);
   const reviewQueue = useMemo(() => buildReviewQueue(provas), [provas]);
   const pendingReview = reviewQueue.filter(item => !item.isReviewed);

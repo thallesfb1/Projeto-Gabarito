@@ -1,3 +1,6 @@
+import { ModalLayer } from './ModalLayer';
+import { ConfirmDialog } from './ConfirmDialog';
+import { MAX_IMPORT_BYTES } from '../utils/validation';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Download,
@@ -31,6 +34,7 @@ import {
 } from '../utils/indexedDbStorage';
 
 interface BackupModalProps {
+  scope?: string;
   isOpen: boolean;
   onClose: () => void;
   store: MultiSimuladoStore;
@@ -46,6 +50,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   onRestoreBackup,
   onShowToast,
   initialTab = 'export',
+  scope = 'guest',
 }) => {
   const [activeTab, setActiveTab] = useState<'export' | 'import' | 'storage'>(initialTab);
   const [importText, setImportText] = useState('');
@@ -57,6 +62,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     examCount?: number;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'replace' | 'clear' | null>(null);
 
   // Storage info & snapshots state
   const [storageInfo, setStorageInfo] = useState<StorageEstimateInfo | null>(null);
@@ -69,6 +76,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   useEffect(() => {
     if (isOpen && initialTab) {
       setActiveTab(initialTab);
+      setImportText(''); setFileName(null); setValidationResult(null); setConfirmAction(null); setConfirmRestoreSnapshot(null);
     }
   }, [isOpen, initialTab]);
 
@@ -78,7 +86,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     try {
       const [estimate, list] = await Promise.all([
         getStorageEstimateInfo(),
-        getSnapshotsFromIndexedDB(),
+        getSnapshotsFromIndexedDB(scope),
       ]);
       setStorageInfo(estimate);
       setSnapshots(list);
@@ -125,6 +133,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = '';
+    if (file.size > MAX_IMPORT_BYTES) { setValidationResult({ valid: false, error: 'Selecione um backup de até 10 MB.' }); return; }
 
     setFileName(file.name);
     const reader = new FileReader();
@@ -134,6 +144,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       const res = validateAndParseBackup(text);
       setValidationResult(res);
     };
+    reader.onerror = () => setValidationResult({ valid: false, error: 'Não foi possível ler o arquivo. Selecione-o novamente.' });
     reader.readAsText(file);
   };
 
@@ -148,13 +159,15 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   };
 
   const handleExecuteRestore = async (mode: 'replace' | 'merge') => {
-    if (!validationResult || !validationResult.valid || !validationResult.data) {
+    if (busy || !validationResult || !validationResult.valid || !validationResult.data) {
       return;
     }
 
+    setBusy(true);
     // Safety snapshot before restore
     if (store.provas.length > 0) {
-      await saveSnapshotToIndexedDB(store, 'Antes de Importar Backup');
+      const snapshot = await saveSnapshotToIndexedDB(store, 'Antes de Importar Backup', scope);
+      if (!snapshot) { onShowToast('Não foi possível preservar as provas atuais. Exporte um backup antes de restaurar.'); setBusy(false); return; }
     }
 
     onRestoreBackup(validationResult.data.provas, mode);
@@ -164,6 +177,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         : `Provas mescladas com sucesso! Adicionadas ao seu catálogo.`
     );
     onClose();
+    setBusy(false);
   };
 
   const handleCreateSnapshot = async () => {
@@ -171,7 +185,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       onShowToast('Não há provas para salvar em ponto de restauração.');
       return;
     }
-    const snap = await saveSnapshotToIndexedDB(store, 'Ponto Manual Criado');
+    const snap = await saveSnapshotToIndexedDB(store, 'Ponto Manual Criado', scope);
     if (snap) {
       onShowToast('Ponto de restauração salvo no banco IndexedDB!');
       refreshStorageData();
@@ -190,15 +204,17 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   };
 
   const handleClearSnapshots = async () => {
-    if (window.confirm('Deseja realmente limpar todos os pontos de restauração históricos?')) {
-      await clearAllSnapshots();
+      const ok = await clearAllSnapshots(scope);
+      if (!ok) { onShowToast('Não foi possível limpar o histórico.'); return; }
       setSnapshots([]);
+      setConfirmAction(null);
       onShowToast('Histórico de pontos limpo.');
-    }
   };
 
-  const handleApplySnapshot = (snapshot: StorageSnapshot) => {
+  const handleApplySnapshot = async (snapshot: StorageSnapshot) => {
     if (!snapshot || !snapshot.data || !Array.isArray(snapshot.data.provas)) return;
+    const before = await saveSnapshotToIndexedDB(store, 'Antes de restaurar um ponto', scope);
+    if (!before) { onShowToast('Não foi possível preservar os dados atuais. Exporte um backup antes de restaurar.'); return; }
     onRestoreBackup(snapshot.data.provas, 'replace');
     onShowToast(`Ponto restaurado com sucesso (${snapshot.data.provas.length} provas)!`);
     setConfirmRestoreSnapshot(null);
@@ -210,9 +226,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     try {
       const granted = await requestPersistentStorage();
       if (granted) {
-        onShowToast('Proteção permanente ativada pelo navegador!');
+        onShowToast('Armazenamento persistente autorizado pelo navegador. Mantenha também um backup.');
       } else {
-        onShowToast('Navegador manteve proteção padrão (dados seguros no IndexedDB).');
+        onShowToast('O navegador manteve o armazenamento padrão. Exporte backups regularmente.');
       }
       refreshStorageData();
     } catch {
@@ -223,7 +239,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   };
 
   return (
-    <div
+    <ModalLayer label="Backup e armazenamento" onClose={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
@@ -308,7 +324,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     </span>
                   </div>
                   <p className="text-xs text-[#2e3a4e] leading-relaxed">
-                    Seus dados estão protegidos no banco de dados nativo do navegador, com capacidade de centenas de Megabytes e espelho duplo em LocalStorage.
+                    As provas são salvas no banco nativo do navegador e em um espelho local. O espaço disponível depende do dispositivo. Exporte um backup para ter uma cópia independente.
                   </p>
                 </div>
 
@@ -326,14 +342,14 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono-code font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                        Padrão Seguro
+                        Armazenamento padrão
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-[#2e3a4e] leading-relaxed">
                     {storageInfo?.isPersisted
-                      ? 'O navegador está configurado para nunca apagar o banco mesmo com pouco espaço em disco.'
-                      : 'Solicite autorização para que o navegador nunca apague suas provas ao limpar arquivos temporários.'}
+                      ? 'A persistência reduz a remoção automática por falta de espaço. Limpar os dados do site manualmente ainda pode apagar suas provas.'
+                      : 'Solicite armazenamento persistente para reduzir a remoção automática por falta de espaço. Isso não substitui um backup.'}
                   </p>
                   {!storageInfo?.isPersisted && (
                     <button
@@ -342,7 +358,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                       onClick={handleRequestBrowserPersistence}
                       className="mt-1 w-full py-1.5 px-3 bg-[#1c2b45] hover:bg-[#132038] text-white rounded-lg text-xs font-mono-code font-semibold transition cursor-pointer"
                     >
-                      {isRequestingPersist ? 'Solicitando...' : 'Ativar Proteção Permanente no Navegador'}
+                      {isRequestingPersist ? 'Solicitando...' : 'Solicitar armazenamento persistente'}
                     </button>
                   )}
                 </div>
@@ -462,7 +478,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      onClick={handleClearSnapshots}
+                      onClick={() => setConfirmAction('clear')}
                       className="text-[11px] text-[#a63b2c] hover:underline font-mono-code cursor-pointer"
                     >
                       Limpar histórico de pontos
@@ -591,6 +607,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             <div className="space-y-4">
               {/* File drop zone */}
               <div
+                role="button"
+                tabIndex={0}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); fileInputRef.current?.click(); } }}
                 onClick={() => fileInputRef.current?.click()}
                 className="p-5 border-2 border-dashed border-[#dedad0] hover:border-[#1c2b45] bg-[#f7f6f2] hover:bg-white rounded-xl cursor-pointer text-center transition group space-y-2"
               >
@@ -666,6 +685,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleExecuteRestore('merge')}
+                      disabled={busy}
                       className="p-3 text-left border-2 border-emerald-700 bg-emerald-50/50 hover:bg-emerald-100/70 rounded-lg transition space-y-1 cursor-pointer"
                     >
                       <div className="font-bold text-xs font-mono-code text-emerald-900 flex items-center gap-1.5">
@@ -679,7 +699,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => handleExecuteRestore('replace')}
+                      onClick={() => store.provas.length ? setConfirmAction('replace') : handleExecuteRestore('replace')}
+                      disabled={busy}
                       className="p-3 text-left border-2 border-[#a63b2c] bg-red-50/50 hover:bg-red-100/70 rounded-lg transition space-y-1 cursor-pointer"
                     >
                       <div className="font-bold text-xs font-mono-code text-[#a63b2c] flex items-center gap-1.5">
@@ -701,7 +722,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         <div className="bg-[#f0eee6] dark:bg-[#18191d] border-t border-[#dedad0] dark:border-[#3b3e48] px-5 py-3 flex items-center justify-between text-xs font-mono-code text-[#5b6478] dark:text-zinc-400">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-            <span>IndexedDB Ativo · Redundância Dupla</span>
+            <span>{storageInfo?.isIndexedDBAvailable ? 'Armazenamento local disponível' : 'Verifique o armazenamento do navegador'}</span>
           </span>
           <button
             type="button"
@@ -712,6 +733,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+      {confirmAction && <ConfirmDialog isOpen title={confirmAction === 'clear' ? 'Limpar pontos de restauração?' : 'Substituir todas as provas?'} description={confirmAction === 'clear' ? 'Os pontos de restauração deste espaço serão removidos. As provas atuais serão mantidas.' : 'As provas atuais serão substituídas pelas do backup. Uma cópia do catálogo atual será preservada antes da restauração.'} confirmLabel={confirmAction === 'clear' ? 'Limpar histórico' : 'Substituir provas'} onCancel={() => setConfirmAction(null)} onConfirm={confirmAction === 'clear' ? handleClearSnapshots : () => handleExecuteRestore('replace')} />}
+    </ModalLayer>
   );
 };

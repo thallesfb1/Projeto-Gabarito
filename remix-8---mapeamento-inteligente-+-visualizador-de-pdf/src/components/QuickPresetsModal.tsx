@@ -1,3 +1,4 @@
+import { ModalLayer } from './ModalLayer';
 import React from 'react';
 import { X, Zap, GraduationCap, BookOpen, Target, FileText, Building2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { ExamType } from '../types';
@@ -110,7 +111,7 @@ export const QuickPresetsModal: React.FC<QuickPresetsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
+    <ModalLayer label="Modelos de provas" onClose={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
@@ -204,6 +205,6 @@ export const QuickPresetsModal: React.FC<QuickPresetsModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </ModalLayer>
   );
 };

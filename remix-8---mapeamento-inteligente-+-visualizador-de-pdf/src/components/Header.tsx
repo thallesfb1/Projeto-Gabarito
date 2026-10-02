@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Play,
   Pause,
@@ -49,6 +49,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(title);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const updateTime = useRef(onTimeChange);
+  updateTime.current = onTimeChange;
 
   const isNotebook = theme === 'notebook';
   const isDark = theme === 'dark';
@@ -61,13 +63,13 @@ export const Header: React.FC<HeaderProps> = ({
     let interval: NodeJS.Timeout | null = null;
     if (isTimerRunning) {
       interval = setInterval(() => {
-        onTimeChange(prev => prev + 1);
+        updateTime.current(prev => prev + 1);
       }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isTimerRunning, onTimeChange]);
+  }, [isTimerRunning]);
 
   const formatTimer = (totalSec: number) => {
     const hrs = Math.floor(totalSec / 3600);

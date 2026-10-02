@@ -1,3 +1,4 @@
+import { MAX_IMPORT_BYTES, MAX_QUESTIONS, normalizeAnswer } from './validation';
 import { AnswerOption, ExamType, ParseResult, SimuladoData, SimuladoStats } from '../types';
 
 export const VALID_LETTERS_MC: AnswerOption[] = ['A', 'B', 'C', 'D', 'E'];
@@ -208,135 +209,44 @@ export function generateSampleNumberedVOF(count: number): string {
  * 2. Numbered formats: "1-A", "1:B", "01. C", "Q1 D", "Questão 1: A", "1-V", "2:F", "1V", "2V", "3F", etc.
  * 3. Plain sequence of letters: "ABCDEABCD..." or "VVFVFF..." or "CCECEE..."
  */
-export function parseAnswers(text: string, examType: ExamType = 'multiple_choice'): ParseResult {
+export function parseAnswers(text: string, examType: ExamType = 'multiple_choice', target: 'user' | 'key' = 'user'): ParseResult {
+  const empty = (error?: string): ParseResult => ({ results: [], count: 0, mode: 'sequence', impliedTotal: 0, error });
   const trimmed = text.trim();
-  if (!trimmed) {
-    return { results: [], count: 0, mode: 'sequence', impliedTotal: 0 };
-  }
-
-  const isTF = examType === 'true_false';
-  const allowedLetters = isTF ? VALID_LETTERS_TF : VALID_LETTERS_MC;
-
-  const normalizeChar = (char: string): AnswerOption | null => {
-    const up = char.toUpperCase();
-    if (isTF) {
-      if (up === 'V' || up === 'C') return 'V';
-      if (up === 'F' || up === 'E') return 'F';
-      return null;
-    }
-    return VALID_LETTERS_MC.includes(up as AnswerOption) ? (up as AnswerOption) : null;
-  };
-
-  // Try parsing as JSON first
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+  if (!trimmed) return empty();
+  if (new Blob([text]).size > MAX_IMPORT_BYTES) return empty('Leitura limitada a 10 MB.');
+  const finish = (results: (AnswerOption | null)[], mode: ParseResult['mode']): ParseResult => results.length > MAX_QUESTIONS
+    ? empty('O arquivo excede o limite de 1.000 questões.')
+    : { results, count: results.filter(Boolean).length, mode, impliedTotal: results.length };
+  if (/^[\[{]/.test(trimmed)) {
     try {
       const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        const results = parsed.map(item => {
-          if (typeof item === 'string') {
-            return normalizeChar(item);
-          }
-          return null;
-        });
-        const validCount = results.filter(Boolean).length;
-        return {
-          results,
-          count: validCount,
-          mode: 'json',
-          impliedTotal: results.length,
-        };
-      } else if (parsed && typeof parsed === 'object') {
-        const answers = parsed.userAnswers || parsed.keyAnswers || parsed.answers;
-        if (Array.isArray(answers)) {
-          const results = answers.map((item: unknown) => {
-            if (typeof item === 'string') {
-              return normalizeChar(item);
-            }
-            return null;
-          });
-          return {
-            results,
-            count: results.filter(Boolean).length,
-            mode: 'json',
-            impliedTotal: results.length,
-          };
-        }
-      }
-    } catch {
-      // not valid json, fallback to text regexes
-    }
+      const answers = Array.isArray(parsed) ? parsed : parsed?.[target === 'key' ? 'keyAnswers' : 'userAnswers'] ?? parsed?.answers;
+      if (!Array.isArray(answers)) return empty('O JSON não contém a lista de respostas selecionada. Para restaurar provas completas, use Importar Backup.');
+      if (answers.some(item => item !== null && item !== '-' && !normalizeAnswer(item, examType))) return empty('O JSON contém alternativas incompatíveis com o formato da prova.');
+      return finish(answers.map(item => normalizeAnswer(item, examType)), 'json');
+    } catch { return empty('O JSON está inválido. Confira o arquivo antes de importar.'); }
   }
-
-  // Look for numbered matches: e.g. "1V", "2F", "1 - A", "1:B", "01. C", "Questão 1: A", "1-V", "2:F", "Q3 C"
-  // Separator is optional to support "1V, 2V, 3F, 4V" and "1A 2B 3C"
-  const numberedPattern = isTF
-    ? /(?:quest[aã]o\s*|item\s*|q\s*)?(\b\d{1,3})\s*[-:.)=–—/]?\s*([VvFfCcEe])\b/gi
-    : /(?:quest[aã]o\s*|q\s*)?(\d{1,3})\s*[-:.)=–—/]?\s*([A-Ea-e])\b/gi;
-
-  const matches = [...trimmed.matchAll(numberedPattern)];
-
-  if (matches.length > 0) {
-    const pairs: [number, AnswerOption][] = [];
-    let maxIdx = 0;
-
-    for (const m of matches) {
-      const num = parseInt(m[1], 10);
-      const letter = normalizeChar(m[2]);
-      if (num >= 1 && letter) {
-        const idx = num - 1;
-        pairs.push([idx, letter]);
-        if (idx + 1 > maxIdx) {
-          maxIdx = idx + 1;
-        }
-      }
+  const isTF = examType === 'true_false';
+  const pattern = isTF
+    ? /(?:(?:quest[aã]o|item|q)\s*)?(\b\d+)\s*[-:.)=–—/]?\s*([VFCE-])(?=\s|[,;]|$)/gi
+    : /(?:(?:quest[aã]o|item|q)\s*)?(\b\d+)\s*[-:.)=–—/]?\s*([A-E-])(?=\s|[,;]|$)/gi;
+  const matches = [...trimmed.matchAll(pattern)];
+  if (matches.length) {
+    const map = new Map<number, AnswerOption | null>();
+    for (const match of matches) {
+      const number = Number(match[1]);
+      if (!Number.isInteger(number) || number < 1 || number > MAX_QUESTIONS) return empty('Número de questão inválido. Use posições de 1 a 1.000.');
+      const answer = normalizeAnswer(match[2], examType);
+      if (map.has(number) && map.get(number) !== answer) return empty('Há respostas divergentes para a questão ' + number + '. Confira antes de importar.');
+      map.set(number, answer);
     }
-
-    if (pairs.length > 0) {
-      const results: (AnswerOption | null)[] = new Array(maxIdx).fill(null);
-      for (const [idx, letter] of pairs) {
-        results[idx] = letter;
-      }
-      return {
-        results,
-        count: pairs.length,
-        mode: 'numbered',
-        impliedTotal: maxIdx,
-      };
-    }
+    return finish(Array.from({ length: Math.max(...map.keys()) }, (_, index) => map.get(index + 1) ?? null), 'numbered');
   }
-
-  // Fallback: sequence of letters (ignoring spaces, punctuation, dashes)
-  if (isTF) {
-    // Convert C to V, E to F, keep V and F
-    const cleanChars = trimmed
-      .toUpperCase()
-      .replace(/C/g, 'V')
-      .replace(/E/g, 'F')
-      .replace(/[^VF]/g, '');
-
-    const results: (AnswerOption | null)[] = cleanChars.split('').map(char => {
-      return (char === 'V' || char === 'F') ? (char as AnswerOption) : null;
-    });
-
-    return {
-      results,
-      count: results.filter(Boolean).length,
-      mode: 'sequence',
-      impliedTotal: results.length,
-    };
-  }
-
-  const lettersOnly = trimmed.toUpperCase().replace(/[^A-E]/g, '');
-  const results: (AnswerOption | null)[] = lettersOnly.split('').map(char => {
-    return VALID_LETTERS_MC.includes(char as AnswerOption) ? (char as AnswerOption) : null;
-  });
-
-  return {
-    results,
-    count: results.filter(Boolean).length,
-    mode: 'sequence',
-    impliedTotal: results.length,
-  };
+  // Only answer tokens are accepted; arbitrary prose must never become answers.
+  const tokens = trimmed.split(/[\s,;|]+/).filter(Boolean);
+  const validToken = isTF ? /^[VFCE-]+$/i : /^[A-E-]+$/i;
+  if (tokens.some(token => !validToken.test(token))) return empty('Use uma sequência de alternativas, uma lista numerada ou JSON. Texto livre não é um gabarito.');
+  return finish(tokens.join('').split('').map(char => normalizeAnswer(char, examType)), 'sequence');
 }
 
 /**
