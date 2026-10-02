@@ -2,20 +2,19 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-const mocks=vi.hoisted(()=>({list:vi.fn(),extract:vi.fn()}));
-vi.mock('../utils/aiClient',()=>({listAIModels:mocks.list,extractWithAI:mocks.extract}));
+const mocks=vi.hoisted(()=>({extract:vi.fn()}));
+vi.mock('../utils/aiClient',()=>({extractWithAI:mocks.extract}));
 import { AIImportModal } from './AIImportModal';
 import { createNewSimulado } from '../utils/provasManager';
 const result={title:'Prova lida',totalQuestions:2,examType:'multiple_choice',questions:[],answers:[{number:1,answer:'A'},{number:2,answer:null}],warnings:['Item 2 ilegível']};
 beforeEach(()=>{
-  vi.clearAllMocks();mocks.list.mockResolvedValue([{name:'gemini-test-flash',label:'Flash teste'}]);mocks.extract.mockResolvedValue(result);
+  vi.clearAllMocks();mocks.extract.mockResolvedValue(result);
   vi.stubGlobal('URL',class extends URL { static createObjectURL(){return 'blob:test';}static revokeObjectURL(){} });
 });
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 async function prepare(){
-  fireEvent.change(screen.getByLabelText('Sua chave do Google AI Studio'),{target:{value:'personal-test-key-only-in-memory'}});
-  fireEvent.click(screen.getByRole('button',{name:'Verificar chave'}));
-  await waitFor(()=>expect(screen.getByRole('combobox',{name:'Modelo Gemini disponível'}).getAttribute('disabled')).toBeNull());
+  expect(screen.queryByLabelText('Sua chave do Google AI Studio')).toBeNull();
+  expect(screen.queryByLabelText('Modelo Gemini disponível')).toBeNull();
   fireEvent.change(screen.getByLabelText('Selecione a imagem ou o PDF do gabarito oficial'),{target:{files:[new File(['image'],'key.png',{type:'image/png'})]}});
   fireEvent.click(screen.getByRole('checkbox',{name:/Enviar este arquivo/}));
 }
