@@ -172,7 +172,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                 type="button"
                 onClick={() => onResetFilter('all')}
                 className={`mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                  isDark ? 'bg-sky-600 text-white hover:bg-sky-500' : 'bg-[#1c2b45] text-white hover:bg-[#132038]'
+                  isDark ? 'theme-solid text-white' : 'theme-solid text-white hover:bg-[#132038]'
                 }`}
               >
                 <span>Ver todas as questões</span>
@@ -189,7 +189,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                 type="button"
                 onClick={() => onResetFilter('all')}
                 className={`mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                  isDark ? 'bg-sky-600 text-white hover:bg-sky-500' : 'bg-[#1c2b45] text-white hover:bg-[#132038]'
+                  isDark ? 'theme-solid text-white' : 'theme-solid text-white hover:bg-[#132038]'
                 }`}
               >
                 <span>Ver todas as questões</span>
@@ -205,7 +205,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                 type="button"
                 onClick={() => onResetFilter('all')}
                 className={`mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                  isDark ? 'bg-zinc-200 text-zinc-900 hover:bg-white' : 'bg-[#1c2b45] text-white hover:bg-[#132038]'
+                  isDark ? 'theme-solid text-zinc-900 hover:bg-white' : 'theme-solid text-white hover:bg-[#132038]'
                 }`}
               >
                 <span>Ver todas as questões</span>
@@ -221,7 +221,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                 type="button"
                 onClick={() => onResetFilter('all')}
                 className={`mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                  isDark ? 'bg-zinc-200 text-zinc-900 hover:bg-white' : 'bg-[#1c2b45] text-white hover:bg-[#132038]'
+                  isDark ? 'theme-solid text-zinc-900 hover:bg-white' : 'theme-solid text-white hover:bg-[#132038]'
                 }`}
               >
                 <span>Ver todas as questões</span>
@@ -336,15 +336,15 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
               if (isSelected) {
                 bubbleStyle = isLocked
                   ? isNotebook
-                    ? 'bg-[#1c2b45] text-[#fdfcf7] border-[#1c2b45] cursor-not-allowed'
+                    ? 'theme-solid text-[#fdfcf7] border-[#1c2b45] cursor-not-allowed'
                     : isDark
-                    ? 'bg-[#2a2c34] text-zinc-100 border-[#444854] cursor-not-allowed'
-                    : 'bg-slate-800 text-white border-slate-800 cursor-not-allowed'
+                    ? 'theme-solid cursor-not-allowed'
+                    : 'theme-solid text-white border-slate-800 cursor-not-allowed'
                   : isNotebook
-                  ? 'bg-[#1c2b45] text-[#fdfcf7] border-[#1c2b45] hover:bg-[#2b3c59] hover:scale-105 cursor-pointer'
+                  ? 'theme-solid text-[#fdfcf7] border-[#1c2b45] hover:bg-[#2b3c59] hover:scale-105 cursor-pointer'
                   : isDark
-                  ? 'bg-zinc-200 text-zinc-900 border-zinc-200 hover:bg-white hover:scale-105 cursor-pointer font-bold'
-                  : 'bg-slate-800 text-white border-slate-800 hover:bg-slate-900 hover:scale-105 cursor-pointer';
+                  ? 'theme-solid text-zinc-900 border-zinc-200 hover:bg-white hover:scale-105 cursor-pointer font-bold'
+                  : 'theme-solid text-white border-slate-800 hover:bg-slate-900 hover:scale-105 cursor-pointer';
               } else {
                 bubbleStyle = isLocked
                   ? isNotebook
@@ -414,10 +414,10 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
             }
           } else if (isSelected) {
             bubbleStyle = isNotebook
-              ? 'bg-[#1c2b45] text-[#fdfcf7] border-[#1c2b45] shadow-xs hover:bg-[#2b3c59] hover:scale-105 cursor-pointer'
+              ? 'theme-solid text-[#fdfcf7] border-[#1c2b45] shadow-xs hover:bg-[#2b3c59] hover:scale-105 cursor-pointer'
               : isDark
-              ? 'bg-zinc-200 text-zinc-900 border-zinc-200 shadow-xs hover:bg-white hover:scale-105 cursor-pointer font-bold'
-              : 'bg-slate-900 text-white border-slate-900 shadow-xs hover:bg-slate-800 hover:scale-105 cursor-pointer';
+              ? 'theme-solid text-zinc-900 border-zinc-200 shadow-xs hover:bg-white hover:scale-105 cursor-pointer font-bold'
+              : 'theme-solid text-white border-slate-900 shadow-xs hover:bg-slate-800 hover:scale-105 cursor-pointer';
           }
 
           return (
@@ -487,8 +487,8 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                   className={`px-2 py-0.5 text-xs rounded transition-all cursor-pointer ${
                     isActive
                       ? isDark
-                        ? 'bg-zinc-200 text-zinc-900 font-bold shadow-2xs'
-                        : 'bg-slate-900 text-white font-bold shadow-2xs'
+                        ? 'theme-solid text-zinc-900 font-bold shadow-2xs'
+                        : 'theme-solid text-white font-bold shadow-2xs'
                       : isDark
                       ? 'text-zinc-400 hover:text-zinc-200 hover:bg-[#2a2c34]'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white'

@@ -247,7 +247,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     >
       <div className="bg-[#fdfbf7] dark:bg-[#22242a] border-2 border-[#1c2b45] dark:border-[#3b3e48] text-slate-800 dark:text-zinc-100 rounded-xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-scaleUp">
         {/* Header */}
-        <div className="bg-[#1c2b45] dark:bg-[#18191d] text-white px-5 py-4 flex items-center justify-between border-b dark:border-[#3b3e48]">
+        <div className="theme-solid dark:bg-[#18191d] text-white px-5 py-4 flex items-center justify-between border-b dark:border-[#3b3e48]">
           <div className="flex items-center gap-2.5">
             <Database className="w-5 h-5 text-amber-300" />
             <h2 className="font-serif-title italic font-bold text-lg text-amber-50">
@@ -287,7 +287,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 : 'border-transparent text-[#5b6478] dark:text-zinc-400 hover:text-[#1c2b45] dark:hover:text-zinc-200'
             }`}
           >
-            <Download className="w-4 h-4" />
+            <Upload className="w-4 h-4" />
             <span>Exportar Arquivo</span>
           </button>
           <button
@@ -299,7 +299,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 : 'border-transparent text-[#5b6478] dark:text-zinc-400 hover:text-[#1c2b45] dark:hover:text-zinc-200'
             }`}
           >
-            <Upload className="w-4 h-4" />
+            <Download className="w-4 h-4" />
             <span>Importar Arquivo</span>
           </button>
         </div>
@@ -356,7 +356,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                       type="button"
                       disabled={isRequestingPersist}
                       onClick={handleRequestBrowserPersistence}
-                      className="mt-1 w-full py-1.5 px-3 bg-[#1c2b45] hover:bg-[#132038] text-white rounded-lg text-xs font-mono-code font-semibold transition cursor-pointer"
+                      className="mt-1 w-full py-1.5 px-3 theme-solid hover:bg-[#132038] text-white rounded-lg text-xs font-mono-code font-semibold transition cursor-pointer"
                     >
                       {isRequestingPersist ? 'Solicitando...' : 'Solicitar armazenamento persistente'}
                     </button>
@@ -400,7 +400,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   <button
                     type="button"
                     onClick={handleCreateSnapshot}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1c2b45] hover:bg-[#132038] text-white text-xs font-mono-code font-semibold rounded-lg shadow-2xs transition cursor-pointer shrink-0"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 theme-solid hover:bg-[#132038] text-white text-xs font-mono-code font-semibold rounded-lg shadow-2xs transition cursor-pointer shrink-0"
                     title="Salvar uma cópia de segurança agora"
                   >
                     <Plus className="w-3.5 h-3.5 text-amber-300" />
@@ -520,7 +520,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleApplySnapshot(confirmRestoreSnapshot)}
-                      className="px-3 py-1 bg-emerald-700 text-white font-semibold rounded hover:bg-emerald-800 cursor-pointer shadow-xs"
+                      className="px-3 py-1 theme-solid font-semibold rounded cursor-pointer shadow-xs"
                     >
                       Sim, Restaurar
                     </button>
@@ -554,9 +554,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   <button
                     type="button"
                     onClick={handleExportFile}
-                    className="flex-1 min-w-[200px] inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1c2b45] hover:bg-[#132038] text-white rounded-lg font-mono-code text-xs font-semibold shadow-sm transition break-all cursor-pointer"
+                    className="flex-1 min-w-[200px] inline-flex items-center justify-center gap-2 px-4 py-2.5 theme-solid hover:bg-[#132038] text-white rounded-lg font-mono-code text-xs font-semibold shadow-sm transition break-all cursor-pointer"
                   >
-                    <Download className="w-4 h-4 shrink-0" />
+                    <Upload className="w-4 h-4 shrink-0" />
                     <span className="truncate">Baixar gabarito-backup-{new Date().toISOString().split('T')[0]}.json</span>
                   </button>
                   <button

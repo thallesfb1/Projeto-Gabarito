@@ -39,7 +39,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         aria-labelledby="confirm-dialog-title"
         className="bg-[#fcfbf9] dark:bg-[#22242a] border-2 border-[#1c2b45] dark:border-[#3b3e48] rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
       >
-        <div className="bg-[#1c2b45] dark:bg-[#18191d] text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b dark:border-[#3b3e48]">
+        <div className="theme-solid dark:bg-[#18191d] text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b dark:border-[#3b3e48]">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-300 dark:text-amber-400" />
             <h3 id="confirm-dialog-title" className="font-sans font-bold text-base">
@@ -81,7 +81,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               className={`px-4 py-2 text-xs font-semibold rounded text-white transition shadow-sm cursor-pointer ${
                 isDestructive
                   ? 'bg-[#a63b2c] dark:bg-[#993425] hover:bg-[#852a1e] dark:hover:bg-[#852a1e]'
-                  : 'bg-[#1c2b45] dark:bg-[#3b3e48] hover:bg-[#132038] dark:hover:bg-[#464956] border dark:border-zinc-500'
+                  : 'theme-solid dark:bg-[#3b3e48] hover:bg-[#132038] dark:hover:bg-[#464956] border dark:border-zinc-500'
               }`}
             >
               {busy ? 'Aguarde…' : confirmLabel}

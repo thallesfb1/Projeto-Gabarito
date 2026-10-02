@@ -205,7 +205,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Minimalist Simulation Timer */}
           <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-mono-code shadow-xs ${
-            isNotebook ? 'bg-[#1c2b45] text-amber-50' : isDark ? 'bg-[#18191d] border border-[#3b3e48] text-zinc-100' : 'bg-slate-900 text-white'
+            isNotebook ? 'theme-solid text-amber-50' : isDark ? 'bg-[#18191d] border border-[#3b3e48] text-zinc-100' : 'theme-solid text-white'
           }`}>
             <Clock className={`w-3.5 h-3.5 ${isNotebook ? 'text-amber-200/80' : isDark ? 'text-zinc-400' : 'text-slate-400'}`} />
             <span className="font-semibold tracking-wider">{formatTimer(timeSeconds)}</span>
@@ -312,10 +312,10 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={handleSaveTitle}
                 className={`p-2 rounded-lg text-white transition-colors shrink-0 cursor-pointer ${
                   isNotebook
-                    ? 'bg-[#1c2b45] hover:bg-[#132038]'
+                    ? 'theme-solid hover:bg-[#132038]'
                     : isDark
-                    ? 'bg-zinc-200 hover:bg-white text-zinc-900'
-                    : 'bg-slate-900 hover:bg-slate-800'
+                    ? 'theme-solid hover:bg-white text-zinc-900'
+                    : 'theme-solid hover:bg-slate-800'
                 }`}
                 title="Salvar título"
               >

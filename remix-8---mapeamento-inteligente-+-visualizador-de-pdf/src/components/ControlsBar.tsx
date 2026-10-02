@@ -141,7 +141,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
                       }}
                       className={`px-2 py-1 text-xs font-mono-code rounded transition cursor-pointer ${
                         totalQuestions === p
-                          ? isDark ? 'bg-zinc-200 text-zinc-900 font-bold' : 'bg-slate-900 text-white font-bold'
+                          ? isDark ? 'theme-solid text-zinc-900 font-bold' : 'theme-solid text-white font-bold'
                           : isDark ? 'bg-[#2a2c34] hover:bg-[#343740] text-zinc-200' : 'bg-slate-50 hover:bg-slate-200 text-slate-700'
                       }`}
                     >
@@ -162,7 +162,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
                 onClick={() => onTotalChange(preset)}
                 className={`px-2 py-1 text-xs font-mono-code rounded-md transition cursor-pointer ${
                   totalQuestions === preset
-                    ? isDark ? 'bg-zinc-200 text-zinc-900 font-semibold shadow-2xs' : 'bg-slate-900 text-white font-semibold shadow-2xs'
+                    ? isDark ? 'theme-solid text-zinc-900 font-semibold shadow-2xs' : 'theme-solid text-white font-semibold shadow-2xs'
                     : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-[#2a2c34]' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
                 }`}
                 title={`Definir cartão com ${preset} questões`}
@@ -181,8 +181,8 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border ${
               showShortcutsHint
                 ? isDark
-                  ? 'bg-zinc-200 text-zinc-900 border-zinc-200 shadow-2xs font-semibold'
-                  : 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                  ? 'theme-solid text-zinc-900 border-zinc-200 shadow-2xs font-semibold'
+                  : 'theme-solid text-white border-slate-900 shadow-2xs'
                 : isDark
                 ? 'bg-[#22242a] text-zinc-300 hover:text-white border-[#3b3e48] hover:bg-[#2a2c34]'
                 : 'bg-white text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100'
@@ -235,7 +235,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
                   ? 'bg-[#f4efe3] border-[#1c2b45] text-[#1c2b45] ring-1 ring-[#1c2b45]/20 font-bold'
                   : isDark
                   ? 'bg-[#2c2f38] border-zinc-400 text-white ring-1 ring-zinc-400/30 font-bold'
-                  : 'bg-slate-900 text-white border-slate-900 shadow-2xs font-bold'
+                  : 'theme-solid text-white border-slate-900 shadow-2xs font-bold'
                 : isNotebook
                 ? 'bg-white hover:bg-[#ede7d8] border-[#ded7c6] text-[#1c2b45] active:bg-[#f4efe3]'
                 : isDark
@@ -340,8 +340,8 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
               onClick={onRunCorrection}
               className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-lg transition shadow-sm cursor-pointer ${
                 isDark
-                  ? 'bg-zinc-200 hover:bg-white text-zinc-950 font-bold'
-                  : 'bg-slate-900 hover:bg-slate-800 text-white'
+                  ? 'theme-solid hover:bg-white text-zinc-950 font-bold'
+                  : 'theme-solid hover:bg-slate-800 text-white'
               }`}
               title="Conferir respostas com o gabarito oficial e ver desempenho"
             >
@@ -387,7 +387,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-[#3b3e48]' : 'bg-slate-200'}`}>
           <div
             className={`h-full transition-all duration-300 rounded-full ${
-              isDark ? 'bg-zinc-300' : isNotebook ? 'bg-[#1c2b45]' : 'bg-slate-900'
+              isDark ? 'bg-zinc-300' : isNotebook ? 'theme-solid' : 'theme-solid'
             }`}
             style={{ width: `${percentage}%` }}
           />

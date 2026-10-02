@@ -29,7 +29,7 @@ export function AccountBar({ workspace, onBackup, theme, onThemeChange, onMenu, 
         </> : configured ? <button type="button" className="google-button" disabled={busy} onClick={() => run(workspace.signIn)}><GoogleIcon />{busy ? 'Conectando…' : 'Entrar com Google'}</button> : <span className="account-local-label">Modo local</span>}
       </div>
     </div>
-    {session && <div className="account-tools"><span>Suas provas acompanham sua conta.</span><button type="button" disabled={busy || imported} onClick={() => run(async () => { await workspace.importGuest(); setImported(true); })}><Upload className="w-3.5 h-3.5" />{imported ? 'Importação solicitada' : 'Trazer provas deste dispositivo'}</button><button type="button" onClick={onBackup}><Download className="w-3.5 h-3.5" />Exportar backup</button></div>}
+    {session && <div className="account-tools"><span>Suas provas acompanham sua conta.</span><button type="button" disabled={busy || imported} onClick={() => run(async () => { await workspace.importGuest(); setImported(true); })}><Download className="w-3.5 h-3.5" />{imported ? 'Importação solicitada' : 'Importar provas deste dispositivo'}</button><button type="button" onClick={onBackup}><Upload className="w-3.5 h-3.5" />Exportar arquivo</button></div>}
     {(error || actionError || saveStatus === 'error') && <div className="account-alert" role="alert"><span>{error || actionError || 'Não foi possível salvar suas alterações. Exporte um backup antes de fechar o site.'}</span><button type="button" onClick={onBackup}>Exportar backup</button>{session && <button type="button" disabled={busy || cloudStatus === 'loading'} onClick={() => run(workspace.retry)}>Tentar novamente</button>}</div>}
   </header>;
 }

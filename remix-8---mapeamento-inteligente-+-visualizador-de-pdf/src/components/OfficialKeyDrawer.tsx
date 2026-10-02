@@ -9,7 +9,7 @@ interface OfficialKeyDrawerProps {
   onToggle: () => void;
   total: number;
   keyAnswers: (AnswerOption | null)[];
-  onKeyChange: (newKey: (AnswerOption | null)[]) => void;
+  onKeyChange: (newKey: (AnswerOption | null)[], isExample?: boolean) => void;
   onClearKey: () => void;
   requestedTab?: 'import' | 'manual';
   examType?: ExamType;
@@ -59,8 +59,8 @@ export const OfficialKeyDrawer: React.FC<OfficialKeyDrawerProps> = ({
     onKeyChange(next);
   };
 
-  const handleConfirmFromImporter = (newKey: (AnswerOption | null)[]) => {
-    onKeyChange(newKey);
+  const handleConfirmFromImporter = (newKey: (AnswerOption | null)[], isExample?: boolean) => {
+    onKeyChange(newKey, isExample);
     setDrawerTab('manual');
     setFeedbackMsg('Gabarito oficial salvo com sucesso.');
     setTimeout(() => setFeedbackMsg(''), 4500);
@@ -94,7 +94,7 @@ export const OfficialKeyDrawer: React.FC<OfficialKeyDrawerProps> = ({
             Gabarito Oficial da Prova
           </h2>
           <span className={`text-xs font-mono-code font-bold px-2 py-0.5 rounded-full ml-1 ${
-            isDark ? 'bg-amber-600 text-white' : isNotebook ? 'bg-[#854d0e] text-white' : 'bg-slate-900 text-white'
+            isDark ? 'theme-solid text-white' : isNotebook ? 'theme-solid text-white' : 'theme-solid text-white'
           }`}>
             {filledCount} de {total} questões
           </span>
@@ -129,10 +129,10 @@ export const OfficialKeyDrawer: React.FC<OfficialKeyDrawerProps> = ({
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                   drawerTab === 'import'
                     ? isDark
-                      ? 'bg-amber-600 text-white shadow-2xs font-bold'
+                      ? 'theme-solid text-white shadow-2xs font-bold'
                       : isNotebook
-                      ? 'bg-[#854d0e] text-white shadow-2xs font-bold'
-                      : 'bg-slate-900 text-white shadow-2xs font-bold'
+                      ? 'theme-solid text-white shadow-2xs font-bold'
+                      : 'theme-solid text-white shadow-2xs font-bold'
                     : isDark
                     ? 'bg-[#2a2c34] text-zinc-300 hover:text-white border border-[#3b3e48]'
                     : isNotebook
@@ -150,10 +150,10 @@ export const OfficialKeyDrawer: React.FC<OfficialKeyDrawerProps> = ({
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                   drawerTab === 'manual'
                     ? isDark
-                      ? 'bg-amber-600 text-white shadow-2xs font-bold'
+                      ? 'theme-solid text-white shadow-2xs font-bold'
                       : isNotebook
-                      ? 'bg-[#854d0e] text-white shadow-2xs font-bold'
-                      : 'bg-slate-900 text-white shadow-2xs font-bold'
+                      ? 'theme-solid text-white shadow-2xs font-bold'
+                      : 'theme-solid text-white shadow-2xs font-bold'
                     : isDark
                     ? 'bg-[#2a2c34] text-zinc-300 hover:text-white border border-[#3b3e48]'
                     : isNotebook
@@ -304,10 +304,10 @@ export const OfficialKeyDrawer: React.FC<OfficialKeyDrawerProps> = ({
                                       className={`w-6 h-6 rounded-full border text-xs font-mono-code font-semibold flex items-center justify-center transition-all duration-150 cursor-pointer ${
                                         isChosen
                                           ? isDark
-                                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs hover:scale-115'
+                                            ? 'theme-solid text-white border-amber-600 shadow-xs hover:scale-115'
                                             : isNotebook
-                                            ? 'bg-[#854d0e] text-white border-[#854d0e] shadow-xs hover:scale-115 hover:bg-[#713f12]'
-                                            : 'bg-slate-900 text-white border-slate-900 shadow-xs hover:scale-115 hover:bg-slate-800'
+                                            ? 'theme-solid text-white border-[#854d0e] shadow-xs hover:scale-115 hover:bg-[#713f12]'
+                                            : 'theme-solid text-white border-slate-900 shadow-xs hover:scale-115 hover:bg-slate-800'
                                           : isDark
                                           ? 'border-amber-600/50 text-amber-300 hover:bg-amber-600 hover:text-white hover:border-amber-600 hover:scale-115'
                                           : isNotebook

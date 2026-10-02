@@ -101,7 +101,7 @@ export const StudyInsights: React.FC<StudyInsightsProps> = ({
                 O diagnóstico combina provas corrigidas, mapas de disciplinas e questões pendentes para mostrar onde revisar primeiro.
               </p>
             </div>
-            <button type="button" onClick={onOpenLibrary} className={`inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition cursor-pointer ${isDark ? 'bg-zinc-100 text-zinc-950 hover:bg-white' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
+            <button type="button" onClick={onOpenLibrary} className={`inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition cursor-pointer ${isDark ? 'theme-solid text-zinc-950 hover:bg-white' : 'theme-solid text-white hover:bg-slate-800'}`}>
               <LibraryBig className="w-4 h-4" /> Nova prova estruturada
             </button>
           </div>
@@ -128,7 +128,7 @@ export const StudyInsights: React.FC<StudyInsightsProps> = ({
               <TrendingUp className="w-9 h-9 mx-auto text-emerald-500" />
               <h2 className="font-serif-title text-xl font-bold mt-4">O diagnóstico começa na primeira correção.</h2>
               <p className={`text-sm mt-2 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Corrija uma prova ou crie um modelo estruturado para liberar métricas por disciplina.</p>
-              <button type="button" onClick={onOpenLibrary} className="mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer">
+              <button type="button" onClick={onOpenLibrary} className="mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg theme-solid text-xs font-bold cursor-pointer">
                 Explorar Biblioteca <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

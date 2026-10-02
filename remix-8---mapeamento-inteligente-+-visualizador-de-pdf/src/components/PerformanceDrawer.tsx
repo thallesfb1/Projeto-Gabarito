@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import {
   X,
   TrendingUp,
-  Download,
+  Upload,
   CheckCircle2,
   XCircle,
   HelpCircle,
@@ -314,7 +314,7 @@ export const PerformanceDrawer: React.FC<PerformanceDrawerProps> = ({
                         className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 ${
                           s.isCurrent
                             ? isNotebook
-                              ? 'bg-[#1c2b45] text-white'
+                              ? 'theme-solid text-white'
                               : 'bg-emerald-600 text-white'
                             : isNotebook
                             ? 'bg-[#ede6d5] text-[#1c2b45]'
@@ -397,7 +397,7 @@ export const PerformanceDrawer: React.FC<PerformanceDrawerProps> = ({
               onClick={onDownloadReport}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-300 text-slate-800 hover:bg-slate-100 transition shadow-2xs cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5 text-slate-600" />
+              <Upload className="w-3.5 h-3.5 text-slate-600" />
               <span>Salvar Espelho (.txt)</span>
             </button>
           ) : (
@@ -409,8 +409,8 @@ export const PerformanceDrawer: React.FC<PerformanceDrawerProps> = ({
             onClick={onClose}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer ${
               isNotebook
-                ? 'bg-[#1c2b45] text-white hover:bg-[#2c3d5a]'
-                : 'bg-slate-900 text-white hover:bg-slate-800'
+                ? 'theme-solid text-white hover:bg-[#2c3d5a]'
+                : 'theme-solid text-white hover:bg-slate-800'
             }`}
           >
             Voltar ao Cartão-Resposta

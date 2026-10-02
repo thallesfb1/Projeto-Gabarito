@@ -111,7 +111,7 @@ export const PerformanceOverview: React.FC<PerformanceOverviewProps> = ({
           {data.isCurrent && (
             <span
               className={`text-[9px] font-mono-code font-bold px-1.5 py-0.5 rounded ${
-                isNotebook ? 'bg-[#ede6d5] text-[#1c2b45]' : 'bg-slate-900 text-white'
+                isNotebook ? 'bg-[#ede6d5] text-[#1c2b45]' : 'theme-solid text-white'
               }`}
             >
               Atual
@@ -209,7 +209,7 @@ export const PerformanceOverview: React.FC<PerformanceOverviewProps> = ({
                 metricMode === 'rates'
                   ? isNotebook
                     ? 'bg-[#fffefb] text-[#1c2b45] font-bold shadow-2xs'
-                    : 'bg-slate-900 text-white font-semibold shadow-2xs'
+                    : 'theme-solid text-white font-semibold shadow-2xs'
                   : isNotebook
                   ? 'text-[#7d7465] hover:text-[#1c2b45]'
                   : 'text-slate-600 hover:text-slate-900'
@@ -224,7 +224,7 @@ export const PerformanceOverview: React.FC<PerformanceOverviewProps> = ({
                 metricMode === 'ratio'
                   ? isNotebook
                     ? 'bg-[#fffefb] text-[#1c2b45] font-bold shadow-2xs'
-                    : 'bg-slate-900 text-white font-semibold shadow-2xs'
+                    : 'theme-solid text-white font-semibold shadow-2xs'
                   : isNotebook
                   ? 'text-[#7d7465] hover:text-[#1c2b45]'
                   : 'text-slate-600 hover:text-slate-900'
@@ -395,8 +395,8 @@ export const PerformanceOverview: React.FC<PerformanceOverviewProps> = ({
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border transition cursor-pointer self-start sm:self-auto shrink-0 ${
               useDemoSample
                 ? isNotebook
-                  ? 'bg-[#1c2b45] text-white border-[#1c2b45]'
-                  : 'bg-slate-900 text-white border-slate-900'
+                  ? 'theme-solid text-white border-[#1c2b45]'
+                  : 'theme-solid text-white border-slate-900'
                 : isNotebook
                 ? 'bg-[#ede6d5] hover:bg-[#e4ddcb] text-[#1c2b45] border-[#dfd7c5]'
                 : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'

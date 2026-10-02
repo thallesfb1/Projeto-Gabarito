@@ -328,3 +328,22 @@ input, select, textarea { color: var(--text-surface-title); }
   .section-heading h2, .home-toolbox h2 { font-size: 22px; }
 }
 
+
+/* Shared action colors keep every primary/selected control aligned with the theme. */
+:root { --action-foreground: #ffffff; }
+html.theme-notebook { --action-foreground: #fffaf0; }
+html.theme-dark { --action-foreground: #142b23; }
+.theme-solid, .modal-layer .theme-solid, .primary-action {
+  background-color: var(--brand); color: var(--action-foreground); border-color: var(--brand);
+}
+.theme-solid:hover, .modal-layer .theme-solid:hover { background-color: var(--brand); filter: brightness(.94); }
+.theme-solid :is(span, div, svg), .modal-layer .theme-solid :is(span, div, svg) { color: inherit; }
+.modal-layer button:not(.theme-solid):not(.primary-action):not(:disabled):hover { background-color: var(--brand-soft); }
+.modal-layer button:not(.theme-solid):is([class*="hover:bg-[#1c2b45]"], [class*="hover:bg-slate-900"]):hover {
+  background-color: var(--brand); color: var(--action-foreground); border-color: var(--brand);
+}
+
+.theme-soft { background-color: var(--brand-soft); color: var(--brand); border-color: var(--border-surface); }
+.modal-layer button:not(.theme-solid):not(.primary-action):is([class*="hover:bg-amber-600"], [class*="hover:bg-amber-500"]):hover {
+  background-color: var(--brand); color: var(--action-foreground); border-color: var(--brand);
+}

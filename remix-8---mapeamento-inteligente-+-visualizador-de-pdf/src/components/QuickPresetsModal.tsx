@@ -119,7 +119,7 @@ export const QuickPresetsModal: React.FC<QuickPresetsModalProps> = ({
     >
       <div className="bg-[#fdfbf7] dark:bg-[#22242a] border-2 border-[#1c2b45] dark:border-[#3b3e48] text-slate-800 dark:text-zinc-100 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-scaleUp max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-[#1c2b45] dark:bg-[#18191d] text-white px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 border-b dark:border-[#3b3e48]">
+        <div className="theme-solid dark:bg-[#18191d] text-white px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 border-b dark:border-[#3b3e48]">
           <div className="flex items-center gap-2.5">
             <Zap className="w-5 h-5 text-amber-300" />
             <div>

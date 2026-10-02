@@ -147,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </h4>
             {isActive && (
               <span className={`shrink-0 text-[10px] uppercase font-mono-code font-bold px-1.5 py-0.5 rounded ${
-                isNotebook ? 'bg-[#1c2b45] text-white' : isDark ? 'bg-zinc-200 text-zinc-950 font-bold' : 'bg-slate-900 text-white'
+                isNotebook ? 'theme-solid text-white' : isDark ? 'theme-solid text-zinc-950 font-bold' : 'theme-solid text-white'
               }`}>
                 Ativo
               </span>
@@ -332,12 +332,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
           className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-mono-code text-xs font-semibold shadow-xs transition active:scale-[0.99] cursor-pointer ${
             isDark
-              ? 'bg-zinc-200 hover:bg-white text-zinc-950 font-bold'
-              : 'bg-slate-900 hover:bg-slate-800 text-white'
+              ? 'theme-solid hover:bg-white text-zinc-950 font-bold'
+              : 'theme-solid hover:bg-slate-800 text-white'
           }`}
           title="Criar novo cartão-resposta para simulado"
         >
-          <PlusCircle className="w-4 h-4 text-emerald-500" />
+          <PlusCircle className="w-4 h-4" />
           <span>+ Criar Cartão-Resposta</span>
         </button>
 
@@ -379,8 +379,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-mono-code transition cursor-pointer border ${
               isHomeActive
                 ? isDark
-                  ? 'bg-zinc-200 text-zinc-950 border-zinc-200 font-bold shadow-2xs'
-                  : 'bg-slate-900 text-white border-slate-900 font-semibold shadow-2xs'
+                  ? 'theme-solid text-zinc-950 border-zinc-200 font-bold shadow-2xs'
+                  : 'theme-solid text-white border-slate-900 font-semibold shadow-2xs'
                 : isDark
                 ? 'bg-[#18191d] text-zinc-200 border-[#3b3e48] hover:bg-[#2a2c34]'
                 : 'bg-slate-50 text-slate-700 border-slate-200 hover:text-slate-900 hover:bg-slate-100'
@@ -388,11 +388,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title="Acessar tela inicial com orientações e funcionamento"
           >
             <div className="flex items-center gap-2">
-              <Home className={`w-3.5 h-3.5 ${isHomeActive ? 'text-emerald-500' : isDark ? 'text-zinc-300' : 'text-slate-500'}`} />
+              <Home className={`w-3.5 h-3.5 ${isHomeActive ? 'text-current' : isDark ? 'text-zinc-300' : 'text-slate-500'}`} />
               <span>Painel Inicial</span>
             </div>
             {isHomeActive && (
-              <span className="text-[10px] text-emerald-500 font-mono-code font-bold">Ativo</span>
+              <span className="text-[10px] text-current font-mono-code font-bold">Ativo</span>
             )}
           </button>
         )}
@@ -409,15 +409,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-[11px] font-mono-code font-semibold transition cursor-pointer border ${
                 isLibraryActive
                   ? isDark
-                    ? 'bg-zinc-200 text-zinc-950 border-zinc-200'
-                    : 'bg-slate-900 text-white border-slate-900'
+                    ? 'theme-solid text-zinc-950 border-zinc-200'
+                    : 'theme-solid text-white border-slate-900'
                   : isDark
                   ? 'bg-[#18191d] text-zinc-300 border-[#3b3e48] hover:bg-[#2a2c34]'
                   : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
               title="Abrir Biblioteca de Provas estruturadas"
             >
-              <LibraryBig className={`w-3.5 h-3.5 ${isLibraryActive ? 'text-emerald-500' : ''}`} />
+              <LibraryBig className={`w-3.5 h-3.5 ${isLibraryActive ? 'text-current' : ''}`} />
               Biblioteca
             </button>
           )}
@@ -432,8 +432,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-[11px] font-mono-code font-semibold transition cursor-pointer border ${
                 isInsightsActive
                   ? isDark
-                    ? 'bg-zinc-200 text-zinc-950 border-zinc-200'
-                    : 'bg-slate-900 text-white border-slate-900'
+                    ? 'theme-solid text-zinc-950 border-zinc-200'
+                    : 'theme-solid text-white border-slate-900'
                   : isDark
                   ? 'bg-[#18191d] text-zinc-300 border-[#3b3e48] hover:bg-[#2a2c34]'
                   : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -711,8 +711,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={onOpenNewProvaModal}
                 className={`p-2 rounded-lg transition shadow-xs cursor-pointer ${
                   isDark
-                    ? 'bg-zinc-200 text-zinc-950 hover:bg-white font-bold'
-                    : 'bg-[#1c2b45] text-white hover:bg-[#132038]'
+                    ? 'theme-solid text-zinc-950 hover:bg-white font-bold'
+                    : 'theme-solid text-white hover:bg-[#132038]'
                 }`}
                 title="Criar Cartão-Resposta"
               >

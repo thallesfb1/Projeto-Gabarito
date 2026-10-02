@@ -1,3 +1,4 @@
+import { generateExamplePair } from './exampleData';
 import { AnswerOption, ExamType } from '../types';
 import { VALID_LETTERS_MC, VALID_LETTERS_TF, parseAnswers } from './parser';
 import { MAX_IMPORT_BYTES } from './validation';
@@ -517,13 +518,11 @@ function buildResultFromMap(
  */
 export function generateSamplePairsText(total: number = 70, examType: ExamType = 'multiple_choice'): string {
   const isTF = examType === 'true_false';
-  const sampleLetters: AnswerOption[] = isTF ? ['V', 'F'] : ['A', 'B', 'C', 'D', 'E'];
   const pairs: string[] = [];
-  const limit = Math.min(total, 50);
+  const sample = generateExamplePair(total, examType).keyAnswers;
+  const limit = sample.length;
   for (let i = 1; i <= limit; i++) {
-    const letter = isTF
-      ? (i % 3 === 0 ? 'F' : 'V')
-      : sampleLetters[(i - 1 + (i % 3)) % 5];
+    const letter = sample[i - 1];
     if (isTF) {
       pairs.push(`${i}${letter}`);
     } else {
@@ -540,9 +539,9 @@ export function generateSamplePairsText(total: number = 70, examType: ExamType =
 
 export function generateSampleTableText(total: number = 70, examType: ExamType = 'multiple_choice'): string {
   const isTF = examType === 'true_false';
-  const sampleLetters: AnswerOption[] = isTF ? ['V', 'F'] : ['A', 'B', 'C', 'D', 'E'];
   const blockSize = 10;
-  const count = Math.min(total, 40);
+  const sample = generateExamplePair(total, examType).keyAnswers;
+  const count = sample.length;
   const blocks: string[] = [];
 
   for (let start = 1; start <= count; start += blockSize) {
@@ -552,9 +551,7 @@ export function generateSampleTableText(total: number = 70, examType: ExamType =
 
     for (let q = start; q <= end; q++) {
       nums.push(String(q).padStart(2, '0'));
-      const letter = isTF
-        ? (q % 2 === 0 ? 'V' : 'F')
-        : sampleLetters[(q + 1) % 5];
+      const letter = sample[q - 1];
       letters.push(letter);
     }
 
@@ -566,15 +563,5 @@ export function generateSampleTableText(total: number = 70, examType: ExamType =
 }
 
 export function generateSampleSequenceText(total: number = 70, examType: ExamType = 'multiple_choice'): string {
-  const isTF = examType === 'true_false';
-  const sampleLetters: AnswerOption[] = isTF ? ['V', 'F'] : ['A', 'B', 'C', 'D', 'E'];
-  const count = Math.min(total, 70);
-  const result: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const letter = isTF
-      ? (i % 2 === 0 ? 'V' : 'F')
-      : sampleLetters[(i + (i % 2)) % 5];
-    result.push(letter);
-  }
-  return result.join('');
+  return generateExamplePair(total, examType).keyAnswers.join('');
 }

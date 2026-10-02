@@ -54,6 +54,7 @@ export interface SimuladoData {
   reviewedQuestionIndexes?: number[];
   extractedQuestions?: ExtractedQuestion[];
   sourceFileName?: string;
+  exampleData?: { user?: boolean; key?: boolean };
   [key: string]: any;
 }
 

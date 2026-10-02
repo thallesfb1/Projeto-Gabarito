@@ -30,7 +30,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 interface OfficialKeyImporterProps {
   totalQuestions: number;
   currentKeyAnswers: (AnswerOption | null)[];
-  onConfirmKey: (newKey: (AnswerOption | null)[]) => void;
+  onConfirmKey: (newKey: (AnswerOption | null)[], isExample?: boolean) => void;
   onCancel?: () => void;
   isDrawerMode?: boolean;
   examType?: ExamType;
@@ -52,6 +52,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
   // Step 1: Input text; Step 2: Interactive Preview & Review Grid
   const [step, setStep] = useState<1 | 2>(1);
   const [pastedText, setPastedText] = useState('');
+  const [sampleText, setSampleText] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showIncompleteConfirmModal, setShowIncompleteConfirmModal] = useState(false);
@@ -118,7 +119,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
     } else {
       sample = generateSampleSequenceText(totalQuestions, examType);
     }
-    setPastedText(sample);
+    setPastedText(sample); setSampleText(sample);
   };
 
   // Interactive review: Select answer on preview grid
@@ -170,7 +171,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
     }
     setIsSubmitting(true);
     try {
-      onConfirmKey(previewAnswers);
+      onConfirmKey(previewAnswers, sampleText !== null && pastedText === sampleText && editedQuestions.size === 0);
       // Clean up internal state to prevent accidental duplicate actions
       setPastedText('');
       setParseResult(null);
@@ -189,7 +190,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
     setIsSubmitting(true);
     try {
       setShowIncompleteConfirmModal(false);
-      onConfirmKey(previewAnswers);
+      onConfirmKey(previewAnswers, sampleText !== null && pastedText === sampleText && editedQuestions.size === 0);
       // Clean up internal state
       setPastedText('');
       setParseResult(null);
@@ -272,6 +273,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
             </span>
           </label>
 
+          {sampleText !== null && <p className="text-xs text-[var(--brand)]">Exemplo fictício de {totalQuestions} questões, vinculado ao teste de respostas com cerca de 70% de acertos.</p>}
           {/* Test Examples Shortcut Buttons */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className={`text-[11px] font-mono-code mr-1 ${isDark ? 'text-zinc-400' : 'text-[#5b6478]'}`}>Exemplos:</span>
@@ -336,7 +338,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
             rows={isDrawerMode ? 4 : 6}
             value={pastedText}
             onChange={e => {
-              setPastedText(e.target.value);
+              setPastedText(e.target.value); setSampleText(null);
               if (errorMessage) setErrorMessage(null);
             }}
             placeholder={
@@ -388,10 +390,10 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
             onClick={handleProcessText}
             className={`px-5 py-2.5 font-semibold rounded-xl text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer ${
               isDark
-                ? 'bg-amber-600 hover:bg-amber-500 text-white hover:shadow-lg'
+                ? 'theme-solid hover:bg-amber-500 text-white hover:shadow-lg'
                 : isNotebook
-                ? 'bg-[#854d0e] hover:bg-[#713f12] text-white hover:shadow-lg'
-                : 'bg-slate-900 hover:bg-slate-800 text-white hover:shadow-lg'
+                ? 'theme-solid hover:bg-[#713f12] text-white hover:shadow-lg'
+                : 'theme-solid hover:bg-slate-800 text-white hover:shadow-lg'
             }`}
           >
             <Sparkles className="w-4 h-4 text-amber-200" />
@@ -416,7 +418,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
             Formato detectado:
           </span>
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono-code font-bold text-white shadow-2xs ${
-            isDark ? 'bg-amber-600' : isNotebook ? 'bg-[#854d0e]' : 'bg-slate-900'
+            isDark ? 'theme-solid' : isNotebook ? 'theme-solid' : 'theme-solid'
           }`}>
             <Layers className="w-3.5 h-3.5" />
             <span>{parseResult?.formatLabel || 'Reconhecido'}</span>
@@ -716,8 +718,8 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
                       className={`font-mono-code font-bold text-xs px-1.5 py-0.5 rounded ${
                         currentAnswer
                           ? isDark
-                            ? 'bg-zinc-100 text-zinc-950'
-                            : 'bg-[#1c2b45] text-white'
+                            ? 'theme-solid text-zinc-950'
+                            : 'theme-solid text-white'
                           : isConflict
                           ? 'bg-red-600 text-white'
                           : isDark
@@ -766,10 +768,10 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
                           className={`w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full text-xs font-mono-code font-bold flex items-center justify-center transition-all duration-150 cursor-pointer ${
                             isSelected
                               ? isDark
-                                ? 'bg-amber-600 text-white shadow-xs scale-105 ring-2 ring-amber-500/40 hover:scale-115 hover:bg-amber-500'
+                                ? 'theme-solid text-white shadow-xs scale-105 ring-2 ring-amber-500/40 hover:scale-115 hover:bg-amber-500'
                                 : isNotebook
-                                ? 'bg-[#854d0e] text-white shadow-xs scale-105 ring-2 ring-[#854d0e]/30 hover:scale-115 hover:bg-[#713f12]'
-                                : 'bg-slate-900 text-white shadow-xs scale-105 ring-2 ring-slate-900/30 hover:scale-115 hover:bg-slate-800'
+                                ? 'theme-solid text-white shadow-xs scale-105 ring-2 ring-[#854d0e]/30 hover:scale-115 hover:bg-[#713f12]'
+                                : 'theme-solid text-white shadow-xs scale-105 ring-2 ring-slate-900/30 hover:scale-115 hover:bg-slate-800'
                               : isDark
                               ? 'border border-[#3b3e48] text-zinc-300 hover:bg-amber-600 hover:text-white hover:border-amber-600 hover:scale-115 hover:ring-2 hover:ring-amber-500/40'
                               : isNotebook
@@ -862,10 +864,10 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
             className={`w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
               isFullKeyComplete && !hasBlockingConflicts && !isSubmitting
                 ? isDark
-                  ? 'bg-amber-600 hover:bg-amber-500 text-white hover:shadow-lg active:scale-98'
+                  ? 'theme-solid hover:bg-amber-500 text-white hover:shadow-lg active:scale-98'
                   : isNotebook
-                  ? 'bg-[#854d0e] hover:bg-[#713f12] text-white hover:shadow-lg active:scale-98'
-                  : 'bg-slate-900 hover:bg-slate-800 text-white hover:shadow-lg active:scale-98'
+                  ? 'theme-solid hover:bg-[#713f12] text-white hover:shadow-lg active:scale-98'
+                  : 'theme-solid hover:bg-slate-800 text-white hover:shadow-lg active:scale-98'
                 : isDark
                 ? 'bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed shadow-none'
                 : 'bg-stone-200 text-stone-500 border border-stone-300 cursor-not-allowed shadow-none'

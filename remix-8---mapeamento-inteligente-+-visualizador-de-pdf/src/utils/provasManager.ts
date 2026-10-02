@@ -157,6 +157,7 @@ export function sanitizeSimulado(item: any, fallbackIndex: number = 1): Simulado
         : undefined,
     reviewedQuestionIndexes: validIndexes(reviewedQuestionIndexes, tot),
     ...(Array.isArray(item?.extractedQuestions) ? { extractedQuestions: sanitizeExtractedQuestions(item.extractedQuestions, tot, examType) } : {}),
+    ...(item?.exampleData && typeof item.exampleData === 'object' ? { exampleData: { user: item.exampleData.user === true, key: item.exampleData.key === true } } : {}),
     sourceFileName: typeof item?.sourceFileName === 'string' ? item.sourceFileName.slice(0, 240) : undefined,
   };
 }

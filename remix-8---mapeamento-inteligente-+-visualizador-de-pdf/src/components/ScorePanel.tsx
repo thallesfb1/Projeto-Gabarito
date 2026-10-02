@@ -4,7 +4,7 @@ import {
   XCircle,
   HelpCircle,
   Bookmark,
-  Download,
+  Upload,
   RotateCcw,
   Unlock,
   AlertTriangle,
@@ -169,7 +169,7 @@ export const ScorePanel: React.FC<ScorePanelProps> = ({
               type="button"
               onClick={onRunCorrection}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg shadow-2xs transition shrink-0 cursor-pointer ${
-                isDark ? 'bg-zinc-200 hover:bg-white text-zinc-900 font-bold' : 'bg-slate-900 text-white hover:bg-slate-800'
+                isDark ? 'theme-solid hover:bg-white text-zinc-900 font-bold' : 'theme-solid text-white hover:bg-slate-800'
               }`}
             >
               Recalcular Agora
@@ -490,12 +490,12 @@ export const ScorePanel: React.FC<ScorePanelProps> = ({
             onClick={onDownloadReport}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition shadow-2xs cursor-pointer ${
               isDark
-                ? 'bg-zinc-200 hover:bg-white text-zinc-950 font-bold'
-                : 'bg-slate-900 text-white hover:bg-slate-800'
+                ? 'theme-solid hover:bg-white text-zinc-950 font-bold'
+                : 'theme-solid text-white hover:bg-slate-800'
             }`}
             title="Baixar espelho de respostas e relatório (.txt)"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Upload className="w-3.5 h-3.5" />
             <span>Salvar Espelho (.txt)</span>
           </button>
 

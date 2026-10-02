@@ -130,8 +130,8 @@ export const ExamLibrary: React.FC<ExamLibraryProps> = ({
                   className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap border transition cursor-pointer ${
                     category === item
                       ? isDark
-                        ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
-                        : 'bg-slate-900 text-white border-slate-900'
+                        ? 'theme-solid text-zinc-950 border-zinc-100'
+                        : 'theme-solid text-white border-slate-900'
                       : isDark
                       ? 'bg-[#22242a] text-zinc-300 border-[#3b3e48] hover:bg-[#2c2f38]'
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -221,8 +221,8 @@ export const ExamLibrary: React.FC<ExamLibraryProps> = ({
                       onClick={() => onCreateFromBlueprint(blueprint)}
                       className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
                         isDark
-                          ? 'bg-zinc-100 hover:bg-white text-zinc-950'
-                          : 'bg-slate-900 hover:bg-slate-800 text-white'
+                          ? 'theme-solid hover:bg-white text-zinc-950'
+                          : 'theme-solid hover:bg-slate-800 text-white'
                       }`}
                     >
                       Usar modelo

@@ -12,7 +12,7 @@ import {
   Sparkles,
   AlertCircle,
   FileCheck,
-  FolderDown,
+  FolderKanban,
   HelpCircle,
   Database,
 } from 'lucide-react';
@@ -38,8 +38,8 @@ interface ExportImportModalProps {
   initialTab?: ModalTab;
   onClose: () => void;
   simulado: SimuladoData;
-  onUpdateUserAnswers: (answers: (AnswerOption | null)[], newTotal?: number) => void;
-  onUpdateKeyAnswers: (answers: (AnswerOption | null)[], newTotal?: number) => void;
+  onUpdateUserAnswers: (answers: (AnswerOption | null)[], newTotal?: number, isExample?: boolean) => void;
+  onUpdateKeyAnswers: (answers: (AnswerOption | null)[], newTotal?: number, isExample?: boolean) => void;
   onOpenBackupModal?: () => void;
   theme?: AppTheme;
 }
@@ -61,6 +61,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
   // Import states
   const [importText, setImportText] = useState('');
+  const [sampleText, setSampleText] = useState<string | null>(null);
   const [importTarget, setImportTarget] = useState<'user' | 'key'>('user');
   const [importMode, setImportMode] = useState<'replace' | 'fill-blanks'>('replace');
   const [autoAdjustQuestions, setAutoAdjustQuestions] = useState(true);
@@ -77,7 +78,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     if (isOpen) {
       setActiveTab(initialTab);
       setImportStatus(null);
-      setImportText('');
+      setImportText(''); setSampleText(null);
       if (initialTab === 'key') {
         setImportTarget('key');
       } else {
@@ -212,7 +213,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     }
 
     if (importTarget === 'user') {
-      onUpdateUserAnswers(targetList, autoAdjustQuestions ? targetCount : undefined);
+      onUpdateUserAnswers(targetList, autoAdjustQuestions ? targetCount : undefined, importMode === 'replace' && sampleText !== null && importText === sampleText);
     } else {
       onUpdateKeyAnswers(targetList, autoAdjustQuestions ? targetCount : undefined);
     }
@@ -237,7 +238,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     reader.onload = event => {
       const text = event.target?.result as string;
       if (text) {
-        setImportText(text);
+        setImportText(text); setSampleText(null);
         setImportStatus({
           success: true,
           message: `Arquivo "${file.name}" carregado. Clique em "Aplicar Respostas" para confirmar.`,
@@ -265,14 +266,14 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         {/* Modal Header */}
         <div className={`px-4 sm:px-6 py-3.5 flex items-center justify-between border-b transition-colors ${
           isNotebook
-            ? 'bg-[#1c2b45] border-[#1c2b45] text-white'
+            ? 'theme-solid border-[#1c2b45] text-white'
             : isDark
             ? 'bg-[#18191d] border-[#3b3e48] text-white'
-            : 'bg-slate-900 border-slate-800 text-white'
+            : 'theme-solid border-slate-800 text-white'
         }`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`p-1.5 rounded-lg shrink-0 ${isDark ? 'bg-zinc-800 text-amber-400' : 'bg-white/10 text-amber-300'}`}>
-              <FolderDown className="w-5 h-5" />
+              <FolderKanban className="w-5 h-5" />
             </div>
             <div className="min-w-0">
               <h2 className="font-serif-title italic font-semibold text-lg sm:text-xl truncate text-white">
@@ -775,11 +776,10 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                       id="btn-prefill-test-example"
                       type="button"
                       onClick={() => {
-                        setImportText(
-                          isTF
+                        const sample = isTF
                             ? generateSampleNumberedVOF(totalQuestions)
-                            : generateSampleSequence(totalQuestions, 'multiple_choice')
-                        );
+                            : generateSampleSequence(totalQuestions, 'multiple_choice');
+                        setImportText(sample); setSampleText(sample);
                       }}
                       className={`text-[11px] font-mono-code underline cursor-pointer ${
                         isDark ? 'text-zinc-400 hover:text-zinc-100' : isNotebook ? 'text-[#5b6478] hover:text-[#1c2b45]' : 'text-slate-500 hover:text-slate-900'
@@ -796,7 +796,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                       <button
                         id="btn-clear-import-textarea"
                         type="button"
-                        onClick={() => setImportText('')}
+                        onClick={() => { setImportText(''); setSampleText(null); }}
                         className={`text-[11px] cursor-pointer ${
                           isDark ? 'text-zinc-400 hover:text-rose-400' : 'text-[#5b6478] hover:text-[#a63b2c]'
                         }`}
@@ -810,7 +810,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   id="import-textarea"
                   rows={4}
                   value={importText}
-                  onChange={e => setImportText(e.target.value)}
+                  onChange={e => { setImportText(e.target.value); setSampleText(null); }}
                   placeholder={
                     isTF
                       ? 'Exemplo numerado: 1V, 2V, 3F, 4V, 5V...\nou em pares: 1-V 2-F 3-V 4-F...\nou sequência contínua: VVFVFFVV...'
@@ -826,6 +826,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 />
               </div>
 
+              {sampleText !== null && <p className="text-xs text-[var(--brand)]">Exemplo fictício de {totalQuestions} questões. Use um exemplo de gabarito para testar cerca de 70% de acertos.</p>}
               {/* Import Options */}
               <div className={`space-y-2 p-3 rounded border text-xs ${
                 isNotebook
@@ -895,10 +896,10 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 onClick={handleProcessImport}
                 className={`w-full py-2.5 px-4 font-semibold rounded-lg transition flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer shadow-sm ${
                   isNotebook
-                    ? 'bg-[#1c2b45] text-white hover:bg-[#132038]'
+                    ? 'theme-solid text-white hover:bg-[#132038]'
                     : isDark
-                    ? 'bg-zinc-200 text-zinc-950 font-bold hover:bg-white'
-                    : 'bg-slate-900 text-white hover:bg-slate-800'
+                    ? 'theme-solid text-zinc-950 font-bold hover:bg-white'
+                    : 'theme-solid text-white hover:bg-slate-800'
                 }`}
               >
                 <Check className={`w-4 h-4 ${isDark ? 'text-emerald-600' : 'text-emerald-400'}`} />
@@ -981,8 +982,8 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   currentKeyAnswers={keyAnswers}
                   examType={simulado.examType}
                   theme={theme}
-                  onConfirmKey={newKey => {
-                    onUpdateKeyAnswers(newKey, totalQuestions);
+                  onConfirmKey={(newKey, isExample) => {
+                    onUpdateKeyAnswers(newKey, totalQuestions, isExample);
                     setImportStatus({
                       success: true,
                       message: `Gabarito oficial salvo com sucesso! (${newKey.filter(Boolean).length} de ${totalQuestions} questões)`,
@@ -1014,13 +1015,13 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   onClick={handleDownloadReport}
                   className={`px-4 py-2 font-semibold rounded-lg transition flex items-center gap-2 text-xs text-white cursor-pointer ${
                     isNotebook
-                      ? 'bg-[#387652] hover:bg-[#2c5f40]'
+                      ? 'theme-solid'
                       : isDark
-                      ? 'bg-emerald-600 hover:bg-emerald-500'
-                      : 'bg-emerald-700 hover:bg-emerald-800'
+                      ? 'theme-solid'
+                      : 'theme-solid'
                   }`}
                 >
-                  <Download className="w-4 h-4" />
+                  <Upload className="w-4 h-4" />
                   <span>Baixar Relatório (.txt)</span>
                 </button>
 

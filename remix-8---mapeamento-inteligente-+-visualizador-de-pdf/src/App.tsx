@@ -1,3 +1,4 @@
+import { applyAnswerImport, generateExamplePair } from './utils/exampleData';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { ControlsBar } from './components/ControlsBar';
@@ -193,6 +194,7 @@ export default function App() {
           return {
             ...prev,
             userAnswers: nextAnswers,
+            exampleData: { ...prev.exampleData, user: false },
             reviewedQuestionIndexes: (prev.reviewedQuestionIndexes || []).filter(index => index !== currentIdx),
             isResultOutdated: prev.isCorrected ? true : prev.isResultOutdated,
           };
@@ -217,6 +219,7 @@ export default function App() {
           return {
             ...prev,
             userAnswers: nextAnswers,
+            exampleData: { ...prev.exampleData, user: false },
             reviewedQuestionIndexes: (prev.reviewedQuestionIndexes || []).filter(index => index !== currentIdx),
             isResultOutdated: prev.isCorrected ? true : prev.isResultOutdated,
           };
@@ -281,6 +284,7 @@ export default function App() {
         return {
           ...prev,
           userAnswers: next,
+          exampleData: { ...prev.exampleData, user: false },
           reviewedQuestionIndexes: (prev.reviewedQuestionIndexes || []).filter(
             index => index !== questionIdx
           ),
@@ -535,8 +539,8 @@ export default function App() {
       return {
         ...prev,
         totalQuestions: validTotal,
-        userAnswers: newUser,
-        keyAnswers: newKey,
+        userAnswers: prev.exampleData?.user && prev.exampleData?.key ? generateExamplePair(validTotal, prev.examType).userAnswers : newUser,
+        keyAnswers: prev.exampleData?.user && prev.exampleData?.key ? generateExamplePair(validTotal, prev.examType).keyAnswers : newKey,
         flaggedQuestions: prev.flaggedQuestions.filter(idx => idx < validTotal),
         reviewedQuestionIndexes: (prev.reviewedQuestionIndexes || []).filter(
           idx => idx < validTotal
@@ -581,6 +585,7 @@ export default function App() {
         updateActiveSimulado(prev => ({
           ...prev,
           userAnswers: new Array(prev.totalQuestions).fill(null),
+          exampleData: { ...prev.exampleData, user: false },
           flaggedQuestions: [],
           reviewedQuestionIndexes: [],
           isCorrected: false,
@@ -611,6 +616,7 @@ export default function App() {
         updateActiveSimulado(prev => ({
           ...prev,
           userAnswers: new Array(resetTotal).fill(null),
+          exampleData: { user: false, key: false },
           keyAnswers: new Array(resetTotal).fill(null),
           flaggedQuestions: [],
           isCorrected: false,
@@ -996,16 +1002,9 @@ export default function App() {
                 keyAnswers={simulado.keyAnswers}
                 examType={simulado.examType}
                 theme={theme}
-                onKeyChange={newKey => {
+                onKeyChange={(newKey, isExample) => {
                   const wasCorrected = simulado.isCorrected;
-                  updateActiveSimulado(prev => ({
-                    ...prev,
-                    keyAnswers: newKey,
-                    reviewedQuestionIndexes: [],
-                    isCorrected: false, // Invalidate previous correction immediately
-                    isLocked: false,
-                    isResultOutdated: false,
-                  }));
+                  updateActiveSimulado(prev => applyAnswerImport(prev, 'key', newKey, undefined, isExample));
                   setFilterMode('all');
                   if (wasCorrected) {
                     showToast('Gabarito alterado. Resultado anterior invalidado — corrija novamente.');
@@ -1024,6 +1023,7 @@ export default function App() {
                       updateActiveSimulado(prev => ({
                         ...prev,
                         keyAnswers: new Array(prev.totalQuestions).fill(null),
+                        exampleData: { ...prev.exampleData, key: false },
                         reviewedQuestionIndexes: [],
                         isCorrected: false, // Invalidate previous correction immediately
                         isLocked: false,
@@ -1124,7 +1124,7 @@ export default function App() {
       </div>
       {/* Export / Import Modal for Individual Exam */}
       <React.Suspense fallback={<div className="fixed inset-0 bg-black/50 z-[100] grid place-items-center text-white" role="status">Abrindo painel…</div>}>
-      {aiMode && isStorageReady && <AIImportModal initialMode={aiMode} simulado={simulado} onClose={() => setAiMode(null)}
+      {aiMode && isStorageReady && <AIImportModal initialMode={aiMode} simulado={simulado} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onClose={() => setAiMode(null)}
         onCreate={async (result: AIExtraction, fileName: string) => {
           const proof = createNewSimulado(result.title, result.totalQuestions, store.provas.length, result.examType);
           proof.extractedQuestions = result.questions; proof.sourceFileName = fileName; proof.notes = result.warnings.join('\n');
@@ -1138,7 +1138,7 @@ export default function App() {
           const snapshot = await saveSnapshotToIndexedDB(store, 'Antes de importar gabarito por IA', scope);
           if (!snapshot) throw new Error('Não foi possível preservar o gabarito atual. Exporte um backup antes de importar.');
           if (currentScope.current !== scope) throw new Error('A conta mudou durante a importação. Abra novamente a prova desejada.');
-          setStore(previous => ({ ...previous, provas: previous.provas.map(proof => proof.id === simulado.id ? { ...proof, keyAnswers: answers, reviewedQuestionIndexes: [], isCorrected: false, isLocked: false, isResultOutdated: false, updatedAt: new Date().toISOString() } : proof) }));
+          setStore(previous => ({ ...previous, provas: previous.provas.map(proof => proof.id === simulado.id ? { ...proof, keyAnswers: answers, exampleData: { ...proof.exampleData, key: false }, reviewedQuestionIndexes: [], isCorrected: false, isLocked: false, isResultOutdated: false, updatedAt: new Date().toISOString() } : proof) }));
           setFilterMode('all'); showToast('Gabarito conferido importado. Corrija a prova para atualizar o resultado.');
         }} />}
       {simulado && (
@@ -1149,37 +1149,13 @@ export default function App() {
           simulado={simulado}
           theme={theme}
           onOpenBackupModal={() => setIsBackupModalOpen(true)}
-          onUpdateUserAnswers={(answers, newTotal) => {
-            updateActiveSimulado(prev => {
-              const finalTotal = newTotal || prev.totalQuestions;
-              return {
-                ...prev,
-                totalQuestions: finalTotal,
-                userAnswers: resizeAnswers(answers, finalTotal, prev.examType),
-                keyAnswers: resizeAnswers(prev.keyAnswers, finalTotal, prev.examType),
-                reviewedQuestionIndexes: [],
-                isCorrected: false,
-                isLocked: false,
-                isResultOutdated: false,
-              };
-            });
+          onUpdateUserAnswers={(answers, newTotal, isExample) => {
+            updateActiveSimulado(prev => applyAnswerImport(prev, 'user', answers, newTotal, isExample));
             setFilterMode('all');
             showToast('Respostas importadas com sucesso!');
           }}
-          onUpdateKeyAnswers={(answers, newTotal) => {
-            updateActiveSimulado(prev => {
-              const finalTotal = newTotal || prev.totalQuestions;
-              return {
-                ...prev,
-                totalQuestions: finalTotal,
-                keyAnswers: resizeAnswers(answers, finalTotal, prev.examType),
-                userAnswers: resizeAnswers(prev.userAnswers, finalTotal, prev.examType),
-                reviewedQuestionIndexes: [],
-                isCorrected: false,
-                isLocked: false,
-                isResultOutdated: false,
-              };
-            });
+          onUpdateKeyAnswers={(answers, newTotal, isExample) => {
+            updateActiveSimulado(prev => applyAnswerImport(prev, 'key', answers, newTotal, isExample));
             setFilterMode('all');
             showToast('Gabarito oficial atualizado. Corrija o simulado para ver o resultado.');
           }}

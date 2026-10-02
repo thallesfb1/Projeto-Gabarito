@@ -56,7 +56,7 @@ export const NewSimuladoModal: React.FC<NewSimuladoModalProps> = ({
     >
       <div className="bg-[#fdfbf7] dark:bg-[#22242a] border-2 border-[#1c2b45] dark:border-[#3b3e48] rounded-xl shadow-2xl max-w-md w-full overflow-hidden animate-scaleUp">
         {/* Header */}
-        <div className="bg-[#1c2b45] dark:bg-[#18191d] text-white px-4 sm:px-5 py-3.5 sm:py-4 flex items-center justify-between border-b dark:border-[#3b3e48]">
+        <div className="theme-solid dark:bg-[#18191d] text-white px-4 sm:px-5 py-3.5 sm:py-4 flex items-center justify-between border-b dark:border-[#3b3e48]">
           <div className="flex items-center gap-2.5">
             <PlusCircle className="w-5 h-5 text-amber-300 dark:text-zinc-300" />
             <h2 className="font-sans font-bold text-lg text-amber-50 dark:text-zinc-100">
@@ -103,7 +103,7 @@ export const NewSimuladoModal: React.FC<NewSimuladoModalProps> = ({
                 onClick={() => setExamType('multiple_choice')}
                 className={`p-2.5 rounded-lg border text-left transition flex flex-col justify-between cursor-pointer ${
                   examType === 'multiple_choice'
-                    ? 'bg-[#1c2b45] dark:bg-[#2c2f38] text-white border-[#1c2b45] dark:border-zinc-500 shadow-xs ring-1 ring-zinc-500/20'
+                    ? 'theme-solid dark:bg-[#2c2f38] text-white border-[#1c2b45] dark:border-zinc-500 shadow-xs ring-1 ring-zinc-500/20'
                     : 'bg-white dark:bg-[#18191d] text-[#1c2b45] dark:text-zinc-200 border-[#dedad0] dark:border-[#3b3e48] hover:bg-[#f0eee6] dark:hover:bg-[#2c2f38]'
                 }`}
               >
@@ -123,7 +123,7 @@ export const NewSimuladoModal: React.FC<NewSimuladoModalProps> = ({
                 onClick={() => setExamType('true_false')}
                 className={`p-2.5 rounded-lg border text-left transition flex flex-col justify-between cursor-pointer ${
                   examType === 'true_false'
-                    ? 'bg-[#1c2b45] dark:bg-[#2c2f38] text-white border-[#1c2b45] dark:border-zinc-500 shadow-xs ring-1 ring-zinc-500/20'
+                    ? 'theme-solid dark:bg-[#2c2f38] text-white border-[#1c2b45] dark:border-zinc-500 shadow-xs ring-1 ring-zinc-500/20'
                     : 'bg-white dark:bg-[#18191d] text-[#1c2b45] dark:text-zinc-200 border-[#dedad0] dark:border-[#3b3e48] hover:bg-[#f0eee6] dark:hover:bg-[#2c2f38]'
                 }`}
               >
@@ -162,7 +162,7 @@ export const NewSimuladoModal: React.FC<NewSimuladoModalProps> = ({
                   onClick={() => setTotalQuestions(tot)}
                   className={`text-[11px] font-mono-code px-2 py-0.5 rounded border transition cursor-pointer ${
                     totalQuestions === tot
-                      ? 'bg-[#1c2b45] dark:bg-[#2c2f38] text-white border-[#1c2b45] dark:border-zinc-500 font-bold'
+                      ? 'theme-solid dark:bg-[#2c2f38] text-white border-[#1c2b45] dark:border-zinc-500 font-bold'
                       : 'bg-[#f0eee6] dark:bg-[#18191d] hover:bg-white dark:hover:bg-[#2c2f38] text-[#1c2b45] dark:text-zinc-200 border-[#dedad0] dark:border-[#3b3e48]'
                   }`}
                 >
@@ -213,7 +213,7 @@ export const NewSimuladoModal: React.FC<NewSimuladoModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-[#1c2b45] dark:bg-[#3b3e48] hover:bg-[#132038] dark:hover:bg-[#464956] text-white text-xs font-mono-code font-semibold rounded-lg shadow-md transition cursor-pointer border dark:border-zinc-500"
+              className="flex items-center gap-1.5 px-5 py-2.5 theme-solid dark:bg-[#3b3e48] hover:bg-[#132038] dark:hover:bg-[#464956] text-white text-xs font-mono-code font-semibold rounded-lg shadow-md transition cursor-pointer border dark:border-zinc-500"
             >
               <Check className="w-4 h-4" />
               <span>Criar Cartão-Resposta</span>

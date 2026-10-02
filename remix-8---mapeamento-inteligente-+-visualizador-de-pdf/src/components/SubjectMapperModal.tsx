@@ -91,7 +91,7 @@ export const SubjectMapperModal: React.FC<SubjectMapperModalProps> = ({
           : 'bg-white border-slate-900 text-slate-900'
       }`}>
         <header className={`px-5 py-4 flex items-center justify-between gap-4 border-b ${
-          isDark ? 'bg-[#18191d] border-[#3b3e48]' : 'bg-slate-900 border-slate-800 text-white'
+          isDark ? 'bg-[#18191d] border-[#3b3e48]' : 'theme-solid border-slate-800 text-white'
         }`}>
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isDark ? 'bg-[#2c2f38]' : 'bg-white/10'}`}>
@@ -227,7 +227,7 @@ export const SubjectMapperModal: React.FC<SubjectMapperModalProps> = ({
               className={`px-4 py-2 rounded-lg text-xs font-bold inline-flex items-center gap-2 transition ${
                 error
                   ? isDark ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : isDark ? 'bg-zinc-100 text-zinc-950 hover:bg-white cursor-pointer' : 'bg-slate-900 text-white hover:bg-slate-800 cursor-pointer'
+                  : isDark ? 'theme-solid text-zinc-950 hover:bg-white cursor-pointer' : 'theme-solid text-white hover:bg-slate-800 cursor-pointer'
               }`}
             >
               <Save className="w-4 h-4" /> Salvar mapa

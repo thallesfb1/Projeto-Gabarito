@@ -67,7 +67,7 @@ export const CompletionFeedbackModal: React.FC<CompletionFeedbackModalProps> = (
         onClick={e => e.stopPropagation()}
       >
         {/* Top Header Banner */}
-        <div className="bg-[#1c2b45] dark:bg-[#18191d] text-white px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between relative overflow-hidden border-b dark:border-[#3b3e48]">
+        <div className="theme-solid dark:bg-[#18191d] text-white px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between relative overflow-hidden border-b dark:border-[#3b3e48]">
           <div className="flex items-center gap-2.5 z-10">
             <div className="w-8 h-8 rounded-lg bg-amber-400/20 border border-amber-300/30 flex items-center justify-center text-amber-300 shrink-0">
               <Sparkles className="w-4 h-4" />
@@ -146,7 +146,7 @@ export const CompletionFeedbackModal: React.FC<CompletionFeedbackModalProps> = (
               id="btn-popup-give-feedback"
               type="button"
               onClick={handleFeedbackClick}
-              className="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer group"
+              className="w-full py-3 px-4 theme-solid font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer group"
             >
               <MessageSquare className="w-4 h-4 text-slate-950" />
               <span>Dar Feedback Rápido</span>

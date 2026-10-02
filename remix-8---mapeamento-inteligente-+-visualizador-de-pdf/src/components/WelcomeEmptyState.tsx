@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, BookOpen, BrainCircuit, Check, CheckCircle2, Clock3, FileCheck, LibraryBig, Plus, ShieldCheck, Upload } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, BrainCircuit, Check, CheckCircle2, Clock3, FileCheck, LibraryBig, Plus, ShieldCheck, Download } from 'lucide-react';
 import { AppTheme, SimuladoData } from '../types';
 import { computeSimuladoStats } from '../utils/parser';
 
@@ -62,7 +62,7 @@ export function WelcomeEmptyState({ provas = [], activeProva, onContinueActivePr
     <section className="home-toolbox"><div><span className="eyebrow">FEITO PARA SUA ROTINA</span><h2>Menos organização.<br />Mais tempo para estudar.</h2><p>Do treino rápido ao simulado completo, mantenha suas provas, resultados e revisões no mesmo lugar.</p></div><div className="toolbox-grid">
       <button type="button" onClick={onOpenPresetsModal}><LibraryBig className="w-5 h-5" /><strong>Modelos por banca</strong><span>ENEM, FGV, Cebraspe e mais</span><ArrowRight className="w-4 h-4" /></button>
       <button type="button" onClick={onOpenInsights}><BarChart3 className="w-5 h-5" /><strong>Meu desempenho</strong><span>Resultados e revisão por disciplina</span><ArrowRight className="w-4 h-4" /></button>
-      <button type="button" onClick={() => onOpenBackupModal('import')}><Upload className="w-5 h-5" /><strong>Importar minhas provas</strong><span>Recupere um backup anterior</span><ArrowRight className="w-4 h-4" /></button>
+      <button type="button" onClick={() => onOpenBackupModal('import')}><Download className="w-5 h-5" /><strong>Importar minhas provas</strong><span>Recupere um backup anterior</span><ArrowRight className="w-4 h-4" /></button>
       <button type="button" onClick={onOpenAI}><BrainCircuit className="w-5 h-5" /><strong>Leitura com IA</strong><span>Provas em PDF e gabaritos em imagem</span><ArrowRight className="w-4 h-4" /></button>
     </div></section>
     <footer className="home-footer"><span><ShieldCheck className="w-4 h-4" />Seus dados locais ficam neste navegador. Entre para sincronizar com sua conta.</span><button type="button" className="text-action" onClick={() => onOpenBackupModal('export')}>Gerenciar backups<ArrowRight className="w-3.5 h-3.5" /></button></footer>

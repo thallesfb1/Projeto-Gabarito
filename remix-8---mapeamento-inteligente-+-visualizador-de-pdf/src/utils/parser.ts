@@ -1,3 +1,4 @@
+import { generateExamplePair } from './exampleData';
 import { MAX_IMPORT_BYTES, MAX_QUESTIONS, normalizeAnswer } from './validation';
 import { AnswerOption, ExamType, ParseResult, SimuladoData, SimuladoStats } from '../types';
 
@@ -194,13 +195,7 @@ export function formatNumberedVOF(
  * Generates sample numbered VOF text: 1V, 2V, 3F, 4V, ...
  */
 export function generateSampleNumberedVOF(count: number): string {
-  const items: string[] = [];
-  const patterns = ['V', 'V', 'F', 'V', 'F', 'V', 'F', 'F', 'V', 'V'];
-  for (let i = 1; i <= count; i++) {
-    const letter = patterns[(i - 1) % patterns.length];
-    items.push(`${i}${letter}`);
-  }
-  return items.join(', ');
+  return generateExamplePair(count, 'true_false').userAnswers.map((answer, i) => `${i + 1}${answer}`).join(', ');
 }
 
 /**
@@ -403,39 +398,5 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
  * Generates a realistic sample sequence of answers (A-E or V/F) with exact specified length
  */
 export function generateSampleSequence(count: number, examType: ExamType = 'multiple_choice'): string {
-  if (count <= 0) return '';
-  if (examType === 'true_false') {
-    const tfPatterns = ['VVFVF', 'FVFVV', 'VFVFF', 'FFVVV', 'VFVFV', 'VVFFV', 'FVVFF'];
-    let res = '';
-    let j = 0;
-    while (res.length < count) {
-      res += tfPatterns[j % tfPatterns.length];
-      j++;
-    }
-    return res.slice(0, count);
-  }
-
-  const patterns = [
-    'ABCDE',
-    'BACDE',
-    'CABDE',
-    'DCBAE',
-    'BCDEA',
-    'CDEAB',
-    'EDCBA',
-    'AEBCD',
-    'DABEC',
-    'EADBC',
-    'AECAB',
-    'DBCCB',
-    'EBDBA',
-    'DEDCA',
-  ];
-  let result = '';
-  let i = 0;
-  while (result.length < count) {
-    result += patterns[i % patterns.length];
-    i++;
-  }
-  return result.slice(0, count);
+  return generateExamplePair(count, examType).userAnswers.join('');
 }
