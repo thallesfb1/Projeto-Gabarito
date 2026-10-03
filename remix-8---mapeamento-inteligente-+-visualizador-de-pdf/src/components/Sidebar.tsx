@@ -342,7 +342,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* Quick Central de Gabarito & Exportação button */}
-        {onOpenExportModal && (
+        {onOpenExportModal && !isHomeActive && !isLibraryActive && !isInsightsActive && provas.some(prova=>prova.id===activeId) && (
           <button
             id="btn-sidebar-export-center"
             type="button"

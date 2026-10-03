@@ -556,3 +556,14 @@ html[data-theme="dark"] { --ambient-main: #28775a38; --ambient-second: #53634226
 .ai-notification-option { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-surface-muted); }
 .ai-notification-option .text-action { min-height: 44px; }
 .account-alert .account-alert-close { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 8px; margin-left: auto; border-radius: 10px; flex-shrink: 0; }
+
+.ai-destination, .ai-subject-summary, .flashcards-saved-round { border: 1px solid var(--border-surface); background: var(--brand-soft); border-radius: 14px; padding: 14px 16px; }
+.ai-destination strong, .ai-subject-summary h4, .flashcards-saved-round > strong { color: var(--brand); font-size: 13px; font-weight: 700; }
+.ai-destination p, .flashcards-saved-round p { font-size: 12px; line-height: 1.7; margin-top: 5px; overflow-wrap: anywhere; }
+.ai-destination small, .ai-subject-summary small { display: block; font-size: 11px; color: var(--text-surface-muted); line-height: 1.7; margin-top: 6px; }
+.ai-subject-summary > p { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; font-size: 12px; padding-top: 9px; }
+.ai-subject-summary > p > span { color: var(--text-surface-muted); }
+.flashcards-saved-round { margin-bottom: 18px; }
+.flashcards-saved-round label { display: block; font-size: 11px; margin-top: 12px; }
+.flashcards-saved-round select { width: 100%; display: block; padding: 9px; border: 1px solid var(--border-surface); border-radius: 9px; margin-top: 5px; min-height: 44px; }
+.flashcards-saved-round .secondary-action { margin-top: 12px; width: 100%; justify-content: center; }

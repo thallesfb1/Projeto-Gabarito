@@ -1,4 +1,4 @@
-import type { AnswerOption, ExamType, ExtractedQuestion } from '../types.ts';
+import type { AnswerOption, ExamType, ExtractedQuestion, SubjectRange, SubjectColor } from '../types.ts';
 import { normalizeAnswer } from './validation.ts';
 
 export type ExtractionMode = 'exam' | 'key';
@@ -63,7 +63,23 @@ export function validateAIExtraction(value: unknown, mode: ExtractionMode): AIEx
     if (!answers.some(item => item.answer)) throw new Error('As respostas estão ilegíveis. Envie uma imagem mais nítida.');
     if (answers.filter(item => item.answer).length < total) warnings.push('O gabarito está incompleto. Respostas ausentes ou ilegíveis permanecerão em branco.');
   }
-  return { title: text(raw.title, 180) || 'Prova importada do PDF', examType, totalQuestions: total, questions: questions.sort((a,b) => a.number-b.number), answers: answers.sort((a,b) => a.number-b.number), warnings };
+  return { title: text(raw.title, 180) || (mode==='exam'?'Prova importada do PDF':'Simulado importado do gabarito'), examType, totalQuestions: total, questions: questions.sort((a,b) => a.number-b.number), answers: answers.sort((a,b) => a.number-b.number), warnings };
+}
+
+export function subjectRangesFromQuestions(questions: ExtractedQuestion[]): SubjectRange[] {
+  const palette: SubjectColor[] = ['blue','emerald','violet','amber','rose','cyan','slate'];
+  const subjects = new Map<string, {name:string;color:SubjectColor}>();
+  const ranges: SubjectRange[] = [];
+  for (const question of [...questions].sort((a,b)=>a.number-b.number)) {
+    const name = (question.subject || '').trim().replace(/\s+/g,' ');
+    if (!name) continue;
+    const key = name.toLocaleLowerCase('pt-BR');
+    if (!subjects.has(key)) subjects.set(key,{name,color:palette[subjects.size%palette.length]});
+    const subject = subjects.get(key)!; const last = ranges.at(-1);
+    if (last && last.name===subject.name && last.end===question.number-1) last.end=question.number;
+    else ranges.push({id:`ai-subject-${question.number}`,name:subject.name,color:subject.color,start:question.number,end:question.number});
+  }
+  return ranges;
 }
 
 export function answersFromExtraction(extraction: AIExtraction, total: number): (AnswerOption | null)[] {

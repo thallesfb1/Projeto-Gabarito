@@ -1,5 +1,5 @@
 import { sanitizeSourceDocuments } from './sourceDocumentMetadata';
-import { sanitizeFlashcardDeck } from './flashcards';
+import { sanitizeFlashcardDeck, sanitizeFlashcardHistory } from './flashcards';
 import { SimuladoData, MultiSimuladoStore, FullBackupData, AnswerOption, ExamType } from '../types';
 import { parseAnswers, downloadFile } from './parser';
 import { MAX_IMPORT_BYTES, MAX_QUESTIONS, normalizeTotal, resizeAnswers, validIndexes, sanitizeExtractedQuestions } from './validation';
@@ -163,6 +163,7 @@ export function sanitizeSimulado(item: any, fallbackIndex: number = 1): Simulado
     ...('sourceDocuments' in safeItem ? { sourceDocuments: sanitizeSourceDocuments(item.sourceDocuments) } : {}),
     sourceFileName: typeof item?.sourceFileName === 'string' ? item.sourceFileName.slice(0, 240) : undefined,
     flashcardDeck: sanitizeFlashcardDeck(item?.flashcardDeck),
+    ...('flashcardHistory' in safeItem ? {flashcardHistory:sanitizeFlashcardHistory(item?.flashcardHistory)} : {}),
   };
 }
 

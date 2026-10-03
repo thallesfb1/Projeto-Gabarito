@@ -27,12 +27,12 @@ describe('flashcards no fim da prova', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Revelar resposta' })); expect(screen.getByText(card.back).closest('article')?.getAttribute('aria-hidden')).toBe('false');
     fireEvent.click(screen.getByRole('button', { name: 'Já sei' })); expect(props.onSave).toHaveBeenLastCalledWith(expect.objectContaining({ masteredCardIds: ['card-1'] }));
   });
-  it('reutiliza cartões salvos sem chamar a IA e rejeita conjunto de uma correção antiga', () => {
+  it('reutiliza cartões salvos e mantém uma rodada antiga após editar a correção', () => {
     const deck = { sourceKey: flashcardSourceKey(proof), createdAt: new Date().toISOString(), cards: [card], masteredCardIds: [] };
     const { rerender } = render(<FlashcardsReview {...props} signedIn={false} proof={{ ...proof, flashcardDeck: deck }}/>); open();
     expect(screen.getByRole('button', { name: 'Começar revisão' })).toBeTruthy(); expect(mocks.generate).not.toHaveBeenCalled();
     rerender(<FlashcardsReview {...props} proof={{ ...proof, userAnswers: ['C', 'A'], flashcardDeck: deck }}/>);
-    expect(screen.getByRole('button', { name: 'Gerar meus flashcards' })).toBeTruthy(); expect(screen.queryByRole('button', { name: 'Começar revisão' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Gerar novos flashcards' })).toBeTruthy(); expect(screen.getByRole('button', { name: 'Começar revisão' })).toBeTruthy();expect(screen.getByText('Revisão de uma versão anterior')).toBeTruthy();expect(mocks.generate).not.toHaveBeenCalled();
   });
   it('não salva uma geração que termina depois de trocar a prova ou conta', async () => {
     let finish!: (cards: typeof card[]) => void; mocks.generate.mockReturnValue(new Promise(resolve => { finish = resolve; }));
@@ -73,5 +73,25 @@ describe('flashcards no fim da prova', () => {
   it('permite uma revisão de reforço quando todas as questões com contexto foram acertadas',()=>{
     render(<FlashcardsReview {...props} proof={{...proof,userAnswers:['B','A']}}/>);open();
     expect(screen.getByText(/Vamos reforçar os conceitos/)).toBeTruthy();expect(screen.getByRole('button',{name:'Gerar meus flashcards'})).toBeTruthy();
+  });
+  it('permite estudar cartões salvos após reiniciar a prova e voltar a gerar somente depois de corrigir',()=>{
+    const deck={sourceKey:flashcardSourceKey(proof),createdAt:'2026-10-02T10:00:00Z',cards:[card],masteredCardIds:['card-1']};
+    const reset={...proof,isCorrected:false,userAnswers:[null,null],flashcardDeck:deck};
+    const {rerender}=render(<FlashcardsReview {...props} proof={reset}/>);open();
+    expect(screen.getByRole('button',{name:'Começar revisão'})).toBeTruthy();expect(screen.queryByRole('button',{name:'Gerar novos flashcards'})).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'Começar revisão'}));expect(screen.getByRole('heading',{name:card.front})).toBeTruthy();
+    rerender(<FlashcardsReview {...props} proof={{...reset,isCorrected:true,userAnswers:['C','A']}}/>);
+    expect(screen.getByRole('button',{name:'Gerar novos flashcards'})).toBeTruthy();expect(mocks.generate).not.toHaveBeenCalled();
+  });
+  it('alterna entre rodadas sem perder progresso e conserva a revisão após falhar uma nova geração',async()=>{
+    const old={sourceKey:'previous',createdAt:'2026-10-02T10:00:00Z',cards:[{...card,front:'Pergunta da rodada anterior'}],masteredCardIds:['card-1']};
+    const latest={sourceKey:flashcardSourceKey(proof),createdAt:'2026-10-03T10:00:00Z',cards:[card],masteredCardIds:[]};
+    mocks.generate.mockRejectedValue(new Error('Falha temporária'));
+    render(<FlashcardsReview {...props} proof={{...proof,flashcardDeck:latest,flashcardHistory:[old]}}/>);open();
+    fireEvent.change(screen.getByRole('combobox',{name:'Rodada de revisão'}),{target:{value:`${old.sourceKey}@${old.createdAt}`}});
+    fireEvent.click(screen.getByRole('button',{name:'Começar revisão'}));expect(screen.getByRole('heading',{name:old.cards[0].front})).toBeTruthy();
+    fireEvent.click(screen.getByRole('button',{name:'Fechar flashcards'}));open();
+    fireEvent.click(screen.getByRole('button',{name:'Gerar novos flashcards'}));await screen.findByRole('alert');
+    expect(screen.getByRole('button',{name:'Começar revisão'})).toBeTruthy();expect(props.onSave).not.toHaveBeenCalled();
   });
 });

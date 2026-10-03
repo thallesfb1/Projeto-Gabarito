@@ -52,6 +52,33 @@ function sourceFingerprint(text: string, version: string): string {
   return `${version}-${text.length}-${(hash >>> 0).toString(16)}`;
 }
 
+export function flashcardReviewId(deck: FlashcardDeck): string { return `${deck.sourceKey}@${deck.createdAt}`; }
+
+export function savedFlashcardReviews(proof: SimuladoData): FlashcardDeck[] {
+  const seen = new Set<string>();
+  return [proof.flashcardDeck,...(proof.flashcardHistory || [])].filter((deck):deck is FlashcardDeck=>{
+    if(!deck || seen.has(flashcardReviewId(deck))) return false;
+    seen.add(flashcardReviewId(deck)); return true;
+  });
+}
+
+export function saveFlashcardReview(proof: SimuladoData, deck: FlashcardDeck): SimuladoData {
+  const id=flashcardReviewId(deck);
+  // Progress belongs to the saved round, even while answers are being edited.
+  if(proof.flashcardDeck && flashcardReviewId(proof.flashcardDeck)===id) return {...proof,flashcardDeck:deck};
+  if(proof.flashcardHistory?.some(previous=>flashcardReviewId(previous)===id)) return {...proof,flashcardHistory:proof.flashcardHistory.map(previous=>flashcardReviewId(previous)===id?deck:previous)};
+  // A generation finishing after the proof changes must never replace saved cards.
+  if(!proof.isCorrected || proof.isResultOutdated || flashcardSourceKey(proof)!==deck.sourceKey) return proof;
+  return {...proof,flashcardDeck:deck,flashcardHistory:savedFlashcardReviews(proof)};
+}
+
+export function sanitizeFlashcardHistory(raw: unknown): FlashcardDeck[] {
+  if(!Array.isArray(raw)) return [];
+  const seen=new Set<string>();const history:FlashcardDeck[]=[];
+  for(const item of raw){const deck=sanitizeFlashcardDeck(item);if(deck&&!seen.has(flashcardReviewId(deck))){seen.add(flashcardReviewId(deck));history.push(deck);}}
+  return history;
+}
+
 // Spread the request over disciplines instead of selecting only the first errors.
 export function selectFlashcardSources(sources: FlashcardSource[], limit = 30): FlashcardSource[] {
   const wrong = sources.filter(source => source.result === 'wrong');

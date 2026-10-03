@@ -86,6 +86,7 @@ export interface SimuladoData {
   sourceFileName?: string;
   sourceDocuments?: SourceDocument[];
   flashcardDeck?: FlashcardDeck;
+  flashcardHistory?: FlashcardDeck[];
   exampleData?: { user?: boolean; key?: boolean };
   [key: string]: any;
 }

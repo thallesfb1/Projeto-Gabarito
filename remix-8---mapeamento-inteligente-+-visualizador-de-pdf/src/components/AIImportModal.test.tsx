@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 const mocks=vi.hoisted(()=>({extract:vi.fn()}));
 vi.mock('../utils/aiClient',()=>({extractWithAI:mocks.extract}));
+vi.mock('./DocumentPreview',()=>({DocumentPreview:()=> <div>Visualizador de teste</div>}));
 import { AIImportModal } from './AIImportModal';
 import { createNewSimulado } from '../utils/provasManager';
 const result={title:'Prova lida',totalQuestions:2,examType:'multiple_choice',questions:[],answers:[{number:1,answer:'A'},{number:2,answer:null}],warnings:['Item 2 ilegível']};
@@ -40,7 +41,7 @@ describe('conferência de IA',()=>{
     const onKey=vi.fn();render(<AIImportModal initialMode="key" simulado={createNewSimulado('Certo e errado',2,0,'true_false')} onKey={onKey} onCreate={vi.fn()} onClose={vi.fn()}/>);
     await prepare();fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
     fireEvent.click(screen.getByRole('checkbox',{name:/Conferi a leitura/}));fireEvent.click(screen.getByRole('button',{name:'Importar gabarito conferido'}));
-    expect((await screen.findByRole('alert')).textContent).toContain('tipo do gabarito');expect(onKey).not.toHaveBeenCalled();
+    expect((await screen.findByRole('alert')).textContent).toContain('tipo do arquivo');expect(onKey).not.toHaveBeenCalled();
   });
   it('aceita arrastar um arquivo sem enviá-lo automaticamente e permite removê-lo',()=>{
     render(<AIImportModal initialMode="key" simulado={createNewSimulado('Minha prova',2)} onKey={vi.fn()} onCreate={vi.fn()} onClose={vi.fn()}/>);
@@ -90,5 +91,30 @@ describe('conferência de IA',()=>{
     fireEvent.click(screen.getByRole('button',{name:'Cancelar'}));finish(result);
     await waitFor(()=>expect(screen.queryByText('Lendo o arquivo. Isso pode levar até dois minutos…')).toBeNull());
     expect(screen.queryByText('Leitura concluída!')).toBeNull();expect(screen.queryByRole('combobox')).toBeNull();
+  });
+  it('na criação por imagem ignora uma prova passada em segundo plano e chama somente a criação',async()=>{
+    const onCreate=vi.fn().mockResolvedValue(undefined);const onKey=vi.fn();
+    render(<AIImportModal purpose="create" initialMode="key" simulado={createNewSimulado('Prova antiga',2)} onCreate={onCreate} onKey={onKey} onClose={vi.fn()}/>);
+    expect(screen.getByText('Novo simulado')).toBeTruthy();await prepare();fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));
+    await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
+    fireEvent.click(screen.getByRole('checkbox',{name:/Conferi a leitura/}));fireEvent.click(screen.getByRole('button',{name:'Criar simulado com este gabarito'}));
+    await waitFor(()=>expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({title:'Prova lida'}),expect.any(File),'key'));
+    expect(onKey).not.toHaveBeenCalled();
+  });
+  it('confere e permite corrigir disciplinas antes de adicionar PDF à prova existente',async()=>{
+    const pdfResult={...result,answers:[],questions:[{number:1,subject:'Português',statement:'Enunciado 1',options:[]},{number:2,subject:'Português',statement:'Enunciado 2',options:[]}]};
+    mocks.extract.mockResolvedValue(pdfResult);const onCreate=vi.fn().mockResolvedValue(undefined);
+    render(<AIImportModal purpose="attach" initialMode="exam" simulado={createNewSimulado('Minha prova',2)} onCreate={onCreate} onKey={vi.fn()} onClose={vi.fn()}/>);
+    fireEvent.change(screen.getByLabelText('Selecione a prova em PDF'),{target:{files:[new File(['%PDF-1.7'],'prova.pdf',{type:'application/pdf'})]}});fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));
+    await screen.findByText('Disciplinas identificadas');expect(screen.getByText('Questões 1–2')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Disciplina da questão 1'),{target:{value:'Matemática'}});
+    fireEvent.click(screen.getByRole('checkbox',{name:/Conferi a leitura/}));fireEvent.click(screen.getByRole('button',{name:'Adicionar PDF e disciplinas à prova'}));
+    await waitFor(()=>expect(onCreate).toHaveBeenCalled());expect(onCreate.mock.calls[0][0].questions[0].subject).toBe('Matemática');expect(onCreate.mock.calls[0][2]).toBe('exam');
+  });
+  it('não transforma em criação uma importação cuja prova de destino deixou de existir',()=>{
+    render(<AIImportModal purpose="attach" initialMode="key" simulado={null} onCreate={vi.fn()} onKey={vi.fn()} onClose={vi.fn()}/>);
+    expect(screen.getByText('A prova selecionada não está mais disponível.')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Selecione a imagem ou o PDF do gabarito oficial'),{target:{files:[new File(['image'],'key.png',{type:'image/png'})]}});
+    expect(screen.getByRole('button',{name:'Extrair e conferir'}).hasAttribute('disabled')).toBe(true);
   });
 });

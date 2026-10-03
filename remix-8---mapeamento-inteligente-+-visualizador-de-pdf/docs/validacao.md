@@ -54,3 +54,12 @@ Verificação final: TypeScript sem erros, builds web e offline gerados e modal 
 - Os originais acompanham a conta pelo Storage e pelas referências em provas.data; não são embutidos nos backups JSON. A exclusão de uma prova preserva originais para backups anteriores; remoção definitiva pode ser feita pelo administrador no Storage.
 
 A prévia de IA foi conferida nos temas Clean, Caderno e Escuro e em 390 × 844, sem transbordamento horizontal. O modal mantém uma única área interna de rolagem. TypeScript, 81 testes e builds web/offline passaram. A busca pela chave real nos 72 arquivos rastreados, nove arquivos novos e 19 arquivos públicos gerados não encontrou exposição.
+
+## Destino da importação, disciplinas e rodadas de revisão
+
+- Testes da aplicação com serviços simulados verificam que a importação de gabarito na página inicial cria outro simulado e preserva integralmente a prova corrigida existente. Dentro da prova, a importação de gabarito altera somente o cartão aberto; o PDF preserva respostas e gabarito e adiciona enunciados e intervalos de disciplinas.
+- Testes da extração verificam o modelo aprovado e a orientação de classificar pelas seções do PDF. Os intervalos agrupam questões contíguas, mantêm blocos separados quando a disciplina reaparece e não preenchem lacunas incertas. A precisão da classificação real continua sujeita à conferência da prévia.
+- Testes de revisão cobrem edição, reinício, nova correção, geração opcional, histórico de rodadas, progresso independente, falha de geração e preservação no backup JSON. Uma geração atrasada após alterar a prova é descartada sem substituir revisões salvas.
+- No navegador, a página inicial foi conferida sem a Central de Gabarito e a prévia mostrou o destino “Novo simulado”. Uma demonstração isolada com duas rodadas confirmou revisão após reinício, seleção da rodada anterior e opção de nova geração após corrigir novamente. Em 390 × 844 não houve largura excedente e o botão de revelar continuou acessível; a apresentação também foi conferida em 1280 × 900. Nenhuma prova real foi editada nessa verificação.
+
+TypeScript, 136 testes em 20 arquivos e builds web/offline passaram nesta revisão.

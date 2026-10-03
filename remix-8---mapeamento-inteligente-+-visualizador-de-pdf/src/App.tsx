@@ -29,8 +29,9 @@ import { normalizeTotal, resizeAnswers } from './utils/validation';
 import { useWorkspace } from './hooks/useWorkspace';
 import { AccountBar } from './components/AccountBar';
 import { ExamReader } from './components/ExamReader';
-import { AIExtraction, answersFromExtraction } from './utils/aiExtraction';
-import { flashcardSourceKey } from './utils/flashcards';
+import { AIExtraction, ExtractionMode } from './utils/aiExtraction';
+import { applyAIReading } from './utils/aiImport';
+import { saveFlashcardReview } from './utils/flashcards';
 import { FolderKanban, MessageSquare, ExternalLink, Bookmark, Sun, BookOpen, Moon } from 'lucide-react';
 
 const ExamLibrary = React.lazy(() => import('./components/ExamLibrary').then(module => ({ default: module.ExamLibrary })));
@@ -45,6 +46,8 @@ export default function App() {
   // Multi-exam centralized state with auto-migration from legacy single-exam storage
   const workspace = useWorkspace();
   const { store, setStore, isStorageReady, saveStatus, scope } = workspace;
+  const currentStore = useRef(store);
+  currentStore.current = store;
   const currentScope = useRef(scope);
   currentScope.current = scope;
 
@@ -95,6 +98,9 @@ export default function App() {
   const setIsHomeView = (show: boolean) => setWorkspaceView(show ? 'home' : 'exam');
   const [mapperProvaId, setMapperProvaId] = useState<string | null>(null);
   const [aiMode, setAiMode] = useState<'exam' | 'key' | null>(null);
+  const [aiTargetId, setAiTargetId] = useState<string | null>(null);
+  const aiTargetProof = aiTargetId ? store.provas.find(proof=>proof.id===aiTargetId) || null : null;
+  const openAI = (mode: ExtractionMode, targetId: string | null = null) => {setAiTargetId(targetId);setAiMode(mode);};
   const [readerQuestionIndex, setReaderQuestionIndex] = useState<number | null>(null);
 
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number | null>(0);
@@ -125,7 +131,7 @@ export default function App() {
     setFilterMode('all');
     setIsBackupModalOpen(false);
     setMapperProvaId(null);
-      setAiMode(null);
+    setAiMode(null); setAiTargetId(null);
     setModalState(previous => ({ ...previous, isOpen: false }));
   }, [scope]);
 
@@ -736,6 +742,28 @@ export default function App() {
     </div>
   );
 
+  const handleAIReading = async (result: AIExtraction, file: File, mode: ExtractionMode) => {
+    const account=scope; const destination=aiTargetId;
+    const target=destination?currentStore.current.provas.find(proof=>proof.id===destination) || null:null;
+    if(destination && !target) throw new Error('Esta prova não está mais disponível. Abra novamente a importação.');
+    const proof=applyAIReading(result,mode,target,currentStore.current.provas.length);
+    if(target) {
+      if((target.sourceDocuments || []).length>=100) throw new Error('Esta prova já possui 100 originais salvos.');
+      const snapshot=await saveSnapshotToIndexedDB(currentStore.current,'Antes de importar arquivo por IA',account);
+      if(!snapshot) throw new Error('Não foi possível preservar a prova atual. Exporte um backup antes de importar.');
+    }
+    if(currentScope.current!==account) throw new Error('A conta mudou. Abra novamente a importação.');
+    const original=await uploadOriginalFile(file,proof.id,mode);
+    if(currentScope.current!==account) throw new Error('A conta mudou durante o salvamento. Abra novamente a importação.');
+    if(target && currentStore.current.provas.find(item=>item.id===destination)?.updatedAt!==target.updatedAt) throw new Error('A prova mudou durante a leitura. Confira a versão atual e importe novamente.');
+    proof.sourceDocuments=[...(target?.sourceDocuments || []),original];
+    if(mode==='exam') proof.sourceFileName=file.name;
+    proof.updatedAt=new Date().toISOString();
+    setStore(previous=>({...previous,activeId:proof.id,provas:destination?previous.provas.map(item=>item.id===destination?proof:item):[...previous.provas,proof]}));
+    setWorkspaceView('exam');setActiveQuestionIndex(0);setFilterMode('all');setIsKeyDrawerOpen(false);
+    showToast(target?(mode==='exam'?'PDF e disciplinas adicionados à prova.':'Gabarito conferido importado. Corrija a prova para atualizar o resultado.'):(mode==='exam'?'Simulado criado com enunciados e disciplinas.':'Novo simulado criado com o gabarito conferido.'));
+  };
+
   return (
     <div className={`workspace-canvas min-h-screen ${
       theme === 'notebook'
@@ -747,7 +775,7 @@ export default function App() {
       <ParallaxBackground theme={theme} />
 
       <div className="w-full max-w-7xl relative z-10">
-        <AccountBar workspace={workspace} theme={theme} onThemeChange={handleThemeChange} onAI={() => setAiMode('exam')} onMenu={() => setIsMobileSidebarOpen(true)} onHome={() => setWorkspaceView('home')} onBackup={() => { setBackupInitialTab('export'); setIsBackupModalOpen(true); }} />
+        <AccountBar workspace={workspace} theme={theme} onThemeChange={handleThemeChange} onAI={() => openAI('exam',workspaceView==='exam'?simulado?.id || null:null)} onMenu={() => setIsMobileSidebarOpen(true)} onHome={() => setWorkspaceView('home')} onBackup={() => { setBackupInitialTab('export'); setIsBackupModalOpen(true); }} />
         <div className="flex flex-col md:flex-row gap-4 sm:gap-6 items-start justify-center">
         {/* Sidebar with saved exams list */}
         <Sidebar
@@ -908,7 +936,7 @@ export default function App() {
                 onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
                 onOpenLibrary={() => setWorkspaceView('library')}
                 onOpenInsights={() => setWorkspaceView('insights')}
-                onOpenAI={() => setAiMode('exam')}
+                onOpenAI={() => openAI('exam')}
                 onOpenBackupModal={(tab) => {
                   setBackupInitialTab(tab || 'export');
                   setIsBackupModalOpen(true);
@@ -971,7 +999,7 @@ export default function App() {
                 isExportModalOpen={modalState.isOpen}
                 subjectRangeCount={simulado.subjectRanges?.length || 0}
                 onOpenSubjectMapper={() => setMapperProvaId(simulado.id)}
-                onOpenAI={() => setAiMode('key')}
+                onOpenAI={() => openAI('key',simulado.id)}
                 theme={theme}
               />
 
@@ -1132,29 +1160,9 @@ export default function App() {
       </div>
       {/* Export / Import Modal for Individual Exam */}
       <React.Suspense fallback={<div className="fixed inset-0 bg-black/50 z-[100] grid place-items-center text-white" role="status">Abrindo painel…</div>}>
-      {aiMode && isStorageReady && <AIImportModal initialMode={aiMode} simulado={simulado} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onClose={() => setAiMode(null)}
-        onCreate={async (result: AIExtraction, file: File) => {
-          const account = scope;
-          const proof = createNewSimulado(result.title, result.totalQuestions, store.provas.length, result.examType);
-          const original = await uploadOriginalFile(file, proof.id, 'exam');
-          if (currentScope.current !== account) throw new Error('A conta mudou. Abra novamente a importação.');
-          proof.extractedQuestions = result.questions; proof.sourceFileName = file.name; proof.sourceDocuments = [original]; proof.notes = result.warnings.join('\n');
-          setStore(previous => ({ ...previous, activeId: proof.id, provas: [...previous.provas, proof] }));
-          setWorkspaceView('exam'); setActiveQuestionIndex(0); setFilterMode('all'); setIsKeyDrawerOpen(false);
-          showToast('Prova criada com os enunciados conferidos.');
-        }}
-        onKey={async (result, file) => {
-          if (!simulado) throw new Error('Selecione uma prova.');
-          const answers = answersFromExtraction(result, simulado.totalQuestions);
-          const snapshot = await saveSnapshotToIndexedDB(store, 'Antes de importar gabarito por IA', scope);
-          if (!snapshot) throw new Error('Não foi possível preservar o gabarito atual. Exporte um backup antes de importar.');
-          if (currentScope.current !== scope) throw new Error('A conta mudou durante a importação. Abra novamente a prova desejada.');
-          if ((simulado.sourceDocuments || []).length >= 100) throw new Error('Esta prova já possui 100 originais salvos. Crie outro cartão para guardar mais arquivos.');
-          const original = await uploadOriginalFile(file, simulado.id, 'key');
-          if (currentScope.current !== scope) throw new Error('A conta mudou durante o salvamento. Abra novamente a importação.');
-          setStore(previous => ({ ...previous, provas: previous.provas.map(proof => proof.id === simulado.id ? { ...proof, sourceDocuments: [...(proof.sourceDocuments || []), original], keyAnswers: answers, exampleData: { ...proof.exampleData, key: false }, reviewedQuestionIndexes: [], isCorrected: false, isLocked: false, isResultOutdated: false, updatedAt: new Date().toISOString() } : proof) }));
-          setFilterMode('all'); showToast('Gabarito conferido importado. Corrija a prova para atualizar o resultado.');
-        }} />}
+      {aiMode && isStorageReady && <AIImportModal key={scope+':'+(aiTargetId||'new')} initialMode={aiMode} purpose={aiTargetId?'attach':'create'} simulado={aiTargetProof} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onClose={() => {setAiMode(null);setAiTargetId(null);}}
+        onCreate={handleAIReading}
+        onKey={(result,file)=>handleAIReading(result,file,'key')} />}
       {simulado && (
         <ExportImportModal
           isOpen={modalState.isOpen}
@@ -1243,7 +1251,7 @@ export default function App() {
 
       {simulado && workspaceView === 'exam' && isStorageReady && <React.Suspense fallback={null}><FlashcardsReview key={scope + simulado.id} proof={simulado} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onMapSubjects={() => setMapperProvaId(simulado.id)} onSave={deck => {
         if (currentScope.current !== scope || currentProvaId.current !== simulado.id) return;
-        updateActiveSimulado(previous => previous.id === simulado.id && previous.isCorrected && !previous.isResultOutdated && flashcardSourceKey(previous) === deck.sourceKey ? { ...previous, flashcardDeck: deck } : previous);
+        updateActiveSimulado(previous => previous.id === simulado.id ? saveFlashcardReview(previous,deck) : previous);
       }}/></React.Suspense>}
 
       {/* Floating Toast Notification */}

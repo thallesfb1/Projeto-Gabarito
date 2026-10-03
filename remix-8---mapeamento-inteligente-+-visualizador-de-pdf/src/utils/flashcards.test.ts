@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createNewSimulado, sanitizeSimulado } from './provasManager';
-import { compatibleFlashcardDeck, flashcardSources, flashcardSourceKey, sanitizeFlashcardDeck, selectFlashcardSources, validateFlashcardPriority, validateFlashcardRequest, validateFlashcards } from './flashcards';
+import { compatibleFlashcardDeck, flashcardSources, flashcardSourceKey, sanitizeFlashcardDeck, selectFlashcardSources, validateFlashcardPriority, validateFlashcardRequest, validateFlashcards, saveFlashcardReview, savedFlashcardReviews } from './flashcards';
 
 const proof = { ...createNewSimulado('Teste', 4), isCorrected: true, userAnswers: ['A', 'A', null, 'B'] as const, keyAnswers: ['B', 'A', 'C', null] as const, subjectRanges: [{ id: 'math', name: 'Matemática', start: 1, end: 4, color: 'blue' as const }] };
 const mutableProof = () => ({ ...proof, userAnswers: [...proof.userAnswers], keyAnswers: [...proof.keyAnswers] });
@@ -61,6 +61,20 @@ describe('revisão por erros da prova', () => {
     const deck = { sourceKey: flashcardSourceKey(mutableProof()), createdAt: '2026-10-02T10:00:00Z', cards: validateFlashcards([card], [1]), masteredCardIds: ['card-1', 'unknown'] };
     expect(sanitizeSimulado({ ...mutableProof(), flashcardDeck: deck }).flashcardDeck?.masteredCardIds).toEqual(['card-1']);
     expect(sanitizeFlashcardDeck({ ...deck, cards: [{ ...card, back: '' }] })).toBeUndefined();
+  });
+  it('preserva rodadas anteriores após nova geração, edição, reinício e backup',()=>{
+    const base=mutableProof();
+    const old={sourceKey:flashcardSourceKey(base),createdAt:'2026-10-02T10:00:00Z',cards:validateFlashcards([card],[1]),masteredCardIds:['card-1']};
+    const edited={...base,flashcardDeck:old,userAnswers:['C','A',null,'B'] as typeof base.userAnswers};
+    const next={...old,sourceKey:flashcardSourceKey(edited),createdAt:'2026-10-03T10:00:00Z',masteredCardIds:[]};
+    const saved=saveFlashcardReview(edited,next);
+    expect(saved.flashcardDeck).toEqual(next);expect(saved.flashcardHistory).toEqual([old]);
+    const reset={...saved,isCorrected:false,userAnswers:Array(4).fill(null)};
+    const progressed=saveFlashcardReview(reset,{...old,masteredCardIds:[]});
+    expect(progressed.flashcardDeck).toEqual(next);expect(progressed.flashcardHistory?.[0].masteredCardIds).toEqual([]);
+    const backup=sanitizeSimulado(JSON.parse(JSON.stringify(progressed)));
+    expect(savedFlashcardReviews(backup)).toHaveLength(2);expect(backup.flashcardHistory?.[0].cards[0].front).toBe(card.front);
+    expect(saveFlashcardReview(reset,{...next,createdAt:'2026-10-03T11:00:00Z'})).toBe(reset);
   });
   it('exige contexto e explicação nas novas rodadas e preserva campos didáticos no backup', () => {
     expect(() => validateFlashcards([card], [1], true)).toThrow('contexto');

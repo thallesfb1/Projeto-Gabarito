@@ -15,6 +15,13 @@ async function post(body:unknown=payload,extra:Record<string,string>={}) {return
 beforeEach(()=>{vi.clearAllMocks();mocks.getUser.mockResolvedValue({data:{user:{id:'conta1'}},error:null});mocks.generate.mockResolvedValue({text:JSON.stringify(output),candidates:[{finishReason:'STOP'}]});mocks.list.mockResolvedValue([{name:'models/gemini-3.8-flash',displayName:'Flash teste',supportedActions:['generateContent']},{name:'models/gemini-test-image',supportedActions:['generateContent']}]);});
 afterEach(async()=>{if(server){server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));}});
 describe('API de IA segura',()=>{
+  it('solicita disciplinas por cabeçalhos do PDF e preserva a classificação na leitura',async()=>{
+    const questions=[{number:1,statement:'Interprete o trecho.',subject:'Português',options:[],page:1},{number:2,statement:'Calcule a proporção.',subject:'Matemática',options:[],page:2}];
+    mocks.generate.mockResolvedValue({text:JSON.stringify({...output,totalQuestions:2,questions,answers:[]}),candidates:[{finishReason:'STOP'}]});await start();
+    const response=await post({...payload,mode:'exam',mime:'application/pdf',data:Buffer.from('%PDF-1.7').toString('base64')});
+    expect(response.status).toBe(200);expect((await response.json()).extraction.questions.map((item:any)=>item.subject)).toEqual(['Português','Matemática']);
+    expect(mocks.generate.mock.calls[0][0].contents[0].parts[0].text).toContain('cabeçalhos');expect(mocks.generate.mock.calls[0][0].model).toBe('gemini-3.1-flash-lite');
+  });
   it('gera flashcards vinculados somente às questões erradas e ao modelo aprovado',async()=>{
     const card={subject:'Matemática',topic:'Frações',context:'Considere a soma 1/2 + 1/3.',front:'Como somar essas frações?',back:'Use um denominador comum.',explanation:'Reescreva as frações com denominador 6 e some os numeradores.',example:'1/2 + 1/3 = 3/6 + 2/6 = 5/6.',pitfall:'',questionNumbers:[1]};
     mocks.generate.mockResolvedValue({text:JSON.stringify({cards:Array.from({length:10},(_,index)=>({...card,front:`Pergunta sobre frações ${index+1}`}))}),candidates:[{finishReason:'STOP'}]});await start();
