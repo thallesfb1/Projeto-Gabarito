@@ -20,7 +20,8 @@ describe('API de IA segura',()=>{
     mocks.generate.mockResolvedValue({text:JSON.stringify({...output,totalQuestions:2,questions,answers:[]}),candidates:[{finishReason:'STOP'}]});await start();
     const response=await post({...payload,mode:'exam',mime:'application/pdf',data:Buffer.from('%PDF-1.7').toString('base64')});
     expect(response.status).toBe(200);expect((await response.json()).extraction.questions.map((item:any)=>item.subject)).toEqual(['Português','Matemática']);
-    expect(mocks.generate.mock.calls[0][0].contents[0].parts[0].text).toContain('cabeçalhos');expect(mocks.generate.mock.calls[0][0].model).toBe('gemini-3.1-flash-lite');
+    const instructions=mocks.generate.mock.calls[0][0].contents[0].parts[0].text;
+    expect(instructions).toContain('cabeçalhos');expect(instructions).toContain('classifique pelo conteúdo');expect(instructions).toContain('capa ou no cabeçalho');expect(mocks.generate.mock.calls[0][0].model).toBe('gemini-3.1-flash-lite');
   });
   it('gera flashcards vinculados somente às questões erradas e ao modelo aprovado',async()=>{
     const card={subject:'Matemática',topic:'Frações',context:'Considere a soma 1/2 + 1/3.',front:'Como somar essas frações?',back:'Use um denominador comum.',explanation:'Reescreva as frações com denominador 6 e some os numeradores.',example:'1/2 + 1/3 = 3/6 + 2/6 = 5/6.',pitfall:'',questionNumbers:[1]};

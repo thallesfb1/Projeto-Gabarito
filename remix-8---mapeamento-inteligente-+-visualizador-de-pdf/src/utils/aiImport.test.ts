@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { applyAIReading } from './aiImport';
+import { applyAIReading,sameAIImportTarget } from './aiImport';
 import { subjectRangesFromQuestions } from './aiExtraction';
 import { createNewSimulado } from './provasManager';
 import type { AIExtraction } from './aiExtraction';
@@ -8,6 +8,10 @@ const key:AIExtraction={title:'Gabarito novo',examType:'multiple_choice',totalQu
 const existing={...createNewSimulado('Prova antiga',4),isCorrected:true,isLocked:true,userAnswers:['A','B','C','D'] as any,keyAnswers:['A','B','C','D'] as any};
 const exam:AIExtraction={...key,title:'PDF',answers:[],questions:[1,2,3,4].map(number=>({number,statement:`Questão ${number}`,subject:number<=2?'Português':'Matemática',options:[]}))};
 describe('destino e disciplinas da importação',()=>{
+  it('permite o cronômetro avançar durante um upload, mas impede aplicar em respostas alteradas ou numa prova excluída',()=>{
+    expect(sameAIImportTarget(existing,{...existing,timeSpentSeconds:12,updatedAt:'2026-10-03T12:00:00Z'})).toBe(true);
+    expect(sameAIImportTarget(existing,{...existing,userAnswers:['B','B','C','D']})).toBe(false);expect(sameAIImportTarget(existing,undefined)).toBe(false);
+  });
   it('cria um novo simulado a partir de um gabarito sem reutilizar prova existente',()=>{
     const proof=applyAIReading(key,'key',null);
     expect(proof.id).not.toBe(existing.id);expect(proof.userAnswers).toEqual([null,null,null,null]);expect(proof.keyAnswers).toEqual(['C',null,null,'D']);expect(proof.isCorrected).toBe(false);
@@ -16,7 +20,7 @@ describe('destino e disciplinas da importação',()=>{
   it('adiciona PDF e mapa de disciplinas à prova, preservando respostas, gabarito e cartões',()=>{
     const saved={sourceKey:'old',createdAt:'2026-10-03T00:00:00Z',cards:[],masteredCardIds:[]};
     const proof=applyAIReading(exam,'exam',{...existing,flashcardDeck:saved});
-    expect(proof.id).toBe(existing.id);expect(proof.title).toBe('Prova antiga');expect(proof.userAnswers).toEqual(existing.userAnswers);expect(proof.keyAnswers).toEqual(existing.keyAnswers);expect(proof.flashcardDeck).toBe(saved);
+    expect(proof.id).toBe(existing.id);expect(proof.title).toBe('PDF');expect(proof.userAnswers).toEqual(existing.userAnswers);expect(proof.keyAnswers).toEqual(existing.keyAnswers);expect(proof.flashcardDeck).toBe(saved);
     expect(proof.subjectRanges).toMatchObject([{name:'Português',start:1,end:2},{name:'Matemática',start:3,end:4}]);
     expect(existing.subjectRanges).toEqual([]);
   });

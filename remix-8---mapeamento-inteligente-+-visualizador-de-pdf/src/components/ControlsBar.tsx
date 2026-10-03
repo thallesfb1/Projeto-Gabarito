@@ -178,7 +178,8 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
           <button
             type="button"
             onClick={onToggleShortcutsHint}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border ${
+            aria-label="Atalhos de teclado"
+            className={`keyboard-only inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border ${
               showShortcutsHint
                 ? isDark
                   ? 'theme-solid text-zinc-900 border-zinc-200 shadow-2xs font-semibold'
@@ -396,7 +397,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
 
       {/* Dismissible Keyboard Navigation Hint Box */}
       {showShortcutsHint && (
-        <div className={`p-3 rounded-xl text-xs flex items-start justify-between gap-3 animate-fadeIn border ${
+        <div className={`keyboard-only p-3 rounded-xl text-xs flex items-start justify-between gap-3 animate-fadeIn border ${
           isDark
             ? 'bg-[#18191d] border-[#3b3e48] text-zinc-300'
             : 'bg-slate-50 border-slate-200 text-slate-700'

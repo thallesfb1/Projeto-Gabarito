@@ -17,14 +17,13 @@ import {
   ExternalLink,
   Home,
   BookMarked,
-  Sun,
-  BookOpen,
   XCircle,
   AlertCircle,
-  Moon,
   LibraryBig,
   BarChart3,
+  GripVertical,
 } from 'lucide-react';
+import {useProofReorder} from '../hooks/useProofReorder';
 import { SimuladoData, AppTheme } from '../types';
 import { computeSimuladoStats, getPerformanceInfo } from '../utils/parser';
 
@@ -37,13 +36,13 @@ interface SidebarProps {
   isLibraryActive?: boolean;
   isInsightsActive?: boolean;
   theme?: AppTheme;
-  onThemeChange?: (theme: AppTheme) => void;
   onToggleOpen: () => void;
   onCloseMobile: () => void;
   onGoHome?: () => void;
   onOpenLibrary?: () => void;
   onOpenInsights?: () => void;
   onSelectProva: (id: string) => void;
+  onReorderProva?: (id:string,targetId:string)=>void;
   onOpenNewProvaModal: () => void;
   onOpenRenameModal: (prova: SimuladoData) => void;
   onDuplicateProva: (prova: SimuladoData) => void;
@@ -61,13 +60,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isLibraryActive = false,
   isInsightsActive = false,
   theme = 'clean',
-  onThemeChange,
   onToggleOpen,
   onCloseMobile,
   onGoHome,
   onOpenLibrary,
   onOpenInsights,
   onSelectProva,
+  onReorderProva,
   onOpenNewProvaModal,
   onOpenRenameModal,
   onDuplicateProva,
@@ -78,6 +77,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isNotebook = theme === 'notebook';
   const isDark = theme === 'dark';
   const [searchTerm, setSearchTerm] = useState('');
+  const reorderEnabled=provas.length>1 && !searchTerm.trim();
+  const reorder=useProofReorder(onReorderProva,reorderEnabled && (isOpen || isMobileOpen));
 
   const filteredProvas = provas.filter(p =>
     p.title.toLowerCase().includes(searchTerm.toLowerCase().trim())
@@ -114,7 +115,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div
         key={prova.id}
         id={`sidebar-item-${prova.id}`}
+        data-proof-id={prova.id}
+        data-dragging={reorder.drag?.id===prova.id || undefined}
+        data-drop-target={reorder.drag?.target===prova.id && reorder.drag.id!==prova.id || undefined}
+        onPointerDown={event=>reorder.pointerDown(event,prova.id)}
+        onTouchStart={event=>reorder.touchStart(event,prova.id)}
         onClick={() => {
+          if(reorder.consumeClick())return;
           onSelectProva(prova.id);
           onCloseMobile();
         }}
@@ -135,6 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="w-full">
           {/* Title & Active badge */}
           <div className="flex items-start justify-between gap-1.5 mb-1.5">
+            {onReorderProva && reorderEnabled && <button type="button" data-reorder-handle className="proof-reorder-handle" aria-label={`Mover ${prova.title}`} title="Arraste para reorganizar. No celular, segure. Use ↑ ou ↓ com o botão focado." onClick={event=>{event.stopPropagation();event.preventDefault();}} onKeyDown={event=>{if(event.key!=='ArrowUp'&&event.key!=='ArrowDown')return;event.preventDefault();event.stopPropagation();const index=provas.findIndex(item=>item.id===prova.id),next=provas[index+(event.key==='ArrowUp'?-1:1)];if(next)onReorderProva(prova.id,next.id);}}><GripVertical size={16}/></button>}
             <h4
               className={`text-xs sm:text-sm font-semibold tracking-tight line-clamp-1 ${
                 isActive
@@ -485,7 +493,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Provas List with dedicated vertical scrollbar */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 overscroll-contain">
+      <div className="proof-list flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 overscroll-contain">
+        {onReorderProva && provas.length>1 && <p className="proof-order-hint">{searchTerm.trim()?'Limpe a busca para reorganizar.':'Arraste para ordenar · no celular, segure'}</p>}
+        <span role="status" className="sr-only">{reorder.drag?'Movendo prova. Solte na posição desejada.':''}</span>
         {provas.length === 0 ? (
           /* Acolhedor Estado Vazio Conforme Requisito 9 */
           <div className="py-8 px-4 text-center text-xs font-mono-code text-[#5b6478] dark:text-zinc-400 flex flex-col items-center justify-center space-y-2.5 my-auto">
@@ -531,73 +541,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className={`shrink-0 p-3 border-t space-y-2.5 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.04)] ${
         isNotebook ? 'border-[#ded7c6] bg-[#f5f0e3]' : isDark ? 'border-[#3b3e48] bg-[#18191d]' : 'border-slate-200 bg-slate-50'
       }`}>
-        {/* Theme Toggle within Sidebar (Clean, Caderno, Escuro) */}
-        {onThemeChange && (
-          <div className="space-y-1">
-            <span className={`text-[10px] font-mono-code font-bold uppercase tracking-wider block px-0.5 ${
-              isDark ? 'text-zinc-400' : 'text-slate-500'
-            }`}>
-              Tema Visual
-            </span>
-            <div className={`grid grid-cols-3 p-0.5 rounded-lg border text-xs shadow-2xs ${
-              isNotebook
-                ? 'bg-[#ede7d8] border-[#ded7c6]'
-                : isDark
-                ? 'bg-[#22242a] border-[#3b3e48]'
-                : 'bg-slate-200/70 border-slate-300/80'
-            }`}>
-              <button
-                id="sidebar-theme-clean"
-                type="button"
-                onClick={() => onThemeChange('clean')}
-                className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-md transition-all cursor-pointer font-medium ${
-                  theme === 'clean'
-                    ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                    : isDark
-                    ? 'text-zinc-400 hover:text-zinc-200'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Tema Clean: visual limpo e contemporâneo"
-              >
-                <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="truncate">Clean</span>
-              </button>
-              <button
-                id="sidebar-theme-notebook"
-                type="button"
-                onClick={() => onThemeChange('notebook')}
-                className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-md transition-all cursor-pointer font-medium ${
-                  theme === 'notebook'
-                    ? 'bg-[#fdfbf7] text-amber-950 shadow-2xs font-bold border border-amber-300/70'
-                    : isDark
-                    ? 'text-zinc-400 hover:text-zinc-200'
-                    : 'text-[#5d6778] hover:text-[#1c2b45]'
-                }`}
-                title="Tema Caderno: linhas de caderno no fundo e tons pastéis confortáveis"
-              >
-                <BookOpen className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                <span className="truncate">Caderno</span>
-              </button>
-              <button
-                id="sidebar-theme-dark"
-                type="button"
-                onClick={() => onThemeChange('dark')}
-                className={`flex items-center justify-center gap-1 py-1.5 px-1 rounded-md transition-all cursor-pointer font-medium ${
-                  theme === 'dark'
-                    ? 'bg-[#2a2c34] text-zinc-100 shadow-2xs font-bold border border-[#4b4f5c]'
-                    : isDark
-                    ? 'text-zinc-400 hover:text-zinc-200'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Tema Escuro: tons de grafite e cinza suave"
-              >
-                <Moon className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
-                <span className="truncate">Escuro</span>
-              </button>
-            </div>
-          </div>
-        )}
-
         <button
           id="btn-sidebar-backup"
           type="button"

@@ -84,7 +84,7 @@ Veja [docs/validacao.md](docs/validacao.md) para os fluxos verificados e os limi
 
 ## Leitura com IA: PDF e gabarito em imagem
 
-Na página inicial, “Importar com IA” sempre cria um novo simulado, tanto para PDF de prova quanto para imagem ou PDF de gabarito, preservando os cartões existentes. Dentro de uma prova, a importação fica vinculada àquele cartão: o PDF adiciona enunciados e disciplinas, preservando respostas e gabarito; a leitura do gabarito atualiza as respostas oficiais e exige nova correção. A prévia informa o destino e permite conferir a leitura antes de aplicar. A Central de Gabarito aparece somente dentro da prova.
+Na página inicial, “Importar com IA” sempre cria um novo simulado, tanto para PDF de prova quanto para imagem ou PDF de gabarito, preservando os cartões existentes. Dentro de uma prova, a importação fica vinculada àquele cartão: o PDF atualiza o nome identificado na capa/cabeçalho e adiciona enunciados e disciplinas, preservando respostas e gabarito; a leitura do gabarito atualiza as respostas oficiais e exige nova correção. O nome continua editável na prévia antes de aplicar. A Central de Gabarito aparece somente dentro da prova.
 
 A IA identifica as disciplinas pelos cabeçalhos e seções do PDF e monta intervalos contíguos de questões. Sem cabeçalhos, pode inferir a disciplina pelo enunciado e registrar um aviso; questões incertas ficam sem disciplina. Confira e edite os nomes na prévia; depois, os intervalos continuam editáveis no mapa da prova. Arraste o arquivo para a área de seleção ou escolha-o no dispositivo. O envio ocorre ao solicitar a leitura. Para gabaritos com várias versões, informe a cor ou o tipo do caderno. O importador não resolve as questões nem deve inventar alternativas ilegíveis.
 
@@ -99,6 +99,12 @@ No dashboard do projeto Supabase, abra **SQL Editor → New query**, copie todo 
 As políticas permitem somente ao dono da pasta ler, inserir e excluir os arquivos; não há links públicos. Em cada prova, **Arquivos originais da prova → Ver original** abre o PDF ou a imagem com download autenticado. O limite é 10 MB por arquivo e 100 originais por prova. Cancelar uma prévia não salva o arquivo. Originais confirmados são preservados mesmo se uma prova for excluída, para que backups anteriores ainda possam referenciá-los; podem ser removidos pelo administrador no Storage. Os backups JSON incluem referências, não cópias dos arquivos: a consulta dos originais exige a mesma conta, o mesmo projeto Supabase e os arquivos ainda presentes no bucket. Trocar de conta durante o salvamento impede aplicar a leitura na outra conta.
 
 O cabeçalho mostra a foto Google (ou iniciais quando indisponível). **Meu perfil** reúne troca de tema, sincronização, exportação de backup e saída da conta. Os três temas possuem luz ambiente e elementos de parallax; o movimento é desativado em telas pequenas e para quem prefere movimento reduzido.
+
+O perfil também reúne **Importar provas deste dispositivo**, para recuperar cartões criados antes do login. A faixa de importação/exportação abaixo do cabeçalho foi removida, assim como o seletor de tema da lateral. Backups continuam disponíveis no perfil e na área de backup. Os atalhos e o painel de preenchimento por teclado ficam ocultos em telas menores que 768 px e em dispositivos com ponteiro de toque, inclusive na versão instalada no celular.
+
+Na primeira interação com uma questão de cada cartão, um convite animado oferece iniciar o cronômetro, mesmo sem PDF. **Sim, iniciar** começa a contagem; **Agora não**, X ou Escape dispensam o convite, que não reaparece naquele cartão. O relógio do cabeçalho permite iniciar ou pausar manualmente. **Corrigir Simulado** para a contagem imediatamente; reiniciar a prova também para e zera o tempo. Trocar de cartão ou conta pausa a contagem. O tempo acumulado é salvo; recarregar a página mantém esse valor e deixa o relógio pausado.
+
+Para organizar a lateral, arraste o cartão ou sua alça no computador; no celular, segure por cerca de meio segundo e mova. O destino recebe destaque e a lista rola ao alcançar suas bordas. Um toque normal abre a prova e deslizar antes de segurar mantém a rolagem. Com a alça focada, ↑/↓ também movem o cartão. A ordem permanece no backup e nos dados sincronizados da conta; a busca precisa estar limpa para reorganizar.
 
 ### Consultar questões e revisar com flashcards
 

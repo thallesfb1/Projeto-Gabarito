@@ -75,6 +75,8 @@ export interface SimuladoData {
   flaggedQuestions: number[]; // índices marcados como dúvida/revisão
   isCorrected: boolean;
   timeSpentSeconds: number;
+  timerPrompted?: boolean;
+  sortOrder?: number;
   notes?: string;
   isLocked?: boolean;
   isResultOutdated?: boolean;

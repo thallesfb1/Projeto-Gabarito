@@ -30,8 +30,11 @@ import { useWorkspace } from './hooks/useWorkspace';
 import { AccountBar } from './components/AccountBar';
 import { ExamReader } from './components/ExamReader';
 import { AIExtraction, ExtractionMode } from './utils/aiExtraction';
-import { applyAIReading } from './utils/aiImport';
+import { applyAIReading,sameAIImportTarget } from './utils/aiImport';
 import { saveFlashcardReview } from './utils/flashcards';
+import {useExamTimer} from './hooks/useExamTimer';
+import {TimerStartModal} from './components/TimerStartModal';
+import {moveProof,orderedProofs} from './utils/proofOrder';
 import { FolderKanban, MessageSquare, ExternalLink, Bookmark, Sun, BookOpen, Moon } from 'lucide-react';
 
 const ExamLibrary = React.lazy(() => import('./components/ExamLibrary').then(module => ({ default: module.ExamLibrary })));
@@ -102,6 +105,7 @@ export default function App() {
   const aiTargetProof = aiTargetId ? store.provas.find(proof=>proof.id===aiTargetId) || null : null;
   const openAI = (mode: ExtractionMode, targetId: string | null = null) => {setAiTargetId(targetId);setAiMode(mode);};
   const [readerQuestionIndex, setReaderQuestionIndex] = useState<number | null>(null);
+  const pendingReader=useRef<number|null>(null);
 
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number | null>(0);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
@@ -159,6 +163,12 @@ export default function App() {
     });
   }, []);
 
+  const timer=useExamTimer(simulado,scope,updateActiveSimulado);
+  const handleQuestionFocus=(index:number|null)=>{setActiveQuestionIndex(index);if(index!==null)timer.requestStart();};
+  const handleQuestionOpen=(index:number)=>{if(timer.requestStart())pendingReader.current=index;else setReaderQuestionIndex(index);};
+  const decideTimer=(start:boolean)=>{timer.decide(start);if(pendingReader.current!==null){setReaderQuestionIndex(pendingReader.current);pendingReader.current=null;}};
+  useEffect(()=>{pendingReader.current=null;},[scope,simulado?.id,workspaceView]);
+
   // Keyboard navigation & quick answers for active exam
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -166,7 +176,7 @@ export default function App() {
 
       // If user is in an input or textarea or any modal is open, ignore global shortcuts
       if (
-        modalState.isOpen || aiMode !== null || readerQuestionIndex !== null ||
+        modalState.isOpen || aiMode !== null || readerQuestionIndex !== null || timer.promptOpen ||
         isNewProvaModalOpen ||
         renameModalProva !== null ||
         isBackupModalOpen ||
@@ -200,6 +210,7 @@ export default function App() {
 
         const currentIdx = activeQuestionIndex ?? 0;
         const letter = matchedAnswer;
+        timer.requestStart();
 
         updateActiveSimulado(prev => {
           const nextAnswers = [...prev.userAnswers];
@@ -282,6 +293,7 @@ export default function App() {
     renameModalProva,
     isBackupModalOpen,
     confirmDialog,
+    timer.promptOpen, timer.requestStart,
     updateActiveSimulado,
   ]);
 
@@ -291,6 +303,7 @@ export default function App() {
       if (simulado && simulado.isCorrected && simulado.isLocked) return;
 
       setActiveQuestionIndex(questionIdx);
+      timer.requestStart();
       updateActiveSimulado(prev => {
         const next = [...prev.userAnswers];
         next[questionIdx] = next[questionIdx] === letter ? null : letter;
@@ -305,7 +318,7 @@ export default function App() {
         };
       });
     },
-    [simulado, updateActiveSimulado]
+    [simulado, updateActiveSimulado, timer.requestStart]
   );
 
   // Flag toggle
@@ -626,6 +639,7 @@ export default function App() {
         if (!snapshot) { showToast('Exporte um backup: não foi possível preservar a prova.'); return; }
         if (currentScope.current !== scope || currentProvaId.current !== simulado.id) return;
         const resetTotal = simulado.totalQuestions || 70;
+        timer.stop();
         updateActiveSimulado(prev => ({
           ...prev,
           userAnswers: new Array(resetTotal).fill(null),
@@ -648,6 +662,7 @@ export default function App() {
 
   // Run correction
   const handleRunCorrection = () => {
+    timer.stop();
     if (!simulado) return;
     const keyHasAnswers = simulado.keyAnswers.some(a => a !== null);
     if (!keyHasAnswers) {
@@ -755,11 +770,11 @@ export default function App() {
     if(currentScope.current!==account) throw new Error('A conta mudou. Abra novamente a importação.');
     const original=await uploadOriginalFile(file,proof.id,mode);
     if(currentScope.current!==account) throw new Error('A conta mudou durante o salvamento. Abra novamente a importação.');
-    if(target && currentStore.current.provas.find(item=>item.id===destination)?.updatedAt!==target.updatedAt) throw new Error('A prova mudou durante a leitura. Confira a versão atual e importe novamente.');
+    if(target && !sameAIImportTarget(target,currentStore.current.provas.find(item=>item.id===destination))) throw new Error('A prova mudou durante a leitura. Confira a versão atual e importe novamente.');
     proof.sourceDocuments=[...(target?.sourceDocuments || []),original];
     if(mode==='exam') proof.sourceFileName=file.name;
     proof.updatedAt=new Date().toISOString();
-    setStore(previous=>({...previous,activeId:proof.id,provas:destination?previous.provas.map(item=>item.id===destination?proof:item):[...previous.provas,proof]}));
+    setStore(previous=>({...previous,activeId:proof.id,provas:destination?previous.provas.map(item=>item.id===destination?{...proof,timeSpentSeconds:item.timeSpentSeconds}:item):[...previous.provas,proof]}));
     setWorkspaceView('exam');setActiveQuestionIndex(0);setFilterMode('all');setIsKeyDrawerOpen(false);
     showToast(target?(mode==='exam'?'PDF e disciplinas adicionados à prova.':'Gabarito conferido importado. Corrija a prova para atualizar o resultado.'):(mode==='exam'?'Simulado criado com enunciados e disciplinas.':'Novo simulado criado com o gabarito conferido.'));
   };
@@ -779,7 +794,7 @@ export default function App() {
         <div className="flex flex-col md:flex-row gap-4 sm:gap-6 items-start justify-center">
         {/* Sidebar with saved exams list */}
         <Sidebar
-          provas={store.provas}
+          provas={orderedProofs(store.provas)}
           activeId={store.activeId}
           isOpen={isSidebarOpen}
           isMobileOpen={isMobileSidebarOpen}
@@ -787,13 +802,13 @@ export default function App() {
           isLibraryActive={workspaceView === 'library'}
           isInsightsActive={workspaceView === 'insights'}
           theme={theme}
-          onThemeChange={handleThemeChange}
           onToggleOpen={() => setIsSidebarOpen(prev => !prev)}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
           onGoHome={() => setWorkspaceView('home')}
           onOpenLibrary={() => setWorkspaceView('library')}
           onOpenInsights={() => setWorkspaceView('insights')}
           onSelectProva={handleSelectProva}
+          onReorderProva={(id,targetId)=>setStore(previous=>({...previous,provas:moveProof(previous.provas,id,targetId)}))}
           onOpenNewProvaModal={() => setIsNewProvaModalOpen(true)}
           onOpenRenameModal={p => setRenameModalProva(p)}
           onDuplicateProva={handleDuplicateProva}
@@ -959,6 +974,9 @@ export default function App() {
                 date={simulado.date}
                 onDateChange={newDate => updateActiveSimulado(prev => ({ ...prev, date: newDate }))}
                 timeSeconds={simulado.timeSpentSeconds}
+                isTimerRunning={timer.running}
+                onToggleTimer={timer.toggle}
+                timerDisabled={simulado.isCorrected}
                 onTimeChange={newTime =>
                   updateActiveSimulado(prev => ({
                     ...prev,
@@ -1083,8 +1101,8 @@ export default function App() {
                   isLocked={Boolean(simulado.isCorrected && simulado.isLocked)}
                   filterMode={filterMode}
                   activeQuestionIndex={activeQuestionIndex}
-                  onSetActiveQuestion={setActiveQuestionIndex}
-                  onOpenQuestion={simulado.extractedQuestions?.length ? setReaderQuestionIndex : undefined}
+                  onSetActiveQuestion={handleQuestionFocus}
+                  onOpenQuestion={simulado.extractedQuestions?.length ? handleQuestionOpen : undefined}
                   onSelectAnswer={handleSelectAnswer}
                   onToggleFlag={handleToggleFlag}
                   onResetFilter={setFilterMode}
@@ -1158,6 +1176,7 @@ export default function App() {
       </div>
 
       </div>
+      {timer.promptOpen && <TimerStartModal onDecide={decideTimer}/>}
       {/* Export / Import Modal for Individual Exam */}
       <React.Suspense fallback={<div className="fixed inset-0 bg-black/50 z-[100] grid place-items-center text-white" role="status">Abrindo painel…</div>}>
       {aiMode && isStorageReady && <AIImportModal key={scope+':'+(aiTargetId||'new')} initialMode={aiMode} purpose={aiTargetId?'attach':'create'} simulado={aiTargetProof} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onClose={() => {setAiMode(null);setAiTargetId(null);}}

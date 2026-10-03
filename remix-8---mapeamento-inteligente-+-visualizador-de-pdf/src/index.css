@@ -567,3 +567,20 @@ html[data-theme="dark"] { --ambient-main: #28775a38; --ambient-second: #53634226
 .flashcards-saved-round label { display: block; font-size: 11px; margin-top: 12px; }
 .flashcards-saved-round select { width: 100%; display: block; padding: 9px; border: 1px solid var(--border-surface); border-radius: 9px; margin-top: 5px; min-height: 44px; }
 .flashcards-saved-round .secondary-action { margin-top: 12px; width: 100%; justify-content: center; }
+
+.timer-prompt-overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; background: #10221c55; backdrop-filter: blur(5px); }
+.timer-prompt { position: relative; width: 100%; max-width: 430px; max-height: calc(100dvh - 40px); overflow-y: auto; padding: 30px; border: 1px solid var(--border-surface); border-radius: 24px; background: var(--bg-surface-primary); color: var(--text-surface-title); box-shadow: 0 24px 80px #0003; }
+.timer-prompt-close { position: absolute; right: 14px; top: 14px; }
+.timer-prompt-emblem { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 17px; color: var(--brand); background: var(--brand-soft); margin-bottom: 20px; }
+.timer-prompt h2 { font-size: 23px; font-weight: 700; line-height: 1.25; }
+.timer-prompt p { margin: 12px 0 22px; font-size: 14px; line-height: 1.7; color: var(--text-surface-muted); }
+.timer-prompt-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.timer-prompt-actions button { flex: 1; justify-content: center; min-height: 44px; }
+.timer-prompt small { display: block; margin-top: 16px; font-size: 11px; line-height: 1.5; color: var(--text-surface-muted); }
+.proof-reorder-handle { display: grid; place-items: center; min-width: 28px; min-height: 28px; flex-shrink: 0; color: var(--text-surface-muted); border-radius: 6px; cursor: grab; touch-action: none; }
+.proof-reorder-handle:hover, .proof-reorder-handle:focus-visible { background: var(--brand-soft); color: var(--brand); }
+.proof-order-hint { font-size: 10px; color: var(--text-surface-muted); padding: 0 2px 4px; line-height: 1.6; }
+.proof-list [data-dragging] { opacity: .6; cursor: grabbing; }
+.proof-list [data-drop-target] { outline: 2px dashed var(--brand); outline-offset: 2px; background: var(--brand-soft); }
+@media (max-width: 767px), (pointer: coarse) { .keyboard-only { display: none !important; } .proof-reorder-handle { min-width: 36px; min-height: 36px; } }
+@media (max-width: 479px) { .timer-prompt { padding: 26px 22px; } }

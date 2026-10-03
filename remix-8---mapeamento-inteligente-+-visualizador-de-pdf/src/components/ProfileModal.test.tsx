@@ -9,6 +9,12 @@ afterEach(cleanup);
 const user = { id: 'user', app_metadata: {}, aud: 'authenticated', created_at: '2026-10-02', email: 'estudante@example.com', user_metadata: { full_name: 'Maria Silva', avatar_url: 'https://lh3.googleusercontent.com/avatar' } } as User;
 function props() { return { user, theme: 'notebook' as const, onThemeChange: vi.fn(), onClose: vi.fn(), onSignOut: vi.fn().mockResolvedValue(undefined), onSync: vi.fn().mockResolvedValue(undefined), onBackup: vi.fn(), count: 3, syncStatus: 'synced' }; }
 describe('perfil da conta', () => {
+  it('importa provas locais pelo perfil e mantém uma falha visível sem indicar sucesso',async()=>{
+    const onImportGuest=vi.fn().mockRejectedValueOnce(new Error('Não há provas locais')).mockResolvedValueOnce(undefined);
+    render(<ProfileModal {...props()} onImportGuest={onImportGuest}/>);
+    fireEvent.click(screen.getByRole('button',{name:/Importar provas deste dispositivo/}));expect((await screen.findByRole('alert')).textContent).toBe('Não há provas locais');
+    fireEvent.click(screen.getByRole('button',{name:/Importar provas deste dispositivo/}));await screen.findByRole('button',{name:/Provas locais importadas/});expect(onImportGuest).toHaveBeenCalledTimes(2);
+  });
   it('mostra a foto Google, seleciona o tema e aciona sincronização e backup', async () => {
     const callbacks = props(); render(<ProfileModal {...callbacks}/>);
     expect(screen.getByAltText('Foto de Maria Silva').getAttribute('src')).toBe(user.user_metadata.avatar_url);

@@ -1,6 +1,7 @@
 import { MultiSimuladoStore, SimuladoData } from '../types';
 import { sanitizeSimulado } from './provasManager';
 import { SupabaseClient } from '@supabase/supabase-js';
+import {orderedProofs} from './proofOrder';
 
 export interface CloudRecord { id: string; user_id: string; title: string; data: SimuladoData; updated_at: string }
 export type CloudBaseline = Record<string, CloudRecord>;
@@ -44,7 +45,7 @@ export function reconcileCloud(local: MultiSimuladoStore, previous: CloudBaselin
     const before = previous[id];
     if (!before || fingerprint(prova) !== fingerprint(proofFromRow(before))) result.push(prova);
   }
-  return { version: 3, activeId: result.some(prova => prova.id === local.activeId) ? local.activeId : result[0]?.id || '', provas: result };
+  return { version: 3, activeId: result.some(prova => prova.id === local.activeId) ? local.activeId : result[0]?.id || '', provas: orderedProofs(result) };
 }
 
 export async function readCloud(client: SupabaseClient, userId: string): Promise<CloudBaseline> {

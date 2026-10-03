@@ -150,6 +150,8 @@ export function sanitizeSimulado(item: any, fallbackIndex: number = 1): Simulado
     isLocked,
     isResultOutdated,
     timeSpentSeconds: typeof item?.timeSpentSeconds === 'number' && Number.isFinite(item.timeSpentSeconds) ? Math.max(0, Math.floor(item.timeSpentSeconds)) : 0,
+    ...('timerPrompted' in safeItem ? {timerPrompted:item.timerPrompted===true} : {}),
+    ...('sortOrder' in safeItem ? {sortOrder:typeof item.sortOrder==='number' && Number.isFinite(item.sortOrder) && item.sortOrder>=0?item.sortOrder:undefined} : {}),
     notes: typeof item?.notes === 'string' ? item.notes : '',
     examType: item?.examType === 'true_false' ? 'true_false' : 'multiple_choice',
     subjectRanges,

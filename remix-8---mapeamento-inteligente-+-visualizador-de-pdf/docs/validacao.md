@@ -63,3 +63,13 @@ A prévia de IA foi conferida nos temas Clean, Caderno e Escuro e em 390 × 844,
 - No navegador, a página inicial foi conferida sem a Central de Gabarito e a prévia mostrou o destino “Novo simulado”. Uma demonstração isolada com duas rodadas confirmou revisão após reinício, seleção da rodada anterior e opção de nova geração após corrigir novamente. Em 390 × 844 não houve largura excedente e o botão de revelar continuou acessível; a apresentação também foi conferida em 1280 × 900. Nenhuma prova real foi editada nessa verificação.
 
 TypeScript, 136 testes em 20 arquivos e builds web/offline passaram nesta revisão.
+
+## Cronômetro, identificação da prova e organização da biblioteca
+
+- Testes da aplicação confirmam o convite na primeira interação sem PDF, início opcional, recusa pelo X sem repetição ao reabrir e interrupção ao corrigir. Atalhos de respostas não alteram o cartão enquanto o convite está aberto. Quando há enunciado extraído, o leitor abre após a decisão, sem sobrepor dois modais.
+- A confirmação do PDF atualiza o nome da prova aberta e preserva respostas e gabarito. A prévia permite editar o nome identificado. O prompt pede identificação pela capa/cabeçalho e classificação das disciplinas pelo conteúdo quando não houver títulos explícitos. Esses testes usam a API simulada; não houve nova verificação de precisão com uma prova real nesta revisão.
+- Testes de reordenação cobrem arraste com mouse, toque mantido por 450 ms, cancelamento para permitir rolagem normal e alternativa por setas do teclado. A posição é preservada pelo backup JSON e pela reconciliação dos dados da conta, sem alterar respostas. A validação de sincronização usa serviços simulados.
+- No navegador, uma demonstração isolada confirmou arraste no computador, convite com X e sim/não, parada ao corrigir e ações de importação/backup no perfil. Em 390 × 844, os atalhos de teclado ficaram ocultos e não houve transbordamento horizontal. Nenhuma prova real foi editada nessa demonstração. O gesto de segurar no celular foi validado nos testes automatizados, sem teste em aparelho físico.
+- A faixa abaixo do cabeçalho e o seletor duplicado de tema na lista foram removidos. As informações da conta e a importação de provas locais ficam no perfil; backup continua disponível como recurso secundário.
+
+Verificação: 146 testes em 22 arquivos passaram. Após os últimos ajustes, os 10 testes de aplicação/perfil foram executados novamente e passaram. TypeScript e builds web/offline também passaram.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Play,
   Pause,
@@ -25,6 +25,9 @@ interface HeaderProps {
   onDateChange: (newDate: string) => void;
   timeSeconds: number;
   onTimeChange: (seconds: number | ((prev: number) => number)) => void;
+  isTimerRunning: boolean;
+  onToggleTimer: () => void;
+  timerDisabled?: boolean;
   theme?: AppTheme;
   onThemeChange?: (theme: AppTheme) => void;
   onToggleSidebar?: () => void;
@@ -40,6 +43,9 @@ export const Header: React.FC<HeaderProps> = ({
   onDateChange,
   timeSeconds,
   onTimeChange,
+  isTimerRunning,
+  onToggleTimer,
+  timerDisabled=false,
   theme = 'clean',
   onThemeChange,
   onToggleSidebar,
@@ -48,9 +54,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(title);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const updateTime = useRef(onTimeChange);
-  updateTime.current = onTimeChange;
 
   const isNotebook = theme === 'notebook';
   const isDark = theme === 'dark';
@@ -58,18 +61,6 @@ export const Header: React.FC<HeaderProps> = ({
   useEffect(() => {
     setTempTitle(title);
   }, [title]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isTimerRunning) {
-      interval = setInterval(() => {
-        updateTime.current(prev => prev + 1);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isTimerRunning]);
 
   const formatTimer = (totalSec: number) => {
     const hrs = Math.floor(totalSec / 3600);
@@ -211,7 +202,9 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-semibold tracking-wider">{formatTimer(timeSeconds)}</span>
             <button
               type="button"
-              onClick={() => setIsTimerRunning(!isTimerRunning)}
+              onClick={onToggleTimer}
+              disabled={timerDisabled}
+              aria-label={isTimerRunning ? 'Pausar cronômetro' : 'Iniciar cronômetro'}
               className={`p-1 rounded transition cursor-pointer ${
                 isNotebook
                   ? 'hover:bg-white/10 text-amber-100 hover:text-white'

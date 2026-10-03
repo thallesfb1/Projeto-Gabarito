@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import {cleanup,fireEvent,render,screen,waitFor,configure} from '@testing-library/react';
+import {act,cleanup,fireEvent,render,screen,waitFor,configure} from '@testing-library/react';
 import type {MultiSimuladoStore} from './types';
 const mocks=vi.hoisted(()=>({initial:null as MultiSimuladoStore|null,store:null as MultiSimuladoStore|null,extract:vi.fn(),upload:vi.fn(),snapshot:vi.fn()}));
 vi.mock('./hooks/useWorkspace',()=>({useWorkspace:()=>{
@@ -25,7 +25,7 @@ beforeEach(()=>{
   vi.stubGlobal('ResizeObserver',class {observe(){}unobserve(){}disconnect(){}});
   HTMLElement.prototype.scrollIntoView=vi.fn();
 });
-afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals();});
 async function readKey(){
   fireEvent.click(await screen.findByRole('button',{name:'Ler gabarito em imagem'}));
   fireEvent.change(screen.getByLabelText('Selecione a imagem ou o PDF do gabarito oficial'),{target:{files:[new File(['image'],'gabarito.png',{type:'image/png'})]}});
@@ -57,7 +57,29 @@ describe('importação por contexto da aplicação',()=>{
     fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
     fireEvent.click(screen.getByRole('checkbox',{name:/Conferi a leitura/}));fireEvent.click(screen.getByRole('button',{name:'Adicionar PDF e disciplinas à prova'}));
     await waitFor(()=>expect(mocks.store!.provas[0].extractedQuestions).toHaveLength(2));
-    expect(mocks.store?.provas).toHaveLength(1);expect(mocks.store!.provas[0].title).toBe(existing.title);expect(mocks.store!.provas[0].userAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].keyAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].isCorrected).toBe(true);
+    expect(mocks.store?.provas).toHaveLength(1);expect(mocks.store!.provas[0].title).toBe('PDF da prova');expect(mocks.store!.provas[0].userAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].keyAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].isCorrected).toBe(true);
     expect(mocks.store!.provas[0].subjectRanges).toMatchObject([{name:'Português',start:1,end:1},{name:'Matemática',start:2,end:2}]);expect(mocks.upload.mock.calls[0][1]).toBe(existing.id);expect(mocks.upload.mock.calls[0][2]).toBe('exam');
+  });
+});
+
+describe('cronômetro da prova',()=>{
+  beforeEach(()=>{mocks.initial={version:3,activeId:existing.id,provas:[{...structuredClone(existing),isCorrected:false,isLocked:false,userAnswers:[null,null]}]};});
+  it('oferece iniciar na primeira interação sem PDF, conta o tempo e para ao corrigir',()=>{
+    render(<App/>);fireEvent.click(screen.getByRole('button',{name:'Continuar minha prova'}));vi.useFakeTimers();
+    fireEvent.click(screen.getByRole('button',{name:'Selecionar questão 01'}));expect(screen.getByRole('dialog',{name:'Iniciar cronômetro da prova'})).toBeTruthy();
+    fireEvent.keyDown(window,{key:'A'});expect(mocks.store!.provas[0].userAnswers).toEqual([null,null]);
+    fireEvent.click(screen.getByRole('button',{name:'Sim, iniciar'}));act(()=>vi.advanceTimersByTime(3000));expect(mocks.store!.provas[0].timeSpentSeconds).toBe(3);
+    fireEvent.click(screen.getByRole('button',{name:'Corrigir Simulado'}));act(()=>vi.advanceTimersByTime(4000));expect(mocks.store!.provas[0].timeSpentSeconds).toBe(3);expect(mocks.store!.provas[0].isCorrected).toBe(true);
+  });
+  it('permite recusar e não volta a incomodar nas próximas questões ou após reabrir',()=>{
+    const first=render(<App/>);fireEvent.click(screen.getByRole('button',{name:'Continuar minha prova'}));fireEvent.click(screen.getByRole('button',{name:'Selecionar questão 01'}));
+    fireEvent.click(screen.getByRole('button',{name:'Fechar convite do cronômetro'}));expect(mocks.store!.provas[0].timerPrompted).toBe(true);fireEvent.click(screen.getByRole('button',{name:'Selecionar questão 02'}));expect(screen.queryByRole('dialog',{name:'Iniciar cronômetro da prova'})).toBeNull();
+    mocks.initial=structuredClone(mocks.store!);first.unmount();render(<App/>);fireEvent.click(screen.getByRole('button',{name:'Continuar minha prova'}));fireEvent.click(screen.getByRole('button',{name:'Selecionar questão 01'}));expect(screen.queryByRole('dialog',{name:'Iniciar cronômetro da prova'})).toBeNull();
+  });
+  it('pergunta pelo cronômetro antes de abrir o enunciado, sem sobrepor os dois modais',()=>{
+    mocks.initial!.provas[0].extractedQuestions=[{number:1,statement:'Enunciado da primeira questão.',options:[]}];
+    render(<App/>);fireEvent.click(screen.getByRole('button',{name:'Continuar minha prova'}));fireEvent.click(screen.getByRole('button',{name:'Ver enunciado da questão 01'}));
+    expect(screen.getByRole('dialog',{name:'Iniciar cronômetro da prova'})).toBeTruthy();expect(screen.queryByRole('dialog',{name:'Questão 1 da prova'})).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'Agora não'}));expect(screen.getByRole('dialog',{name:'Questão 1 da prova'})).toBeTruthy();expect(screen.queryByRole('dialog',{name:'Iniciar cronômetro da prova'})).toBeNull();
   });
 });
