@@ -30,6 +30,7 @@ import { useWorkspace } from './hooks/useWorkspace';
 import { AccountBar } from './components/AccountBar';
 import { ExamReader } from './components/ExamReader';
 import { AIExtraction, answersFromExtraction } from './utils/aiExtraction';
+import { flashcardSourceKey } from './utils/flashcards';
 import { FolderKanban, MessageSquare, ExternalLink, Bookmark, Sun, BookOpen, Moon } from 'lucide-react';
 
 const ExamLibrary = React.lazy(() => import('./components/ExamLibrary').then(module => ({ default: module.ExamLibrary })));
@@ -38,6 +39,7 @@ const BackupModal = React.lazy(() => import('./components/BackupModal').then(mod
 const ExportImportModal = React.lazy(() => import('./components/ExportImportModal').then(module => ({ default: module.ExportImportModal })));
 const QuickPresetsModal = React.lazy(() => import('./components/QuickPresetsModal').then(module => ({ default: module.QuickPresetsModal })));
 const AIImportModal = React.lazy(() => import('./components/AIImportModal').then(module => ({ default: module.AIImportModal })));
+const FlashcardsReview = React.lazy(() => import('./components/FlashcardsReview').then(module => ({ default: module.FlashcardsReview })));
 
 export default function App() {
   // Multi-exam centralized state with auto-migration from legacy single-exam storage
@@ -93,6 +95,7 @@ export default function App() {
   const setIsHomeView = (show: boolean) => setWorkspaceView(show ? 'home' : 'exam');
   const [mapperProvaId, setMapperProvaId] = useState<string | null>(null);
   const [aiMode, setAiMode] = useState<'exam' | 'key' | null>(null);
+  const [readerQuestionIndex, setReaderQuestionIndex] = useState<number | null>(null);
 
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number | null>(0);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
@@ -104,6 +107,7 @@ export default function App() {
     tab: 'export-user',
   });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  useEffect(() => { setReaderQuestionIndex(null); }, [scope, simulado?.id, workspaceView]);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -156,7 +160,7 @@ export default function App() {
 
       // If user is in an input or textarea or any modal is open, ignore global shortcuts
       if (
-        modalState.isOpen || aiMode !== null ||
+        modalState.isOpen || aiMode !== null || readerQuestionIndex !== null ||
         isNewProvaModalOpen ||
         renameModalProva !== null ||
         isBackupModalOpen ||
@@ -261,7 +265,7 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
-    workspaceView, isStorageReady, isKeyDrawerOpen, isPresetsModalOpen, mapperProvaId, isCompletionFeedbackOpen, aiMode,
+    workspaceView, isStorageReady, isKeyDrawerOpen, isPresetsModalOpen, mapperProvaId, isCompletionFeedbackOpen, aiMode, readerQuestionIndex,
     activeQuestionIndex,
     simulado?.totalQuestions,
     simulado?.isCorrected,
@@ -972,7 +976,6 @@ export default function App() {
               />
 
               {Boolean(simulado.sourceDocuments?.length) && <SourceDocuments key={scope + simulado.id} documents={simulado.sourceDocuments || []} />}
-              {Boolean(simulado.extractedQuestions?.length) && <ExamReader key={simulado.id} simulado={simulado} index={activeQuestionIndex || 0} onNavigate={setActiveQuestionIndex} onAnswer={handleSelectAnswer} />}
 
               {/* Score Performance Panel (Shown when corrected) */}
               {simulado.isCorrected && (
@@ -1053,6 +1056,7 @@ export default function App() {
                   filterMode={filterMode}
                   activeQuestionIndex={activeQuestionIndex}
                   onSetActiveQuestion={setActiveQuestionIndex}
+                  onOpenQuestion={simulado.extractedQuestions?.length ? setReaderQuestionIndex : undefined}
                   onSelectAnswer={handleSelectAnswer}
                   onToggleFlag={handleToggleFlag}
                   onResetFilter={setFilterMode}
@@ -1234,6 +1238,13 @@ export default function App() {
           theme={theme}
         />
       )}
+
+      {simulado && readerQuestionIndex !== null && <ExamReader key={scope + simulado.id} simulado={simulado} index={readerQuestionIndex} onNavigate={index => { setReaderQuestionIndex(index); setActiveQuestionIndex(index); }} onAnswer={handleSelectAnswer} onClose={() => setReaderQuestionIndex(null)}/>}
+
+      {simulado && workspaceView === 'exam' && isStorageReady && <React.Suspense fallback={null}><FlashcardsReview key={scope + simulado.id} proof={simulado} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onMapSubjects={() => setMapperProvaId(simulado.id)} onSave={deck => {
+        if (currentScope.current !== scope || currentProvaId.current !== simulado.id) return;
+        updateActiveSimulado(previous => previous.id === simulado.id && previous.isCorrected && !previous.isResultOutdated && flashcardSourceKey(previous) === deck.sourceKey ? { ...previous, flashcardDeck: deck } : previous);
+      }}/></React.Suspense>}
 
       {/* Floating Toast Notification */}
       {toastMessage && (

@@ -256,7 +256,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
   return (
     <ModalLayer label="Importar e exportar respostas" onClose={onClose} className={`fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn ${isDark ? 'dark' : ''}`}>
-      <div className={`rounded-xl shadow-2xl w-full max-w-4xl lg:max-w-5xl max-h-[92vh] flex flex-col overflow-hidden transition-colors ${
+      <div className={`rounded-xl shadow-2xl w-full min-w-0 max-w-4xl lg:max-w-5xl max-h-[92dvh] flex flex-col overflow-hidden transition-colors ${
         isNotebook
           ? 'bg-[#fdfbf7] border-2 border-[#1c2b45] text-[#1c2b45]'
           : isDark
@@ -264,7 +264,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           : 'bg-[#fcfbf9] border-2 border-slate-900 text-slate-900'
       }`}>
         {/* Modal Header */}
-        <div className={`px-4 sm:px-6 py-3.5 flex items-center justify-between border-b transition-colors ${
+        <div className={`shrink-0 px-4 sm:px-6 py-3.5 flex items-center justify-between border-b transition-colors ${
           isNotebook
             ? 'theme-solid border-[#1c2b45] text-white'
             : isDark
@@ -295,7 +295,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         </div>
 
         {/* Primary Functional Tabs - Responsive Grid without horizontal scroll cramping */}
-        <div className={`p-2 sm:p-3 border-b transition-colors ${
+        <div className={`shrink-0 p-2 sm:p-3 border-b transition-colors ${
           isNotebook
             ? 'bg-[#f5f0e3] border-[#ded7c6]'
             : isDark
@@ -476,7 +476,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-3.5 sm:p-5 overflow-y-auto flex-1 space-y-4 text-sm">
+        <div className="min-h-0 min-w-0 p-3.5 sm:p-5 overflow-y-auto flex-1 space-y-4 text-sm">
           {/* TAB 1: EXPORT USER ANSWERS (Main feature) */}
           {activeTab === 'export-user' && (
             <div className="space-y-4">
@@ -1065,7 +1065,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className={`border-t px-5 py-3 flex items-center justify-between text-xs transition-colors flex-wrap gap-2 ${
+        <div className={`shrink-0 border-t px-5 py-3 flex items-center justify-between text-xs transition-colors flex-wrap gap-2 ${
           isNotebook
             ? 'bg-[#f5f0e3] border-[#ded7c6] text-[#6b6255]'
             : isDark

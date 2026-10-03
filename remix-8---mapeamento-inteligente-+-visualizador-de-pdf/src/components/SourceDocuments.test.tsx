@@ -12,6 +12,12 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe('consulta dos originais', () => {
+  it('abre automaticamente um único original no painel, mas exige escolha quando há vários', async () => {
+    const { unmount } = render(<SourceDocuments documents={[document]} expanded autoOpen/>);
+    expect(await screen.findByAltText('Gabarito original salvo na conta')).toBeTruthy(); expect(mocks.download).toHaveBeenCalledTimes(1);
+    unmount(); mocks.download.mockClear(); render(<SourceDocuments documents={[document, { ...document, path: 'account/prova/segundo.png' }]} expanded autoOpen/>);
+    expect(mocks.download).not.toHaveBeenCalled();
+  });
   it('baixa com autenticação, abre a imagem e libera a URL ao fechar', async () => {
     render(<SourceDocuments documents={[document]}/>);
     fireEvent.click(screen.getByRole('button', { name: 'Ver original', hidden: true }));

@@ -16,6 +16,7 @@ interface QuestionGridProps {
   onSelectAnswer: (questionIdx: number, letter: AnswerOption) => void;
   onToggleFlag: (questionIdx: number) => void;
   onResetFilter?: (mode: FilterMode) => void;
+  onOpenQuestion?: (idx: number) => void;
   examType?: ExamType;
   theme?: AppTheme;
 }
@@ -33,6 +34,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
   onSelectAnswer,
   onToggleFlag,
   onResetFilter,
+  onOpenQuestion,
   examType = 'multiple_choice',
   theme = 'clean',
 }) => {
@@ -735,7 +737,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                         ref={el => {
                           rowRefs.current[idx] = el;
                         }}
-                        onClick={() => onSetActiveQuestion(idx)}
+                        onClick={event => { if ((event.target as HTMLElement).closest('button')) return; onSetActiveQuestion(idx); onOpenQuestion?.(idx); }}
                         className={`group rounded transition-all duration-150 cursor-pointer min-w-0 ${rowBgClass}`}
                       >
                         {isCardMode ? (
@@ -749,7 +751,10 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                             <div className="flex items-center justify-between gap-2 w-full min-w-0">
                               <div className="flex items-center gap-1 min-w-0">
                                 {flagButton}
-                                <span
+                                <button
+                                  type="button"
+                                  aria-label={onOpenQuestion ? `Ver enunciado da questão ${qNum}` : `Selecionar questão ${qNum}`}
+                                  onClick={event => { event.stopPropagation(); onSetActiveQuestion(idx); onOpenQuestion?.(idx); }}
                                   className={`font-mono-code font-bold text-xs ${
                                     isActive
                                       ? isDark ? 'text-zinc-100 underline' : 'text-[#1c2b45] underline'
@@ -757,7 +762,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                                   }`}
                                 >
                                   Questão {qNum}
-                                </span>
+                                </button>
                               </div>
                               <div
                                 className={`flex items-center justify-end min-w-0 text-right text-[10px] font-mono-code ${statusColorClass}`}
@@ -795,7 +800,10 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                             {/* Track 1 (Left): Flag & Question Number (strictly 38px) */}
                             <div className="flex items-center gap-0.5 min-w-0 shrink-0 w-[38px]">
                               {flagButton}
-                              <span
+                              <button
+                                type="button"
+                                aria-label={onOpenQuestion ? `Ver enunciado da questão ${qNum}` : `Selecionar questão ${qNum}`}
+                                onClick={event => { event.stopPropagation(); onSetActiveQuestion(idx); onOpenQuestion?.(idx); }}
                                 className={`font-mono-code font-bold text-xs text-right w-5 transition-colors ${
                                   isActive
                                     ? isDark ? 'text-zinc-100 underline' : 'text-[#1c2b45] underline'
@@ -803,7 +811,7 @@ export const QuestionGrid: React.FC<QuestionGridProps> = ({
                                 }`}
                               >
                                 {qNum}
-                              </span>
+                              </button>
                             </div>
 
                             {/* Track 2 (Center): Alternatives perfectly aligned with column guide */}

@@ -261,7 +261,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
         </div>
 
         {/* Formats and Shortcuts */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <label htmlFor="official-key-input" className={`font-semibold text-xs flex items-center gap-1.5 ${
             isDark ? 'text-zinc-200' : isNotebook ? 'text-[#1c2b45]' : 'text-slate-800'
           }`}>
@@ -346,7 +346,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
                 ? 'Cole aqui o gabarito oficial em formato V/F (ex: 1V, 2V, 3F, 4V... ou VVFVFFV... ou 1 C, 2 E...)'
                 : 'Cole aqui o gabarito oficial (ex: 01-A 02-B... ou ABCDE...)'
             }
-            className={`w-full p-3 font-mono-code text-xs rounded-xl outline-none transition leading-relaxed border-2 ${
+            className={`w-full p-3 pr-11 font-mono-code text-xs rounded-xl outline-none transition leading-relaxed border-2 ${
               isDark
                 ? 'bg-[#18191d] border-[#3b3e48] text-zinc-100 placeholder-zinc-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/40'
                 : isNotebook
@@ -379,7 +379,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
         )}
 
         {/* Action Button: Step 1 -> Step 2 */}
-        <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <div className={`text-xs font-mono-code ${isDark ? 'text-zinc-400' : 'text-[#5b6478]'}`}>
             Limite desta prova: <b className={isDark ? 'text-zinc-200' : 'text-slate-900'}>{totalQuestions} questões</b>
           </div>
@@ -408,7 +408,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
   // ETAPA 2: GRADE DE CONFERÊNCIA & EDIÇÃO INTERATIVA
   // =========================================================================
   return (
-    <div className="space-y-4 text-xs sm:text-sm overflow-x-hidden animate-fadeIn">
+    <div className="min-w-0 space-y-4 text-xs sm:text-sm animate-fadeIn">
       {/* Top Bar: Format Badge & Navigation */}
       <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b ${
         isDark ? 'border-[#3b3e48]' : 'border-[#dedad0]'
@@ -447,9 +447,8 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
       }`}>
         <HelpCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
         <div className="leading-relaxed">
-          <span className="font-bold">Aviso sobre o Salvamento: </span>
-          As respostas exibidas abaixo estão <b>apenas em pré-visualização para conferência</b> e ainda não foram salvas na prova.
-          Você pode corrigir qualquer alternativa diretamente na grade antes de confirmar.
+          <span className="font-bold">Confira antes de salvar. </span>
+          Esta é uma prévia. Corrija as alternativas na grade e confirme quando terminar.
         </div>
       </div>
 
@@ -469,7 +468,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
       )}
 
       {/* Metrics Dashboard */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-3">
         {/* Metric 1: Reconhecidas no Texto */}
         <div className={`p-3 rounded-xl border shadow-2xs flex flex-col justify-between transition-colors ${
           isDark
@@ -504,7 +503,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
             ? 'bg-[#fdfbf7] border-[#ded7c6]'
             : 'bg-white border-slate-200'
         }`}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className={`text-[11px] font-mono-code uppercase tracking-wider font-bold ${
               isDark ? 'text-zinc-400' : 'text-[#5b6478]'
             }`}>
@@ -545,7 +544,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
             ? isDark ? 'bg-red-950/40 border-red-800' : 'bg-red-50/70 border-red-300'
             : isDark ? 'bg-[#22242a] border-[#3b3e48]' : isNotebook ? 'bg-[#fdfbf7] border-[#ded7c6]' : 'bg-white border-slate-200'
         }`}>
-          <div className="text-[11px] font-mono-code uppercase tracking-wider font-bold flex items-center justify-between">
+          <div className="text-[11px] font-mono-code uppercase tracking-wider font-bold flex flex-wrap items-center justify-between gap-2">
             <span className={hasBlockingConflicts ? isDark ? 'text-red-300' : 'text-red-900' : isDark ? 'text-zinc-400' : 'text-[#5b6478]'}>
               Conflitos & Alertas
             </span>
@@ -618,7 +617,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
               </p>
               <div className="space-y-1 pt-1 font-mono-code">
                 {activeConflicts.map(c => (
-                  <div key={c.questionNumber} className={`flex items-center gap-2 p-1.5 rounded border ${
+                  <div key={c.questionNumber} className={`flex flex-wrap items-center gap-2 p-1.5 rounded border ${
                     isDark ? 'bg-[#18191d] border-red-900/60 text-red-300' : 'bg-white/80 border-red-200 text-red-900'
                   }`}>
                     <span className="font-bold">Questão {String(c.questionNumber).padStart(2, '0')}:</span>
@@ -659,19 +658,19 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
 
       {/* Interactive Responsive Question Grid */}
       <div className="space-y-2 pt-2">
-        <div className={`flex items-center justify-between text-xs font-mono-code px-1 ${
+        <div className={`flex flex-wrap items-center justify-between gap-2 text-xs font-mono-code px-1 ${
           isDark ? 'text-zinc-400' : 'text-[#5b6478]'
         }`}>
           <span className={`font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-200' : 'text-[#1c2b45]'}`}>
             Grade de Conferência · {totalQuestions} questões
           </span>
-          <span className="text-[11px] hidden sm:inline">
-            Clique em uma letra para alterar ou resolver conflitos
+          <span className="text-[11px]">
+            Clique na alternativa para ajustar o gabarito
           </span>
         </div>
 
         {/* Responsive Grid */}
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[46vh] overflow-y-auto p-2 overflow-x-hidden border rounded-xl w-full ${
+        <div className={`grid grid-cols-[repeat(auto-fit,minmax(min(100%,250px),1fr))] gap-3 p-3 border rounded-xl w-full ${
           isDark ? 'bg-[#18191d] border-[#3b3e48]' : isNotebook ? 'bg-[#fdfbf7] border-[#dedad0]' : 'bg-slate-50/80 border-slate-200'
         }`}>
           {Array.from({ length: totalQuestions }).map((_, idx) => {
@@ -709,7 +708,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
                 className={`p-2.5 rounded-lg border transition flex flex-col justify-between gap-2 min-w-0 ${cardClasses}`}
               >
                 {/* Upper line: Question Number, current choice, and status tag */}
-                <div className="flex items-center justify-between gap-1.5 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
                   <div className="flex items-center gap-1.5 shrink-0 min-w-0">
                     <span className={`font-mono-code font-bold text-xs ${isDark ? 'text-zinc-100' : 'text-[#1c2b45]'}`}>
                       Questão {String(qNum).padStart(2, '0')}
@@ -754,10 +753,10 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
                 </div>
 
                 {/* Lower line: tactile buttons (A-E or V/F) + Compact Clear button */}
-                <div className={`flex items-center justify-between gap-1 pt-1.5 border-t min-w-0 ${
+                <div className={`flex flex-wrap items-center justify-between gap-2 pt-2 border-t min-w-0 ${
                   isDark ? 'border-[#3b3e48]' : 'border-[#dedad0]/60'
                 }`}>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {availableOptions.map(letter => {
                       const isSelected = currentAnswer === letter;
                       return (
@@ -765,7 +764,9 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
                           key={letter}
                           type="button"
                           onClick={() => handleSelectOptionInReview(idx, letter)}
-                          className={`w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full text-xs font-mono-code font-bold flex items-center justify-center transition-all duration-150 cursor-pointer ${
+                          aria-label={`Questão ${qNum}, alternativa ${letter} na conferência`}
+                          aria-pressed={isSelected}
+                          className={`w-8 h-8 shrink-0 rounded-full text-xs font-mono-code font-bold flex items-center justify-center transition-all duration-150 cursor-pointer ${
                             isSelected
                               ? isDark
                                 ? 'theme-solid text-white shadow-xs scale-105 ring-2 ring-amber-500/40 hover:scale-115 hover:bg-amber-500'
@@ -800,7 +801,6 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
                       aria-label={`Limpar alternativa da questão ${qNum}`}
                     >
                       <X className="w-3 h-3 text-red-500" />
-                      <span className="text-[10px]">Limpar</span>
                     </button>
                   )}
                 </div>
@@ -811,7 +811,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
       </div>
 
       {/* Review Action Buttons */}
-      <div className={`pt-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3 ${
+      <div className={`pt-4 border-t flex flex-wrap items-start justify-between gap-4 ${
         isDark ? 'border-[#3b3e48]' : 'border-[#dedad0]'
       }`}>
         <button
@@ -829,7 +829,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
           <span>Voltar / Editar Texto</span>
         </button>
 
-        <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-3">
+        <div className="flex min-w-0 flex-1 basis-72 flex-col items-stretch gap-3">
           {/* Secondary action: Save partial key if not 100% complete and has at least 1 answer */}
           {!isFullKeyComplete && !hasBlockingConflicts && previewFilledCount > 0 && (
             <button
@@ -861,7 +861,7 @@ export const OfficialKeyImporter: React.FC<OfficialKeyImporterProps> = ({
             type="button"
             disabled={!isFullKeyComplete || hasBlockingConflicts || isSubmitting}
             onClick={handleConfirmFull}
-            className={`w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
+            className={`w-full px-4 py-3 rounded-xl font-semibold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
               isFullKeyComplete && !hasBlockingConflicts && !isSubmitting
                 ? isDark
                   ? 'theme-solid hover:bg-amber-500 text-white hover:shadow-lg active:scale-98'

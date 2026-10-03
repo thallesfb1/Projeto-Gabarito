@@ -1,5 +1,7 @@
 import { AIExtraction, ExtractionMode, validateAIExtraction, validateAIFile } from './aiExtraction';
 import { supabase } from './supabase';
+import { flashcardSources, selectFlashcardSources, validateFlashcards } from './flashcards';
+import type { SimuladoData, StudyFlashcard } from '../types';
 
 async function headers() {
   const session = supabase ? (await supabase.auth.getSession()).data.session : null;
@@ -21,4 +23,11 @@ export async function extractWithAI(file: File, mode: ExtractionMode, signal: Ab
   for (let i=0; i<bytes.length; i+=16384) binary += String.fromCharCode(...bytes.subarray(i, i+16384));
   const data = await request('extract', signal, { mode, mime: file.type, data: btoa(binary), versionHint: versionHint.slice(0, 160) });
   return validateAIExtraction(data.extraction, mode);
+}
+
+export async function generateFlashcardsWithAI(proof: SimuladoData, signal: AbortSignal): Promise<StudyFlashcard[]> {
+  const sources = selectFlashcardSources(flashcardSources(proof));
+  if (!sources.length) throw new Error('Corrija a prova e importe os enunciados ou mapeie as disciplinas das questões erradas.');
+  const data = await request('flashcards', signal, { questions: sources });
+  return validateFlashcards(data.cards, sources.map(source => source.number), true);
 }

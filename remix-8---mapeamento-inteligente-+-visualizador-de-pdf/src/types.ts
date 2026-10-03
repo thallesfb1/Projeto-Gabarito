@@ -43,6 +43,26 @@ export interface SourceDocument {
   createdAt: string;
 }
 
+export interface StudyFlashcard {
+  id: string;
+  subject: string;
+  topic: string;
+  front: string;
+  back: string;
+  context?: string;
+  explanation?: string;
+  example?: string;
+  pitfall?: string;
+  questionNumbers: number[];
+}
+
+export interface FlashcardDeck {
+  sourceKey: string;
+  createdAt: string;
+  cards: StudyFlashcard[];
+  masteredCardIds: string[];
+}
+
 export interface SimuladoData {
   id: string;
   title: string;
@@ -65,6 +85,7 @@ export interface SimuladoData {
   extractedQuestions?: ExtractedQuestion[];
   sourceFileName?: string;
   sourceDocuments?: SourceDocument[];
+  flashcardDeck?: FlashcardDeck;
   exampleData?: { user?: boolean; key?: boolean };
   [key: string]: any;
 }
