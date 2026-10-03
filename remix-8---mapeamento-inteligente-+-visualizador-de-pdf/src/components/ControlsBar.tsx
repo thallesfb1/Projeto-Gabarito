@@ -33,7 +33,6 @@ interface ControlsBarProps {
   isExportModalOpen?: boolean;
   subjectRangeCount?: number;
   onOpenSubjectMapper?: () => void;
-  onOpenAI?: () => void;
   theme?: AppTheme;
 }
 
@@ -55,7 +54,6 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
   isExportModalOpen = false,
   subjectRangeCount = 0,
   onOpenSubjectMapper,
-  onOpenAI,
   theme = 'clean',
 }) => {
   const [draftTotal, setDraftTotal] = useState(String(totalQuestions));
@@ -76,7 +74,6 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
 
   return (
     <div className="space-y-3 mb-5 no-print">
-      {onOpenAI && <button type="button" className="secondary-action" onClick={onOpenAI}>Ler gabarito com IA</button>}
       {/* Primary Unified Workspace Bar */}
       <div className={`rounded-xl p-2.5 sm:p-3 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3 border transition-colors ${
         isNotebook ? 'bg-[#fcfaf4] border-[#ded7c6]' : isDark ? 'bg-[#18191d] border-[#3b3e48]' : 'bg-slate-50 border-slate-200/90'

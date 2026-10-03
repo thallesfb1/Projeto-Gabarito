@@ -27,7 +27,7 @@ beforeEach(()=>{
 });
 afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals();});
 async function readKey(){
-  fireEvent.click(await screen.findByRole('button',{name:'Ler gabarito em imagem'}));
+  fireEvent.click(await screen.findByRole('button',{name:'Ler gabarito em imagem ou PDF'}));
   fireEvent.change(screen.getByLabelText('Selecione a imagem ou o PDF do gabarito oficial'),{target:{files:[new File(['image'],'gabarito.png',{type:'image/png'})]}});
   fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
   fireEvent.click(screen.getByRole('checkbox',{name:/Conferi a leitura/}));
@@ -44,6 +44,7 @@ describe('importação por contexto da aplicação',()=>{
   it('dentro da prova, importa o gabarito somente no cartão aberto',async()=>{
     mocks.extract.mockResolvedValue({title:'Gabarito',examType:'multiple_choice',totalQuestions:2,questions:[],answers:[{number:1,answer:'C'},{number:2,answer:'D'}],warnings:[]});
     render(<App/>);fireEvent.click(screen.getByRole('button',{name:/Continuar minha prova/}));expect(screen.getAllByText('Central de Gabarito').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button',{name:'Ler gabarito com IA'})).toBeNull();
     fireEvent.click(screen.getByRole('button',{name:'Importar com IA'}));await screen.findByText('Importar nesta prova');await readKey();
     fireEvent.click(screen.getByRole('button',{name:'Importar gabarito conferido'}));await waitFor(()=>expect(mocks.store!.provas[0].keyAnswers).toEqual(['C','D']));
     expect(mocks.store?.provas).toHaveLength(1);expect(mocks.store!.provas[0].userAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].isCorrected).toBe(false);expect(mocks.snapshot).toHaveBeenCalled();expect(mocks.upload.mock.calls[0][1]).toBe(existing.id);

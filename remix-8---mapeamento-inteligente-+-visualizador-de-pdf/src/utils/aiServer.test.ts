@@ -5,6 +5,7 @@ const mocks=vi.hoisted(()=>({generate:vi.fn(),list:vi.fn(),getUser:vi.fn(),const
 vi.mock('@google/genai',()=>({GoogleGenAI:class { constructor(config:unknown){mocks.construct(config);} models={generateContent:mocks.generate,list:mocks.list}; }}));
 vi.mock('@supabase/supabase-js',()=>({createClient:()=>({auth:{getUser:mocks.getUser}})}));
 import { createAIApp, validateFilePayload } from '../../server/ai';
+import { AI_EXTRACTION_TIMEOUT_MS, AI_EXTRACTION_ATTEMPT_TIMEOUT_MS } from './aiTiming';
 let server:Server;let url:string;
 const key='AQ.test-personal-key-with-no-prefix-assumption';
 const payload={mode:'key',model:'gemini-3.8-flash',mime:'image/png',data:Buffer.from([137,80,78,71,13,10,26,10,1]).toString('base64')};
@@ -13,7 +14,7 @@ const serverConfig={GEMINI_API_KEY:key,VITE_SUPABASE_URL:'https://example.supaba
 async function start(config: Partial<typeof serverConfig> & { GEMINI_MODEL?: string }=serverConfig) { const app=createAIApp(config);server=app.listen(0,'127.0.0.1');await new Promise<void>(resolve=>server.once('listening',resolve));url=`http://127.0.0.1:${(server.address() as AddressInfo).port}`; }
 async function post(body:unknown=payload,extra:Record<string,string>={}) {return fetch(`${url}/api/ai/extract`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer signed-session',...extra},body:JSON.stringify(body)});}
 beforeEach(()=>{vi.clearAllMocks();mocks.getUser.mockResolvedValue({data:{user:{id:'conta1'}},error:null});mocks.generate.mockResolvedValue({text:JSON.stringify(output),candidates:[{finishReason:'STOP'}]});mocks.list.mockResolvedValue([{name:'models/gemini-3.8-flash',displayName:'Flash teste',supportedActions:['generateContent']},{name:'models/gemini-test-image',supportedActions:['generateContent']}]);});
-afterEach(async()=>{if(server){server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));}});
+afterEach(async()=>{vi.restoreAllMocks();if(server){server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));}});
 describe('API de IA segura',()=>{
   it('solicita disciplinas por cabeçalhos do PDF e preserva a classificação na leitura',async()=>{
     const questions=[{number:1,statement:'Interprete o trecho.',subject:'Português',options:[],page:1},{number:2,statement:'Calcule a proporção.',subject:'Matemática',options:[],page:2}];
@@ -80,7 +81,7 @@ describe('API de IA segura',()=>{
     expect((await response.json()).extraction.answers).toEqual(output.answers);
     expect(mocks.generate).toHaveBeenCalledTimes(2);
     expect(mocks.generate.mock.calls.every(([request])=>request.model==='gemini-3.1-flash-lite')).toBe(true);
-    expect(mocks.construct).toHaveBeenCalledWith(expect.objectContaining({httpOptions:{timeout:120000,retryOptions:{attempts:1}}}));
+    expect(mocks.construct).toHaveBeenCalledWith(expect.objectContaining({httpOptions:{timeout:AI_EXTRACTION_ATTEMPT_TIMEOUT_MS,retryOptions:{attempts:1}}}));
   });
   it('limita as tentativas e diferencia capacidade do Google de cota disponível',async()=>{
     mocks.generate.mockRejectedValue({status:503,message:`secret ${key}`});await start();
@@ -91,7 +92,21 @@ describe('API de IA segura',()=>{
   it('identifica tempo excedido sem chamar de alta demanda',async()=>{
     mocks.generate.mockRejectedValue(new DOMException('Timed out','TimeoutError'));await start();
     const response=await post();expect(response.status).toBe(504);
-    expect((await response.json()).error).toContain('tempo de espera');expect(mocks.generate).toHaveBeenCalledTimes(1);
+    const message=(await response.json()).error;
+    expect(message).toContain('tempo de espera');expect(message).toContain('Isso pode acontecer');expect(message).toContain('Tente novamente');expect(mocks.generate).toHaveBeenCalledTimes(2);
+  });
+  it('recupera um timeout com uma nova tentativa e um novo sinal de cancelamento',async()=>{
+    mocks.generate.mockRejectedValueOnce(new DOMException('Timed out','TimeoutError'));await start();
+    const response=await post();expect(response.status).toBe(200);expect((await response.json()).extraction.answers).toEqual(output.answers);
+    expect(mocks.generate).toHaveBeenCalledTimes(2);
+    expect(mocks.generate.mock.calls[0][0].config.abortSignal).not.toBe(mocks.generate.mock.calls[1][0].config.abortSignal);
+  });
+  it('não repete a leitura depois do prazo total e libera a conta para tentar novamente',async()=>{
+    const timeout=AbortSignal.timeout.bind(AbortSignal);
+    vi.spyOn(AbortSignal,'timeout').mockImplementation(ms=>timeout(ms===AI_EXTRACTION_TIMEOUT_MS?20:ms));
+    mocks.generate.mockImplementationOnce(({config})=>new Promise((_resolve,reject)=>config.abortSignal.addEventListener('abort',()=>reject(config.abortSignal.reason),{once:true})));
+    await start();const response=await post();expect(response.status).toBe(504);expect(mocks.generate).toHaveBeenCalledTimes(1);
+    expect((await post()).status).toBe(200);
   });
   it('reserva menos tokens de saída para gabaritos do que para provas',async()=>{
     await start();await post();

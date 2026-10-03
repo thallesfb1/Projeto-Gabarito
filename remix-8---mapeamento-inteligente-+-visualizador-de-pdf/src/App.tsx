@@ -1017,7 +1017,6 @@ export default function App() {
                 isExportModalOpen={modalState.isOpen}
                 subjectRangeCount={simulado.subjectRanges?.length || 0}
                 onOpenSubjectMapper={() => setMapperProvaId(simulado.id)}
-                onOpenAI={() => openAI('key',simulado.id)}
                 theme={theme}
               />
 

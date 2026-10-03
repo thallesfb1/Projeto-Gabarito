@@ -26,6 +26,7 @@ export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreat
   const [result, setResult] = useState<AIExtraction | null>(null);
   const [busy, setBusy] = useState<'extract' | 'apply' | null>(null);
   const [error, setError] = useState('');
+  const [failedReading, setFailedReading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
@@ -49,14 +50,14 @@ export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreat
   const run = async (kind: 'extract' | 'apply', action: (signal: AbortSignal) => Promise<void>) => {
     if (busy) return;
     const abort = new AbortController(); controller.current = abort;
-    setBusy(kind); setError('');
+    setBusy(kind); setError(''); setFailedReading(false);
     try { await action(abort.signal); }
-    catch (cause) { if (alive.current) setError(abort.signal.aborted ? 'Leitura cancelada. Nenhuma prova foi alterada.' : cause instanceof Error ? cause.message : 'Não foi possível concluir a leitura.'); }
+    catch (cause) { if (alive.current) { setFailedReading(kind === 'extract' && !abort.signal.aborted && Boolean(file)); setError(abort.signal.aborted ? 'Leitura cancelada. Nenhuma prova foi alterada.' : cause instanceof Error ? cause.message : 'Não foi possível concluir a leitura. Isso pode acontecer temporariamente. Tente novamente.'); } }
     finally { if (alive.current) setBusy(null); }
   };
-  const changeMode = (next: ExtractionMode) => { setCompleted(null); setMode(next); setFile(null); setResult(null); setReviewed(false); setError(''); };
+  const changeMode = (next: ExtractionMode) => { setCompleted(null); setMode(next); setFile(null); setResult(null); setReviewed(false); setError(''); setFailedReading(false); };
   const selectFile = (next?: File) => {
-    setCompleted(null); setResult(null); setReviewed(false); setFile(null); setError('');
+    setCompleted(null); setResult(null); setReviewed(false); setFile(null); setError(''); setFailedReading(false);
     if (!next) return;
     try { validateAIFile(next, mode); setFile(next); } catch(cause) { setError((cause as Error).message); }
   };
@@ -79,7 +80,7 @@ export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreat
       <header className="flex items-center justify-between gap-3 p-4 sm:p-5 border-b"><div className="flex items-center gap-3"><Sparkles className="w-6 h-6"/><div><h2 className="font-bold text-lg">Leitura de provas com IA</h2><p className="text-xs opacity-75">Selecione o arquivo, confira a leitura e importe</p></div></div><button aria-label="Fechar leitura com IA" disabled={busy === 'apply'} onClick={close}><X className="w-5 h-5"/></button></header>
       <div className="ai-scroll overflow-y-auto p-4 sm:p-5 space-y-5">
         <div className="ai-destination" role="note"><strong>{creating?'Novo simulado':'Importar nesta prova'}</strong><p>{creating?'Esta importação cria um novo cartão-resposta. Suas provas salvas serão preservadas.':simulado?.title || 'A prova selecionada não está mais disponível.'}</p>{!creating&&simulado&&<small>{simulado.totalQuestions} questões · O PDF atualiza o nome, os enunciados e as disciplinas; o gabarito atualiza as respostas oficiais desta prova.</small>}</div>
-        <div className="flex flex-wrap gap-2"><button className={`secondary-action ${mode === 'exam' ? 'ai-selected' : ''}`} disabled={Boolean(busy)} aria-pressed={mode === 'exam'} onClick={()=>changeMode('exam')}><FileText className="w-4 h-4"/>Ler prova em PDF</button><button className={`secondary-action ${mode === 'key' ? 'ai-selected' : ''}`} disabled={Boolean(busy)} aria-pressed={mode === 'key'} onClick={()=>changeMode('key')}><Image className="w-4 h-4"/>Ler gabarito em imagem</button></div>
+        <div className="flex flex-wrap gap-2"><button className={`secondary-action ${mode === 'exam' ? 'ai-selected' : ''}`} disabled={Boolean(busy)} aria-pressed={mode === 'exam'} onClick={()=>changeMode('exam')}><FileText className="w-4 h-4"/>Ler prova em PDF</button><button className={`secondary-action ${mode === 'key' ? 'ai-selected' : ''}`} disabled={Boolean(busy)} aria-pressed={mode === 'key'} onClick={()=>changeMode('key')}><Image className="w-4 h-4"/>Ler gabarito em imagem ou PDF</button></div>
         {!result && <>
           {onSignIn && !signedIn && <div className="ai-warning rounded-xl p-4 space-y-3"><p className="text-sm">Entre na sua conta para ler arquivos com IA e salvar suas provas.</p><button className="google-button" disabled={Boolean(busy)} onClick={() => run('extract', async () => { await onSignIn(); })}><GoogleIcon />Entrar com Google</button></div>}
           {!creating && !simulado && <p className="ai-warning rounded-xl p-3 text-sm">Abra a prova desejada antes de iniciar a leitura.</p>}
@@ -101,9 +102,9 @@ export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreat
           </div>
           {mode === 'key' && <label className="block text-sm font-semibold">Versão ou cor do caderno (opcional)<input value={versionHint} maxLength={160} disabled={Boolean(busy)} onChange={e=>setVersionHint(e.target.value)} placeholder="Ex.: caderno azul, prova tipo 1" className="block w-full rounded-lg border p-2.5 mt-2"/></label>}
           <div className="ai-notification-option"><Bell size={16}/><span>{notificationPermission === 'granted' ? 'Você também receberá um aviso se estiver em outra aba.' : 'Um aviso aparecerá aqui quando a leitura terminar.'}</span>{notificationPermission === 'default' && <button className="text-action" onClick={()=>void enableNotifications()}>Ativar aviso neste dispositivo</button>}{notificationPermission === 'denied' && <small>O navegador bloqueou avisos externos; o aviso no site continua ativo.</small>}</div>
-          <button className="primary-action" disabled={Boolean(busy) || !file || (Boolean(onSignIn) && !signedIn) || (!creating && !simulado)} onClick={()=>run('extract',async signal=>{setCompleted(null);if(file){const extracted=await extractWithAI(file,mode,signal,versionHint);if(!signal.aborted && alive.current){setResult(extracted);setReviewed(false);setCompleted({filename:file.name,count:extracted.totalQuestions});notifyCompletedReading();}}})}><Sparkles className="w-4 h-4"/>Extrair e conferir</button>
+          <button className="primary-action" disabled={Boolean(busy) || !file || (Boolean(onSignIn) && !signedIn) || (!creating && !simulado)} onClick={()=>run('extract',async signal=>{setCompleted(null);if(file){const extracted=await extractWithAI(file,mode,signal,versionHint);if(!signal.aborted && alive.current){setResult(extracted);setReviewed(false);setCompleted({filename:file.name,count:extracted.totalQuestions});notifyCompletedReading();}}})}><Sparkles className="w-4 h-4"/>{failedReading ? 'Tentar novamente' : 'Extrair e conferir'}</button>
         </>}
-        {busy && <div className="flex items-center gap-3 rounded-xl border p-4" role="status"><LoaderCircle className="w-5 h-5 animate-spin"/><span>{busy === 'extract' ? 'Lendo o arquivo. Isso pode levar até dois minutos…' : 'Preservando os dados e importando…'}</span>{busy !== 'apply' && <button className="text-action ml-auto" onClick={()=>controller.current?.abort()}>Cancelar</button>}</div>}
+        {busy && <div className="flex items-center gap-3 rounded-xl border p-4" role="status"><LoaderCircle className="w-5 h-5 animate-spin"/><span>{busy === 'extract' ? 'Lendo o arquivo. PDFs maiores podem levar alguns minutos. Se houver demora ou falha temporária, tentaremos novamente automaticamente. Aguarde até cinco minutos…' : 'Preservando os dados e importando…'}</span>{busy !== 'apply' && <button className="text-action ml-auto" onClick={()=>controller.current?.abort()}>Cancelar</button>}</div>}
         {error && <p className="ai-error rounded-xl p-3 text-sm" role="alert">{error}</p>}
         {result && <>
           <div><h3 className="font-bold text-lg">Confira a leitura antes de importar</h3><p className="text-sm opacity-75">{result.totalQuestions} questões · {result.examType === 'true_false' ? 'Certo/Errado' : 'Múltipla escolha'}. A IA pode errar; compare com o arquivo original.</p></div>

@@ -2,6 +2,7 @@ import { AIExtraction, ExtractionMode, validateAIExtraction, validateAIFile } fr
 import { supabase } from './supabase';
 import { flashcardSources, selectFlashcardSources, validateFlashcards, validateFlashcardPriority } from './flashcards';
 import type { SimuladoData, StudyFlashcard } from '../types';
+import { AI_EXTRACTION_TIMEOUT_MS, AI_FLASHCARDS_TIMEOUT_MS, AI_RESPONSE_GRACE_MS, AI_READING_TIMEOUT_MESSAGE } from './aiTiming';
 
 async function headers() {
   const session = supabase ? (await supabase.auth.getSession()).data.session : null;
@@ -9,11 +10,19 @@ async function headers() {
 }
 async function request(path: string, signal: AbortSignal, body?: unknown) {
   if (window.location.protocol === 'file:') throw new Error('A IA precisa da versão web com servidor. Abra a aplicação pelo endereço do site.');
-  const response = await fetch(`/api/ai/${path}`, { method: body ? 'POST' : 'GET', headers: await headers(), ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.any([signal, AbortSignal.timeout(135000)]) });
-  let data;
-  try { data = await response.json(); } catch { throw new Error('O servidor de IA não está disponível neste endereço. Use a versão web com a API configurada.'); }
-  if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Falha na leitura do arquivo.');
-  return data;
+  const requestSignal = AbortSignal.any([signal, AbortSignal.timeout((path === 'extract' ? AI_EXTRACTION_TIMEOUT_MS : AI_FLASHCARDS_TIMEOUT_MS) + AI_RESPONSE_GRACE_MS)]);
+  try {
+    const response = await fetch(`/api/ai/${path}`, { method: body ? 'POST' : 'GET', headers: await headers(), ...(body ? { body: JSON.stringify(body) } : {}), signal: requestSignal });
+    let data;
+    try { data = await response.json(); } catch { requestSignal.throwIfAborted(); throw new Error('O servidor de IA não está disponível neste endereço. Use a versão web com a API configurada.'); }
+    if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Falha na leitura do arquivo.');
+    return data;
+  } catch (cause) {
+    signal.throwIfAborted();
+    if (requestSignal.aborted) throw new Error(path === 'extract' ? AI_READING_TIMEOUT_MESSAGE : 'A geração excedeu o tempo de espera. Isso pode acontecer quando a IA demora a responder. Tente novamente.');
+    if (cause instanceof TypeError) throw new Error('A conexão com o serviço de IA foi interrompida. Confira a conexão e tente novamente.');
+    throw cause;
+  }
 }
 export async function extractWithAI(file: File, mode: ExtractionMode, signal: AbortSignal, versionHint = ''): Promise<AIExtraction> {
   validateAIFile(file, mode);

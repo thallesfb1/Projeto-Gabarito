@@ -73,3 +73,12 @@ TypeScript, 136 testes em 20 arquivos e builds web/offline passaram nesta revis�
 - A faixa abaixo do cabeçalho e o seletor duplicado de tema na lista foram removidos. As informações da conta e a importação de provas locais ficam no perfil; backup continua disponível como recurso secundário.
 
 Verificação: 146 testes em 22 arquivos passaram. Após os últimos ajustes, os 10 testes de aplicação/perfil foram executados novamente e passaram. TypeScript e builds web/offline também passaram.
+
+## Demora da leitura e importação unificada
+
+- A extração permite até quatro minutos por tentativa, com prazo total de cinco minutos e uma nova tentativa automática em timeout/504. Falhas temporárias 500/502/503 continuam com até duas novas tentativas. O limite total e o cancelamento interrompem as tentativas e liberam a conta para outra leitura.
+- Os testes simulam timeout no serviço e no navegador, queda de conexão e cancelamento. A mensagem explica a demora e orienta tentar novamente. O modal mantém o mesmo PDF selecionado, oferece “Tentar novamente” e continua exigindo conferência antes de importar.
+- “Ler gabarito com IA” foi removido da faixa acima dos controles. “Importar com IA” no topo reúne PDF de prova e gabarito em imagem ou PDF e mantém o destino na prova aberta. Os testes verificam a preservação das respostas e a aplicação no cartão correto.
+- A disposição dos controles e o destino da importação foram conferidos no navegador. O modal em 390 × 844 não apresentou transbordamento horizontal. Nenhuma prova foi importada nem houve envio de PDF pessoal à IA nesta verificação; o PDF que falhou para o usuário ainda precisa ser tentado com o novo prazo.
+
+Verificação: TypeScript, 53 testes nos quatro arquivos afetados e builds web/offline passaram.

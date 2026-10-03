@@ -7,6 +7,7 @@ vi.mock('../utils/aiClient',()=>({extractWithAI:mocks.extract}));
 vi.mock('./DocumentPreview',()=>({DocumentPreview:()=> <div>Visualizador de teste</div>}));
 import { AIImportModal } from './AIImportModal';
 import { createNewSimulado } from '../utils/provasManager';
+import { AI_READING_TIMEOUT_MESSAGE } from '../utils/aiTiming';
 const result={title:'Prova lida',totalQuestions:2,examType:'multiple_choice',questions:[],answers:[{number:1,answer:'A'},{number:2,answer:null}],warnings:['Item 2 ilegível']};
 beforeEach(()=>{
   vi.clearAllMocks();mocks.extract.mockResolvedValue(result);
@@ -89,8 +90,23 @@ describe('conferência de IA',()=>{
     render(<AIImportModal initialMode="key" simulado={createNewSimulado('Minha prova',2)} onKey={vi.fn()} onCreate={vi.fn()} onClose={vi.fn()}/>);
     await prepare();fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));
     fireEvent.click(screen.getByRole('button',{name:'Cancelar'}));finish(result);
-    await waitFor(()=>expect(screen.queryByText('Lendo o arquivo. Isso pode levar até dois minutos…')).toBeNull());
+    await waitFor(()=>expect(screen.queryByText(/Lendo o arquivo\./)).toBeNull());
     expect(screen.queryByText('Leitura concluída!')).toBeNull();expect(screen.queryByRole('combobox')).toBeNull();
+  });
+  it('explica uma demora temporária e tenta novamente com o mesmo PDF sem importar antes da conferência',async()=>{
+    const onCreate=vi.fn();const onKey=vi.fn();
+    mocks.extract.mockRejectedValueOnce(new Error(AI_READING_TIMEOUT_MESSAGE));
+    mocks.extract.mockResolvedValue({...result,answers:[],questions:[{number:1,statement:'Enunciado.',subject:'Português',options:[]}]});
+    render(<AIImportModal initialMode="exam" simulado={null} onKey={onKey} onCreate={onCreate} onClose={vi.fn()}/>);
+    const file=new File(['%PDF-1.7'],'prova.pdf',{type:'application/pdf'});
+    fireEvent.change(screen.getByLabelText('Selecione a prova em PDF'),{target:{files:[file]}});
+    fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));
+    expect((await screen.findByRole('alert')).textContent).toContain('Isso pode acontecer');
+    expect(screen.queryByText('Leitura concluída!')).toBeNull();expect(onCreate).not.toHaveBeenCalled();expect(onKey).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));
+    await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
+    expect(mocks.extract.mock.calls[0][0]).toBe(file);expect(mocks.extract.mock.calls[1][0]).toBe(file);
+    expect(screen.queryByRole('alert')).toBeNull();expect(onCreate).not.toHaveBeenCalled();
   });
   it('na criação por imagem ignora uma prova passada em segundo plano e chama somente a criação',async()=>{
     const onCreate=vi.fn().mockResolvedValue(undefined);const onKey=vi.fn();
