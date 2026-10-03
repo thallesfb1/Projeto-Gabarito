@@ -59,4 +59,18 @@ describe('flashcards no fim da prova', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Atualizar cartões com mais contexto' }));
     await screen.findByRole('alert'); expect(props.onSave).not.toHaveBeenCalled(); expect(screen.getByRole('button', { name: 'Começar revisão' })).toBeTruthy();
   });
+  it('navega pelo carrossel com teclado, revela e volta sem manter a resposta aberta',()=>{
+    const second={...card,id:'card-2',front:'Qual é a proporção equivalente?',topic:'Proporções'};
+    const deck={sourceKey:flashcardSourceKey(proof),createdAt:new Date().toISOString(),cards:[card,second],masteredCardIds:[]};
+    render(<FlashcardsReview {...props} proof={{...proof,flashcardDeck:deck}}/>);open();fireEvent.click(screen.getByRole('button',{name:'Começar revisão'}));
+    fireEvent.click(screen.getByRole('button',{name:'Revelar resposta'}));
+    fireEvent.keyDown(screen.getByRole('region',{name:'Carrossel horizontal de flashcards'}),{key:'ArrowRight'});
+    expect(screen.getByRole('heading',{name:second.front})).toBeTruthy();expect(screen.getByText('Cartão 2 de 2')).toBeTruthy();
+    expect(screen.getByRole('button',{name:'Revelar resposta'})).toBeTruthy();
+    fireEvent.click(screen.getByRole('button',{name:'Flashcard anterior'}));expect(screen.getByRole('heading',{name:card.front})).toBeTruthy();
+  });
+  it('permite uma revisão de reforço quando todas as questões com contexto foram acertadas',()=>{
+    render(<FlashcardsReview {...props} proof={{...proof,userAnswers:['B','A']}}/>);open();
+    expect(screen.getByText(/Vamos reforçar os conceitos/)).toBeTruthy();expect(screen.getByRole('button',{name:'Gerar meus flashcards'})).toBeTruthy();
+  });
 });

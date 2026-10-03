@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { ArrowRight, BookOpen, Check, ChevronLeft, ChevronRight, Layers, LoaderCircle, RotateCcw, Sparkles, X } from 'lucide-react';
 import { ModalLayer } from './ModalLayer';
 import { ExamReader } from './ExamReader';
+import { FlashcardCarousel } from './FlashcardCarousel';
 import type { FlashcardDeck, SimuladoData } from '../types';
-import { flashcardSourceKey, flashcardSources } from '../utils/flashcards';
+import { compatibleFlashcardDeck, flashcardSourceKey, flashcardSources } from '../utils/flashcards';
 import { generateFlashcardsWithAI } from '../utils/aiClient';
 
 interface Props {
@@ -31,7 +32,7 @@ export function FlashcardsReview({ proof, signedIn, onSignIn, onSave, onMapSubje
   const wrongCount = proof.userAnswers.filter((answer, idx) => idx < proof.totalQuestions && answer && proof.keyAnswers[idx] && answer !== proof.keyAnswers[idx]).length;
   const sources = flashcardSources(proof);
   const sourceKey = flashcardSourceKey(proof);
-  const deck = ready && proof.flashcardDeck?.sourceKey === sourceKey ? proof.flashcardDeck : ready && generated?.sourceKey === sourceKey ? generated : undefined;
+  const deck = compatibleFlashcardDeck(proof) || (ready && generated?.sourceKey === sourceKey ? generated : undefined);
   const card = deck?.cards[index];
   const legacyDeck = deck?.cards.some(item => !item.context || !item.explanation);
   useEffect(() => { abort.current?.abort(); setBusy(false); setGenerated(undefined); setStarted(false); setIndex(0); setFlipped(false); setFinished(false); setReferenceQuestion(null); setError(''); return () => abort.current?.abort(); }, [sourceKey, ready]);
@@ -48,7 +49,7 @@ export function FlashcardsReview({ proof, signedIn, onSignIn, onSave, onMapSubje
     } catch (cause) { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Não foi possível criar os flashcards.'); }
     finally { if (abort.current === controller) setBusy(false); }
   };
-  const move = (next: number) => { setIndex(next); setFlipped(false); };
+  const move = useCallback((next: number) => { setIndex(next); setFlipped(false); }, []);
   const remember = (mastered: boolean) => {
     if (!deck || !card) return;
     const ids = new Set(deck.masteredCardIds); if (mastered) ids.add(card.id); else ids.delete(card.id);
@@ -57,36 +58,30 @@ export function FlashcardsReview({ proof, signedIn, onSignIn, onSave, onMapSubje
   };
   const duration = reduced ? 0 : 0.55;
   return <>
-    <motion.button className={`flashcards-launcher ${ready && wrongCount ? 'flashcards-ready' : ''}`} aria-label="Flashcards de revisão" title={ready ? 'Revisar os temas das questões erradas' : 'Disponível após corrigir a prova'} onClick={() => { setOpen(true); setStarted(false); setFinished(false); move(0); }} initial={false} animate={ready && wrongCount && !reduced ? { scale: [1, 1.06, 1] } : { scale: 1 }} transition={{ duration: 0.8 }}>
-      <Layers size={22}/><span>Flashcards<small>{ready ? wrongCount ? `${wrongCount} ${wrongCount === 1 ? 'erro para revisar' : 'erros para revisar'}` : 'Revisão da prova' : 'Após a correção'}</small></span>{ready && wrongCount > 0 && <i/>}
+    <motion.button className={`flashcards-launcher ${ready && sources.length ? 'flashcards-ready' : ''}`} aria-label="Flashcards de revisão" title={ready ? 'Revisar os conceitos desta prova' : 'Disponível após corrigir a prova'} onClick={() => { setOpen(true); setStarted(false); setFinished(false); move(0); }} initial={false} animate={ready && wrongCount && !reduced ? { scale: [1, 1.06, 1] } : { scale: 1 }} transition={{ duration: 0.8 }}>
+      <Layers size={22}/><span>Flashcards<small>{ready ? wrongCount ? `${wrongCount} ${wrongCount === 1 ? 'erro para revisar' : 'erros para revisar'}` : 'Reforçar acertos' : 'Após a correção'}</small></span>{ready && wrongCount > 0 && <i/>}
     </motion.button>
     <AnimatePresence>{open && <ModalLayer label="Flashcards de revisão" onClose={close} className="flashcards-overlay">
       <motion.section className="flashcards-dialog" initial={{ opacity: 0, x: reduced ? 0 : 180, y: reduced ? 0 : 70, rotate: reduced ? 0 : 7, scale: reduced ? 1 : 0.9 }} animate={{ opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 }} exit={{ opacity: 0, y: reduced ? 0 : 30, scale: reduced ? 1 : 0.96 }} transition={{ duration, type: 'tween', ease: 'easeOut' }}>
         <header className="flashcards-header"><div><span className="flashcards-eyebrow"><Sparkles size={13}/>SEU PRÓXIMO ACERTO</span><h2>Flashcards de revisão</h2><p>{proof.title}</p></div><button className="account-icon-button" aria-label="Fechar flashcards" onClick={close}><X size={20}/></button></header>
         <div className="flashcards-content">
           {!ready ? <div className="flashcards-empty"><Layers size={38}/><h3>Primeiro, conclua sua prova</h3><p>Marque suas respostas, adicione o gabarito oficial e clique em “Corrigir Simulado”. Seus erros vão orientar esta revisão.</p></div>
-          : !wrongCount ? <div className="flashcards-empty"><Check size={38}/><h3>Nenhum erro para revisar</h3><p>Esta correção não encontrou respostas erradas. Os flashcards aparecem quando houver erros com gabarito oficial.</p></div>
-          : !sources.length ? <div className="flashcards-empty"><BookOpen size={38}/><h3>Vamos dar contexto aos seus erros</h3><p>Importe os enunciados do PDF ou mapeie as disciplinas das questões erradas para criar uma revisão útil.</p><button className="primary-action" onClick={()=>{close();onMapSubjects();}}>Mapear disciplinas<ArrowRight size={16}/></button></div>
+          : !sources.length ? <div className="flashcards-empty"><BookOpen size={38}/><h3>Vamos dar contexto à sua revisão</h3><p>Importe os enunciados do PDF ou mapeie as disciplinas das questões corrigidas para criar uma revisão útil.</p><button className="primary-action" onClick={()=>{close();onMapSubjects();}}>Mapear disciplinas<ArrowRight size={16}/></button></div>
           : busy ? <div className="flashcards-generating" role="status"><div className="flashcards-mini-stack"><Layers size={40}/></div><LoaderCircle size={22} className="animate-spin"/><h3>Transformando erros em aprendizado</h3><p>A IA está identificando os temas e preparando até 10 cartões para você. Isso pode levar até dois minutos.</p><button className="secondary-action" onClick={()=>{abort.current?.abort();setBusy(false);}}>Cancelar geração</button></div>
-          : !deck ? <div className="flashcards-empty"><div className="flashcards-mini-stack"><Sparkles size={36}/></div><h3>Uma revisão feita para esta prova</h3><p>Até 10 cartões sobre os conceitos das suas questões erradas, com perguntas curtas e explicações para fixar.</p><div className="flashcards-source-summary"><span>{sources.length} questões com contexto</span><span>{new Set(sources.map(s=>s.subject || 'A categorizar')).size} disciplinas</span></div>{sources.length > 30 && <p className="flashcards-note">Esta rodada seleciona 30 erros distribuídos entre as disciplinas.</p>}
+          : !deck ? <div className="flashcards-empty"><div className="flashcards-mini-stack"><Sparkles size={36}/></div><h3>Uma revisão feita para esta prova</h3><p>{sources.some(source=>source.result==='wrong') ? 'Seus erros têm prioridade. Com poucos erros, alguns acertos complementam a revisão.' : 'Você acertou as questões com contexto. Vamos reforçar os conceitos para mantê-los na memória.'}</p><div className="flashcards-source-summary"><span>{sources.filter(s=>s.result==='wrong').length} erros com contexto</span><span>{new Set(sources.map(s=>s.subject || 'A categorizar')).size} disciplinas</span></div>{sources.length > 30 && <p className="flashcards-note">Esta rodada seleciona 30 erros distribuídos entre as disciplinas.</p>}
             {signedIn ? <button className="primary-action" onClick={()=>void create()}><Sparkles size={17}/>Gerar meus flashcards</button> : <><p className="flashcards-note">Entre com Google para gerar a revisão e salvá-la na sua conta.</p><button className="primary-action" onClick={()=>void onSignIn().catch(()=>setError('Não foi possível entrar. Tente novamente.'))}>Entrar com Google</button></>}
             <p className="flashcards-note">Os enunciados e as respostas selecionados serão enviados à IA do Google. Confira as explicações com seu material de estudo.</p>
           </div>
           : finished ? <div className="flashcards-empty"><Check size={38}/><h3>Mais clareza para a próxima prova</h3><p>Você percorreu {deck.cards.length} cartões. Marcou {deck.masteredCardIds.length} como “Já sei”; os demais ficam para revisar de novo.</p><button className="primary-action" onClick={()=>{setFinished(false);move(0);}}><RotateCcw size={16}/>Revisar novamente</button><button className="secondary-action" onClick={close}>Voltar à prova</button></div>
           : !started ? <div className="flashcards-intro">
             <div className="flashcards-stack"><div className="flashcard-shadow-card flashcard-shadow-one"/><div className="flashcard-shadow-card flashcard-shadow-two"/>
-              <motion.div className="flashcard-cover" initial={{ rotateY: reduced ? 0 : -25, y: reduced ? 0 : 25 }} animate={{ rotateY: 0, y: 0 }} transition={{ duration, delay: reduced ? 0 : 0.12 }}><span className="flashcard-cover-corner">GP / ESTUDO ATIVO</span><div className="flashcard-cover-emblem"><Sparkles size={38}/></div><p>Transforme o erro.<br/><strong>Guarde o conceito.</strong></p><span className="flashcard-cover-bottom">{deck.cards.length} CARTÕES · SUA PRÓXIMA EVOLUÇÃO</span></motion.div>
+              <motion.div className="flashcard-cover" initial={{ rotateY: reduced ? 0 : -25, y: reduced ? 0 : 25 }} animate={{ rotateY: 0, y: 0 }} transition={{ duration, delay: reduced ? 0 : 0.12 }}><span className="flashcard-cover-corner">GP / ESTUDO ATIVO</span><div className="flashcard-cover-emblem"><Sparkles size={38}/></div><p>Explore o conceito.<br/><strong>Prepare seu próximo acerto.</strong></p><span className="flashcard-cover-bottom">{deck.cards.length} CARTÕES · SUA PRÓXIMA EVOLUÇÃO</span></motion.div>
             </div><p className="flashcards-note">Pense na resposta antes de virar cada cartão.</p><button className="primary-action" onClick={()=>setStarted(true)}>Começar revisão<ArrowRight size={17}/></button>
             {legacyDeck && signedIn && <div className="flashcards-upgrade"><button className="secondary-action" onClick={()=>void create()}><Sparkles size={16}/>Atualizar cartões com mais contexto</button><p className="flashcards-note">Gera uma nova rodada pela IA e reinicia o progresso destes cartões quando ela estiver pronta.</p></div>}
           </div>
           : card && <>
-            <div className="flashcards-progress"><span>Cartão {index+1} de {deck.cards.length}</span><span>{deck.masteredCardIds.length} fixados</span><div><i style={{ width: `${(index+1)/deck.cards.length*100}%` }}/></div></div>
-            <AnimatePresence mode="wait"><motion.div key={card.id} className="flashcard-stage" initial={{ opacity: 0, x: reduced ? 0 : 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : -40 }} transition={{ duration: reduced ? 0 : 0.25 }}>
-              <motion.div className="flashcard-flipper" animate={{ rotateY: flipped ? 180 : 0 }} transition={{ duration }}>
-                <article className="flashcard-face flashcard-front" aria-hidden={flipped} inert={flipped} tabIndex={flipped ? -1 : 0} aria-label="Pergunta do flashcard"><div className="flashcard-category"><BookOpen size={15}/>{card.subject}</div><span className="flashcard-topic">{card.topic}</span>{card.context && <div className="flashcard-context"><span>CONTEXTO DA REVISÃO</span><p>{card.context}</p></div>}<h3>{card.front}</h3><div className="flashcard-origin"><span>Questão de origem</span>{card.questionNumbers.map(number=><button key={number} className="flashcard-source-button" aria-label={`Consultar questão ${number} de origem`} onClick={()=>setReferenceQuestion(number-1)}>Q{number}<BookOpen size={12}/></button>)}</div></article>
-                <article className="flashcard-face flashcard-answer" aria-hidden={!flipped} inert={!flipped}><div className="flashcard-category"><Sparkles size={15}/>O CONCEITO PARA GUARDAR</div><h3>{card.topic}</h3><p className="flashcard-direct-answer">{card.back}</p>{card.explanation && <section className="flashcard-learning-section"><h4>Por que funciona</h4><p>{card.explanation}</p></section>}{card.example && <section className="flashcard-learning-section flashcard-example"><h4>Na prática</h4><p>{card.example}</p></section>}{card.pitfall && <section className="flashcard-learning-section"><h4>Atenção ao detalhe</h4><p>{card.pitfall}</p></section>}<button className="text-action" onClick={()=>setFlipped(false)}>Ver pergunta novamente</button></article>
-              </motion.div>
-            </motion.div></AnimatePresence>
+            <div className="flashcards-progress"><span>Cartão {index+1} de {deck.cards.length}</span><span>{deck.masteredCardIds.length} {deck.masteredCardIds.length===1?'fixado':'fixados'}</span><div><i style={{ width: `${(index+1)/deck.cards.length*100}%` }}/></div></div>
+            <FlashcardCarousel cards={deck.cards} proof={proof} index={index} flipped={flipped} onMove={move} onFlip={setFlipped} onReference={setReferenceQuestion}/>
             <div className="flashcards-actions">{flipped ? <><button className="secondary-action" onClick={()=>remember(false)}><RotateCcw size={16}/>Revisar de novo</button><button className="primary-action" onClick={()=>remember(true)}><Check size={16}/>Já sei</button></> : <button className="primary-action" onClick={()=>setFlipped(true)}>Revelar resposta<RotateCcw size={16}/></button>}</div>
             <nav className="flashcards-navigation" aria-label="Navegação dos flashcards"><button className="account-icon-button" aria-label="Flashcard anterior" disabled={index===0} onClick={()=>move(index-1)}><ChevronLeft size={18}/></button><span>Revisão por IA · confira com seu material</span><button className="account-icon-button" aria-label="Próximo flashcard" disabled={index>=deck.cards.length-1} onClick={()=>move(index+1)}><ChevronRight size={18}/></button></nav>
           </>}

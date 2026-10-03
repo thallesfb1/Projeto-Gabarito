@@ -68,4 +68,27 @@ describe('conferência de IA',()=>{
     expect((await screen.findByRole('alert')).textContent).toContain('Armazenamento indisponível');
     expect(screen.getByRole('combobox',{name:'Gabarito da questão 1'})).toBeTruthy();expect(onClose).not.toHaveBeenCalled();
   });
+  it('avisa ao terminar, permite fechar o aviso e não importa sem conferência',async()=>{
+    const onKey=vi.fn();render(<AIImportModal initialMode="key" simulado={createNewSimulado('Minha prova',2)} onKey={onKey} onCreate={vi.fn()} onClose={vi.fn()}/>);
+    await prepare();fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));
+    expect(await screen.findByText('Leitura concluída!')).toBeTruthy();expect(onKey).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button',{name:'Fechar aviso de leitura concluída'}));
+    expect(screen.queryByText('Leitura concluída!')).toBeNull();expect(screen.getByRole('combobox',{name:'Gabarito da questão 1'})).toBeTruthy();
+  });
+  it('pede permissão apenas por clique e mantém o aviso no site mesmo com bloqueio no navegador',async()=>{
+    const requestPermission=vi.fn().mockResolvedValue('denied');
+    vi.stubGlobal('Notification',{permission:'default',requestPermission});vi.stubGlobal('isSecureContext',true);
+    render(<AIImportModal initialMode="key" simulado={createNewSimulado('Minha prova',2)} onKey={vi.fn()} onCreate={vi.fn()} onClose={vi.fn()}/>);
+    expect(requestPermission).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('button',{name:'Ativar aviso neste dispositivo'}));
+    await screen.findByText(/O navegador bloqueou/);expect(requestPermission).toHaveBeenCalledTimes(1);
+    await prepare();fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));expect(await screen.findByText('Leitura concluída!')).toBeTruthy();
+  });
+  it('não emite aviso para uma leitura cancelada que termina depois',async()=>{
+    let finish!: (value:typeof result)=>void;mocks.extract.mockReturnValue(new Promise(resolve=>{finish=resolve;}));
+    render(<AIImportModal initialMode="key" simulado={createNewSimulado('Minha prova',2)} onKey={vi.fn()} onCreate={vi.fn()} onClose={vi.fn()}/>);
+    await prepare();fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));
+    fireEvent.click(screen.getByRole('button',{name:'Cancelar'}));finish(result);
+    await waitFor(()=>expect(screen.queryByText('Lendo o arquivo. Isso pode levar até dois minutos…')).toBeNull());
+    expect(screen.queryByText('Leitura concluída!')).toBeNull();expect(screen.queryByRole('combobox')).toBeNull();
+  });
 });

@@ -1,7 +1,7 @@
 import { AccountAvatar } from './AccountAvatar';
 import { ProfileModal } from './ProfileModal';
 import { useEffect, useState } from 'react';
-import { BookOpenCheck, Cloud, CloudOff, Download, ChevronDown, RefreshCw, Upload, Menu, Sun, Moon, BookOpen, Sparkles } from 'lucide-react';
+import { BookOpenCheck, Cloud, CloudOff, Download, ChevronDown, RefreshCw, Upload, Menu, Sun, Moon, BookOpen, Sparkles, X } from 'lucide-react';
 import { AppTheme } from '../types';
 import { useWorkspace } from '../hooks/useWorkspace';
 import { GoogleIcon } from './GoogleIcon';
@@ -11,10 +11,12 @@ export function AccountBar({ workspace, onBackup, theme, onThemeChange, onMenu, 
   const [profileOpen, setProfileOpen] = useState(false);
   const [imported, setImported] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [alertDismissed, setAlertDismissed] = useState(false);
   const { session, configured, cloudStatus, saveStatus, error } = workspace;
+  useEffect(() => { setAlertDismissed(false); }, [workspace.scope, error, actionError, saveStatus, cloudStatus]);
   useEffect(() => { setImported(false); setActionError(''); setProfileOpen(false); }, [workspace.scope]);
   const run = async (action: () => Promise<void>) => {
-    setBusy(true); setActionError('');
+    setBusy(true); setActionError(''); setAlertDismissed(false);
     try { await action(); } catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Não foi possível concluir a ação. Seus dados foram mantidos. Tente novamente.'); }
     finally { setBusy(false); }
   };
@@ -34,6 +36,6 @@ export function AccountBar({ workspace, onBackup, theme, onThemeChange, onMenu, 
       </div>
     </div>
     {session && <div className="account-tools"><span>Suas provas acompanham sua conta.</span><button type="button" disabled={busy || imported} onClick={() => run(async () => { await workspace.importGuest(); setImported(true); })}><Download className="w-3.5 h-3.5" />{imported ? 'Importação solicitada' : 'Importar provas deste dispositivo'}</button><button type="button" onClick={onBackup}><Upload className="w-3.5 h-3.5" />Exportar arquivo</button></div>}
-    {(error || actionError || saveStatus === 'error') && <div className="account-alert" role="alert"><span>{error || actionError || 'Não foi possível salvar suas alterações. Exporte um backup antes de fechar o site.'}</span><button type="button" onClick={onBackup}>Exportar backup</button>{session && <button type="button" disabled={busy || cloudStatus === 'loading'} onClick={() => run(workspace.retry)}>Tentar novamente</button>}</div>}
+    {!alertDismissed && (error || actionError || saveStatus === 'error') && <div className="account-alert" role="alert"><span>{error || actionError || 'Não foi possível salvar suas alterações. Exporte um backup antes de fechar o site.'}</span><button type="button" onClick={onBackup}>Exportar backup</button>{session && <button type="button" disabled={busy || cloudStatus === 'loading'} onClick={() => run(workspace.retry)}>Tentar novamente</button>}<button type="button" className="account-alert-close" aria-label="Fechar aviso da conta" onClick={()=>setAlertDismissed(true)}><X size={18}/></button></div>}
   </header>{profileOpen && session && <ProfileModal user={session.user} theme={theme} onThemeChange={onThemeChange} onClose={()=>setProfileOpen(false)} onSignOut={workspace.signOut} onSync={workspace.retry} onBackup={onBackup} count={workspace.store.provas.length} syncStatus={cloudStatus}/>}</>;
 }

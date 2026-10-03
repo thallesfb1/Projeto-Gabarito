@@ -26,11 +26,20 @@ describe('API de IA segura',()=>{
     const response=await fetch(`${url}/api/ai/flashcards`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer signed-session'},body:JSON.stringify({questions:[{number:1,subject:'Matemática',statement:'',options:[],userAnswer:'A',correctAnswer:'B'}]})});
     expect(response.status).toBe(422);
   });
-  it('não gera flashcards sem autenticação, sem contexto ou para respostas corretas',async()=>{
+  it('não gera flashcards sem autenticação, sem contexto ou com classificação adulterada',async()=>{
     await start();
     const call=(questions:unknown,token=true)=>fetch(`${url}/api/ai/flashcards`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer signed-session'}:{})},body:JSON.stringify({questions})});
     expect((await call([],false)).status).toBe(401);expect((await call([])).status).toBe(400);
-    expect((await call([{number:1,subject:'Matemática',userAnswer:'A',correctAnswer:'A'}])).status).toBe(400);expect(mocks.generate).not.toHaveBeenCalled();
+    expect((await call([{number:1,subject:'Matemática',userAnswer:'A',correctAnswer:'A',result:'wrong'}])).status).toBe(400);expect(mocks.generate).not.toHaveBeenCalled();
+  });
+  it('permite acertos como reforço e recusa uma rodada que não prioriza erros',async()=>{
+    const cards=Array.from({length:10},(_,index)=>({subject:'Matemática',topic:'Frações',context:'Considere 1/2 + 1/3.',front:`Como calcular frações ${index}?`,back:'Use denominadores comuns.',explanation:'Expresse ambas as frações em sextos para somar.',questionNumbers:[index<6?1:2]}));
+    mocks.generate.mockResolvedValue({text:JSON.stringify({cards}),candidates:[{finishReason:'STOP'}]});await start();
+    const questions=[{number:1,subject:'Matemática',userAnswer:'A',correctAnswer:'B',result:'wrong'},{number:2,subject:'Matemática',userAnswer:'B',correctAnswer:'B',result:'correct'}];
+    const call=(selected:unknown)=>fetch(`${url}/api/ai/flashcards`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer signed-session'},body:JSON.stringify({questions:selected})});
+    expect((await call(questions)).status).toBe(422);
+    cards[6].questionNumbers=[1]; mocks.generate.mockResolvedValue({text:JSON.stringify({cards}),candidates:[{finishReason:'STOP'}]});expect((await call(questions)).status).toBe(200);
+    cards.forEach(card=>{card.questionNumbers=[2];});mocks.generate.mockResolvedValue({text:JSON.stringify({cards}),candidates:[{finishReason:'STOP'}]});expect((await call([questions[1]])).status).toBe(200);
   });
   it('rejeita cartões que inventam números de questões de origem',async()=>{
     mocks.generate.mockResolvedValue({text:JSON.stringify({cards:[{subject:'Matemática',topic:'Frações',front:'Pergunta',back:'Explicação',questionNumbers:[99]}]}),candidates:[{finishReason:'STOP'}]});await start();

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { FileText, Image, Sparkles, X, LoaderCircle, FolderOpen, CheckCircle2, Cloud, Trash2 } from 'lucide-react';
+import { Bell, FileText, Image, Sparkles, X, LoaderCircle, FolderOpen, CheckCircle2, Cloud, Trash2 } from 'lucide-react';
 import { ModalLayer } from './ModalLayer';
 import { AIExtraction, ExtractionMode, validateAIFile, validateAIExtraction, answersFromExtraction } from '../utils/aiExtraction';
 import { extractWithAI } from '../utils/aiClient';
 import { SimuladoData } from '../types';
 import { GoogleIcon } from './GoogleIcon';
+import { AICompletionNotice, notifyCompletedReading } from './AICompletionNotice';
+import { DocumentPreview } from './DocumentPreview';
 
 interface Props {
   initialMode: ExtractionMode;
@@ -27,6 +29,12 @@ export function AIImportModal({ initialMode, simulado, onClose, onCreate, onKey,
   const dragDepth = useRef(0);
   const [reviewed, setReviewed] = useState(false);
   const [versionHint, setVersionHint] = useState('');
+  const [completed, setCompleted] = useState<{ filename: string; count: number } | null>(null);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>(() => typeof Notification !== 'undefined' && window.isSecureContext ? Notification.permission : 'unsupported');
+  const enableNotifications = async () => {
+    try { setNotificationPermission(await Notification.requestPermission()); }
+    catch { setNotificationPermission('unsupported'); }
+  };
   const controller = useRef<AbortController | null>(null);
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; controller.current?.abort(); }; }, []);
@@ -44,9 +52,9 @@ export function AIImportModal({ initialMode, simulado, onClose, onCreate, onKey,
     catch (cause) { if (alive.current) setError(abort.signal.aborted ? 'Leitura cancelada. Nenhuma prova foi alterada.' : cause instanceof Error ? cause.message : 'Não foi possível concluir a leitura.'); }
     finally { if (alive.current) setBusy(null); }
   };
-  const changeMode = (next: ExtractionMode) => { setMode(next); setFile(null); setResult(null); setReviewed(false); setError(''); };
+  const changeMode = (next: ExtractionMode) => { setCompleted(null); setMode(next); setFile(null); setResult(null); setReviewed(false); setError(''); };
   const selectFile = (next?: File) => {
-    setResult(null); setReviewed(false); setFile(null); setError('');
+    setCompleted(null); setResult(null); setReviewed(false); setFile(null); setError('');
     if (!next) return;
     try { validateAIFile(next, mode); setFile(next); } catch(cause) { setError((cause as Error).message); }
   };
@@ -87,7 +95,8 @@ export function AIImportModal({ initialMode, simulado, onClose, onCreate, onKey,
             <p className="ai-storage-note"><Cloud className="w-4 h-4"/><span>Ao solicitar a leitura, o arquivo é enviado ao serviço de IA. Ao confirmar a importação, o original fica salvo de forma privada na sua conta.</span></p>
           </div>
           {mode === 'key' && <label className="block text-sm font-semibold">Versão ou cor do caderno (opcional)<input value={versionHint} maxLength={160} disabled={Boolean(busy)} onChange={e=>setVersionHint(e.target.value)} placeholder="Ex.: caderno azul, prova tipo 1" className="block w-full rounded-lg border p-2.5 mt-2"/></label>}
-          <button className="primary-action" disabled={Boolean(busy) || !file || (Boolean(onSignIn) && !signedIn) || (mode === 'key' && !simulado)} onClick={()=>run('extract',async signal=>{if(file){const extracted=await extractWithAI(file,mode,signal,versionHint);if(!signal.aborted){setResult(extracted);setReviewed(false);}}})}><Sparkles className="w-4 h-4"/>Extrair e conferir</button>
+          <div className="ai-notification-option"><Bell size={16}/><span>{notificationPermission === 'granted' ? 'Você também receberá um aviso se estiver em outra aba.' : 'Um aviso aparecerá aqui quando a leitura terminar.'}</span>{notificationPermission === 'default' && <button className="text-action" onClick={()=>void enableNotifications()}>Ativar aviso neste dispositivo</button>}{notificationPermission === 'denied' && <small>O navegador bloqueou avisos externos; o aviso no site continua ativo.</small>}</div>
+          <button className="primary-action" disabled={Boolean(busy) || !file || (Boolean(onSignIn) && !signedIn) || (mode === 'key' && !simulado)} onClick={()=>run('extract',async signal=>{setCompleted(null);if(file){const extracted=await extractWithAI(file,mode,signal,versionHint);if(!signal.aborted && alive.current){setResult(extracted);setReviewed(false);setCompleted({filename:file.name,count:extracted.totalQuestions});notifyCompletedReading();}}})}><Sparkles className="w-4 h-4"/>Extrair e conferir</button>
         </>}
         {busy && <div className="flex items-center gap-3 rounded-xl border p-4" role="status"><LoaderCircle className="w-5 h-5 animate-spin"/><span>{busy === 'extract' ? 'Lendo o arquivo. Isso pode levar até dois minutos…' : 'Preservando os dados e importando…'}</span>{busy !== 'apply' && <button className="text-action ml-auto" onClick={()=>controller.current?.abort()}>Cancelar</button>}</div>}
         {error && <p className="ai-error rounded-xl p-3 text-sm" role="alert">{error}</p>}
@@ -96,7 +105,7 @@ export function AIImportModal({ initialMode, simulado, onClose, onCreate, onKey,
           {result.warnings.length > 0 && <div className="ai-warning rounded-xl p-3 space-y-1" role="status">{result.warnings.map((warning,index)=><p className="text-sm" key={index}>{warning}</p>)}</div>}
           {mode === 'exam' && <label className="block text-sm font-semibold">Título da nova prova<input value={result.title} maxLength={180} disabled={Boolean(busy)} onChange={e=>setResult({...result,title:e.target.value})} className="block mt-2 w-full rounded-lg border p-2.5"/></label>}
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="ai-original rounded-xl border overflow-hidden"><h4 className="p-3 text-sm font-semibold border-b">Arquivo original</h4>{file?.type === 'application/pdf' ? <iframe title="PDF original para conferência" src={previewURL} className="w-full h-[420px]" sandbox="allow-same-origin"/> : <img src={previewURL} alt="Gabarito original para conferência" className="w-full max-h-[600px] object-contain"/>}</div>
+            <div className="ai-original rounded-xl border overflow-hidden"><h4 className="p-3 text-sm font-semibold border-b">Arquivo original</h4>{file?.type === 'application/pdf' ? <DocumentPreview blob={file} url={previewURL} name={file.name} mime={file.type}/> : <img src={previewURL} alt="Gabarito original para conferência" className="w-full max-h-[600px] object-contain"/>}</div>
             <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">{mode === 'exam' ? result.questions.map((question,index)=><details key={question.number} className="rounded-xl border p-3" open={index===0}><summary className="font-semibold cursor-pointer">Questão {question.number}{question.page ? ` · página ${question.page}` : ''}</summary><label className="block text-xs mt-3">Enunciado<textarea aria-label={`Enunciado da questão ${question.number}`} rows={5} value={question.statement} disabled={Boolean(busy)} onChange={e=>setResult({...result,questions:result.questions.map((item,i)=>i===index?{...item,statement:e.target.value}:item)})} className="block w-full rounded border p-2 mt-1 text-sm"/></label>{question.options.map((option,optionIndex)=><label key={option.label} className="block text-xs mt-2">Alternativa {option.label}<textarea aria-label={`Questão ${question.number}, texto da alternativa ${option.label}`} rows={2} disabled={Boolean(busy)} value={option.text} onChange={e=>setResult({...result,questions:result.questions.map((item,i)=>i===index?{...item,options:item.options.map((opt,j)=>j===optionIndex?{...opt,text:e.target.value}:opt)}:item)})} className="block w-full rounded border p-2 mt-1 text-sm"/></label>)}</details>) : result.answers.map((item,index)=><label key={item.number} className="flex items-center justify-between gap-3 rounded-lg border p-2 text-sm"><span>Questão {String(item.number).padStart(2,'0')}</span><select aria-label={`Gabarito da questão ${item.number}`} value={item.answer||''} disabled={Boolean(busy)} className="rounded border p-2" onChange={e=>setResult({...result,answers:result.answers.map((answer,i)=>i===index?{...answer,answer:(e.target.value||null) as typeof answer.answer}:answer)})}><option value="">Em branco / ilegível</option>{(result.examType==='true_false'?['V','F']:['A','B','C','D','E']).map(answer=><option key={answer} value={answer}>{answer}</option>)}</select></label>)}</div>
           </div>
           <label className="flex gap-2 text-sm"><input type="checkbox" checked={reviewed} disabled={Boolean(busy)} onChange={e=>setReviewed(e.target.checked)}/><span>Conferi a leitura e a versão da prova com o arquivo original.</span></label>
@@ -104,5 +113,6 @@ export function AIImportModal({ initialMode, simulado, onClose, onCreate, onKey,
         </>}
       </div>
     </div>
+    {completed && <AICompletionNotice {...completed} onClose={()=>setCompleted(null)}/>}
   </ModalLayer>;
 }
