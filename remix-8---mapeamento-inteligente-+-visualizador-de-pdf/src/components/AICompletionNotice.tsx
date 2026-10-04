@@ -1,5 +1,6 @@
 import { CheckCircle2, X } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
+import { playReadingSound } from '../utils/readingSound';
 
 export function AICompletionNotice({ filename, count, onClose, onReview }: { filename: string; count: number; onClose: () => void; onReview?: () => void }) {
   const reduced = useReducedMotion();
@@ -11,6 +12,7 @@ export function AICompletionNotice({ filename, count, onClose, onReview }: { fil
 }
 
 export async function notifyCompletedReading(id = 'complete') {
+  if (document.querySelector('[data-reading-active="true"]')?.getAttribute('data-reading-id') !== id || document.visibilityState === 'hidden') playReadingSound();
   if (document.visibilityState !== 'hidden' || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
   try {
     const options = { body: 'A IA terminou de ler seu arquivo. Volte ao site para conferir e importar.', tag: `ai-reading-${id}` };

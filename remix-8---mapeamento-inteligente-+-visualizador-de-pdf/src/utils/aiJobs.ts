@@ -2,7 +2,13 @@ import type { SimuladoData, SourceDocument } from '../types';
 import type { AIExtraction, ExtractionMode } from './aiExtraction';
 import { sanitizeSourceDocuments } from './sourceDocumentMetadata';
 
-export type AIJobStatus = 'queued' | 'running' | 'ready' | 'failed' | 'cancelled' | 'completed';
+export type AIJobStatus = 'queued' | 'running' | 'saving' | 'ready' | 'failed' | 'cancelled' | 'completed';
+export interface AIJobProgress {
+  stage: 'downloading' | 'reading' | 'retrying' | 'preserving' | 'saving';
+  part?: number;
+  parts?: number;
+  attempt?: number;
+}
 export interface AIReadingJob {
   id: string;
   user_id: string;
@@ -16,10 +22,21 @@ export interface AIReadingJob {
   error: string | null;
   question_count?: number;
   created_at: string;
+  started_at?: string | null;
+  progress?: AIJobProgress | null;
   lease_token?: string | null;
   lease_expires_at?: string | null;
 }
-export const isReadingJob = (job: AIReadingJob) => job.status === 'queued' || job.status === 'running';
+export const isReadingJob = (job: AIReadingJob) => ['queued', 'running', 'saving'].includes(job.status);
+export function readingStage(job: AIReadingJob) {
+  if (job.status === 'queued') return 'Aguardando processamento';
+  if (job.status === 'saving' || job.progress?.stage === 'saving') return 'Salvando a leitura concluída';
+  if (job.progress?.stage === 'downloading') return 'Preparando o arquivo';
+  if (job.progress?.stage === 'retrying') return 'Aguardando nova tentativa da IA';
+  if (job.progress?.stage === 'preserving') return `Preservando parte ${job.progress.part} de ${job.progress.parts}`;
+  if (job.progress?.parts && job.progress.parts > 1) return `Lendo parte ${job.progress.part} de ${job.progress.parts}`;
+  return 'Lendo o arquivo';
+}
 export const locksProof = (job: AIReadingJob, proofId: string) => job.proof_id === proofId && Boolean(job.target_snapshot) && (isReadingJob(job) || job.status === 'ready');
 
 export function validateJobInput(value: unknown, owner: string) {

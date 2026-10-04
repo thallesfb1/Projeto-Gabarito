@@ -39,9 +39,10 @@ export async function submitAIJob(file: File, mode: ExtractionMode, target: Simu
 }
 export const cancelAIJob = (id: string) => jobRequest(`/${encodeURIComponent(id)}`, 'DELETE');
 export const completeAIJob = (id: string) => jobRequest(`/${encodeURIComponent(id)}/complete`, 'POST');
+export async function retryAIJob(id: string): Promise<AIReadingJob> { return (await jobRequest(`/${encodeURIComponent(id)}/retry`, 'POST')).job; }
 export async function reviewAIJobFile(job: AIReadingJob) {
   const { job: full } = await jobRequest(`/${encodeURIComponent(job.id)}`);
-  const extraction = validateAIExtraction(full.extraction, full.mode);
+  const extraction = full.status === 'ready' ? validateAIExtraction(full.extraction, full.mode) : null;
   const blob = await downloadOriginalFile(full.source);
   return { job: { ...full, extraction } as AIReadingJob, file: new File([blob], full.source.name, { type: full.source.mime }) };
 }

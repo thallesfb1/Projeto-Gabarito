@@ -110,8 +110,19 @@ export default function App() {
   const [mapperProvaId, setMapperProvaId] = useState<string | null>(null);
   const [aiMode, setAiMode] = useState<'exam' | 'key' | null>(null);
   const [aiTargetId, setAiTargetId] = useState<string | null>(null);
+  const [aiChooseDestination, setAiChooseDestination] = useState(true);
   const aiTargetProof = aiTargetId ? store.provas.find(proof=>proof.id===aiTargetId) || null : null;
-  const openAI = (mode: ExtractionMode, targetId: string | null = null) => {setAiTargetId(targetId);setAiMode(mode);};
+  const openAI = (mode: ExtractionMode, targetId: string | null = null, chooseDestination = true) => {setReviewReading(null);setAiChooseDestination(chooseDestination);setAiTargetId(targetId);setAiMode(mode);};
+  const followedJob = reviewReading ? aiReadings.jobs.find(job => job.id === reviewReading.job.id) : null;
+  const currentReadingJob = reviewReading ? { ...reviewReading.job, ...followedJob, target_snapshot: reviewReading.job.target_snapshot, extraction: reviewReading.job.extraction } : undefined;
+  useEffect(() => {
+    if (!reviewReading || followedJob?.status !== 'ready' || reviewReading.job.extraction) return;
+    let disposed = false;
+    let retryTimer: ReturnType<typeof setTimeout>;
+    const load = () => { void reviewAIJobFile(followedJob).then(reading => { if (!disposed) setReviewReading(reading); }).catch(() => { if (!disposed) retryTimer = setTimeout(load, 5000); }); };
+    load();
+    return () => { disposed = true; clearTimeout(retryTimer); };
+  }, [reviewReading?.job.id, followedJob?.status, scope]);
   const [readerQuestionIndex, setReaderQuestionIndex] = useState<number | null>(null);
   const pendingReader=useRef<number|null>(null);
 
@@ -802,7 +813,7 @@ export default function App() {
     const account=scope;
     const reading=await reviewAIJobFile(job);
     if(currentScope.current!==account)return;
-    setReviewReading(reading);setAiTargetId(reading.job.target_snapshot ? reading.job.proof_id : null);setAiMode(reading.job.mode);
+    setReviewReading(reading);setAiChooseDestination(false);setAiTargetId(reading.job.target_snapshot ? reading.job.proof_id : null);setAiMode(reading.job.mode);
   };
   const startReading = async (file: File, mode: ExtractionMode, hint: string) => {
     const account=scope,destination=aiTargetId;
@@ -812,8 +823,8 @@ export default function App() {
     if(currentScope.current!==account)throw new Error('A conta mudou durante o envio.');
     const target=destination ? currentStore.current.provas.find(item=>item.id===destination) || null : null;
     if(destination && !target)throw new Error('A prova de destino não está mais disponível.');
-    await aiReadings.start(file,mode,target,hint);
-    if(currentScope.current===account)showToast('Leitura iniciada. Você pode continuar nas outras provas.');
+    const job = await aiReadings.start(file,mode,target,hint);
+    if(currentScope.current===account && job){setAiMode(mode);setReviewReading({job,file});setAiChooseDestination(false);showToast('Leitura iniciada. Você pode acompanhar aqui ou continuar pelo site.');}
   };
 
   return (
@@ -1039,6 +1050,7 @@ export default function App() {
 
               {/* Action and Control Bar */}
               <ControlsBar
+                onImportFile={() => openAI('exam', simulado.id, false)}
                 totalQuestions={simulado.totalQuestions}
                 onTotalChange={handleTotalQuestionsChange}
                 filledCount={userFilledCount}
@@ -1218,7 +1230,11 @@ export default function App() {
       {timer.promptOpen && <TimerStartModal onDecide={decideTimer}/>}
       {/* Export / Import Modal for Individual Exam */}
       <React.Suspense fallback={<div className="fixed inset-0 bg-black/50 z-[100] grid place-items-center text-white" role="status">Abrindo painel…</div>}>
-      {aiMode && isStorageReady && <AIImportModal key={scope+':'+(reviewReading?.job.id || aiTargetId || 'new')} initialMode={aiMode} purpose={aiTargetId?'attach':'create'} simulado={aiTargetProof} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onClose={() => {setAiMode(null);setAiTargetId(null);setReviewReading(null);}}
+      {aiMode && isStorageReady && <AIImportModal key={scope+':'+(reviewReading?.job.id || 'import')} initialMode={aiMode} purpose={aiTargetId?'attach':'create'} simulado={aiTargetProof} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onClose={() => {setAiMode(null);setAiTargetId(null);setReviewReading(null);}}
+        proofs={store.provas} onDestinationChange={aiChooseDestination && !reviewReading ? setAiTargetId : undefined}
+        initialJob={currentReadingJob}
+        onRetry={reviewReading ? async () => {const job = await aiReadings.retry(reviewReading.job);if(currentScope.current===scope)setReviewReading({...reviewReading,job});} : undefined}
+        onCancel={reviewReading ? async () => {await aiReadings.remove(reviewReading.job);setAiMode(null);setReviewReading(null);} : undefined}
         onStart={reviewReading ? undefined : startReading}
         initialExtraction={reviewReading?.job.extraction || undefined} initialFile={reviewReading?.file}
         onCreate={handleAIReading}
@@ -1314,7 +1330,7 @@ export default function App() {
         updateActiveSimulado(previous => previous.id === simulado.id ? saveFlashcardReview(previous,deck) : previous);
       }}/></React.Suspense>}
 
-      {workspace.session && <AIReadingPanel key={scope} {...aiReadings} onReview={reviewJob} onRemove={job=>aiReadings.remove(job)} onRefresh={aiReadings.refresh}/>}
+      {workspace.session && <AIReadingPanel key={scope} {...aiReadings} onReview={reviewJob} onRetry={job=>aiReadings.retry(job).then(()=>undefined)} onRemove={job=>aiReadings.remove(job)} onRefresh={aiReadings.refresh}/>}
 
       {/* Floating Toast Notification */}
       {toastMessage && (

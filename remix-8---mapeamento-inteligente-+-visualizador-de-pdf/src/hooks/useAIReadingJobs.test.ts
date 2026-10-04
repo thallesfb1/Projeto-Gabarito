@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
-const mocks = vi.hoisted(() => ({ list: vi.fn(), submit: vi.fn(), cancel: vi.fn(), complete: vi.fn(), notify: vi.fn() }));
-vi.mock('../utils/aiJobClient', () => ({ listAIJobs: mocks.list, submitAIJob: mocks.submit, cancelAIJob: mocks.cancel, completeAIJob: mocks.complete }));
+const mocks = vi.hoisted(() => ({ list: vi.fn(), submit: vi.fn(), cancel: vi.fn(), complete: vi.fn(), notify: vi.fn(), retry: vi.fn() }));
+vi.mock('../utils/aiJobClient', () => ({ listAIJobs: mocks.list, submitAIJob: mocks.submit, cancelAIJob: mocks.cancel, completeAIJob: mocks.complete, retryAIJob: mocks.retry }));
 vi.mock('../components/AICompletionNotice', () => ({ notifyCompletedReading: mocks.notify }));
 import { useAIReadingJobs } from './useAIReadingJobs';
 import type { AIReadingJob } from '../utils/aiJobs';
@@ -10,6 +10,18 @@ const job = { id: 'job1', user_id: 'account1', proof_id: 'proof1', mode: 'exam',
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); mocks.list.mockResolvedValue([]); mocks.submit.mockResolvedValue(job); mocks.cancel.mockResolvedValue({ ok: true }); mocks.complete.mockResolvedValue({ ok: true }); });
 afterEach(cleanup);
 describe('acompanhamento de leituras sem bloquear a navegação', () => {
+  it('uma leitura que falhou pode concluir após repetir e recebe um novo aviso', async () => {
+    const failed={...job,status:'failed' as const,started_at:'2026-10-04T02:00:00Z'};
+    mocks.list.mockResolvedValue([failed]);
+    const {result}=renderHook(()=>useAIReadingJobs('account1',true));
+    await waitFor(()=>expect(result.current.notice?.status).toBe('failed'));
+    const retried={...job,started_at:'2026-10-04T02:05:00Z'};
+    mocks.retry.mockResolvedValue(retried);mocks.list.mockResolvedValue([retried]);
+    await act(async()=>{await result.current.retry(failed);});
+    mocks.list.mockResolvedValue([{...retried,status:'ready'}]);act(()=>result.current.refresh());
+    await waitFor(()=>expect(result.current.notice?.status).toBe('ready'));
+    expect(mocks.notify).toHaveBeenCalledTimes(1);expect(mocks.submit).not.toHaveBeenCalled();
+  });
   it('uma consulta antiga não esconde uma leitura recém-enviada', async () => {
     let finish!: (value: AIReadingJob[]) => void;
     mocks.list.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));

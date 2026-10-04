@@ -14,6 +14,10 @@ const input = { id, proof_id: 'proof1', mode: 'exam', target_snapshot: null, ver
 const extraction = { title: 'Prova', examType: 'multiple_choice', totalQuestions: 1, questions: [{ number: 1, statement: 'Enunciado', options: [] }], answers: [], warnings: [] };
 let rows: any[], server: Server, url: string;
 const read = vi.fn(), authenticate = vi.fn(), remove = vi.fn(), download = vi.fn();
+const recoveryFiles = new Map<string, Blob>();
+const recoveryUpload = vi.fn(), recoveryDownload = vi.fn();
+let resultSaveFailures = 0;
+vi.mock('node:timers/promises', () => ({ setTimeout: async (_ms: number, _value: unknown, options?: {signal?: AbortSignal}) => { options?.signal?.throwIfAborted(); } }));
 function query() {
   let operation = 'select', values: any, predicates: ((row: any) => boolean)[] = [];
   const builder: any = {
@@ -24,6 +28,7 @@ function query() {
     lt: (key: string, value: string) => { predicates.push(row => Boolean(row[key]) && row[key] < value); return builder; },
     order: () => builder, limit: () => builder,
     execute: () => {
+      if (operation === 'update' && values.status === 'ready' && resultSaveFailures > 0) { resultSaveFailures--; return { data: null, error: {code: 'TEST_OUTAGE'} }; }
       if (operation === 'insert') {
         if (rows.some(row => row.id === values.id || (row.user_id === values.user_id && ['queued','running'].includes(row.status)))) return { data: null, error: { code: '23505' } };
         rows.push({ ...values, created_at: new Date().toISOString() });
@@ -42,8 +47,10 @@ async function request(method = 'GET', path = '', body?: unknown, token = 'owner
   return fetch(url + path, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: token } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
 }
 beforeEach(async () => {
-  vi.clearAllMocks(); rows = [];
-  mocks.client.mockImplementation(() => ({ from: query, storage: { from: () => ({ download, remove }) } }));
+  vi.clearAllMocks(); rows = []; recoveryFiles.clear(); resultSaveFailures = 0;
+  recoveryUpload.mockImplementation(async (path, data) => { recoveryFiles.set(path, data); return { error: null }; });
+  recoveryDownload.mockImplementation(async path => ({data: recoveryFiles.get(path) || null, error: recoveryFiles.has(path) ? null : {statusCode:'404',message:'Not found'}}));
+  mocks.client.mockImplementation(() => ({ from: query, storage: { from: (bucket: string) => bucket === 'ai-reading-results' ? { download: recoveryDownload, upload: recoveryUpload, list: async () => ({data:[],error:null}), remove: async () => ({error:null}) } : { download, remove } } }));
   download.mockResolvedValue({ data: blob, error: null }); remove.mockResolvedValue({ error: null });
   authenticate.mockImplementation(async (req, res) => {
     if (!req.get('authorization')) { res.status(401).json({ error: 'Login necessário' }); return null; }
@@ -99,5 +106,43 @@ describe('requisições assíncronas persistidas', () => {
     expect((await request('POST', `/${id}/complete`)).status).toBe(200);
     expect((await request('DELETE', `/${id}`)).status).toBe(404);
     expect(rows[0].status).toBe('completed'); expect(remove).not.toHaveBeenCalled();
+  });
+  it('retoma uma falha com o mesmo original e rejeita repetição por outra conta', async () => {
+    read.mockRejectedValueOnce({status:503});
+    await request('POST', '', input); await vi.waitFor(() => expect(rows[0].status).toBe('failed'));
+    expect((await request('POST', `/${id}/retry`, undefined, 'other')).status).toBe(404);
+    expect((await request('POST', `/${id}/retry`)).status).toBe(202);
+    await vi.waitFor(() => expect(rows[0].status).toBe('ready'));
+    expect(rows).toHaveLength(1); expect(download).toHaveBeenCalledTimes(2); expect(read).toHaveBeenCalledTimes(2);
+    expect(remove).not.toHaveBeenCalled();
+  });
+  it('repete só o salvamento quando o banco falha após a IA concluir', async () => {
+    resultSaveFailures = 2;
+    await request('POST', '', input); await vi.waitFor(() => expect(rows[0].status).toBe('ready'));
+    expect(read).toHaveBeenCalledOnce(); expect(recoveryFiles.has(`${owner}/${id}/result.json`)).toBe(true);
+  });
+  it('recupera resultado durável após todas as tentativas de salvar no banco falharem', async () => {
+    resultSaveFailures = 5;
+    await request('POST', '', input); await vi.waitFor(() => expect(rows[0].status).toBe('saving'));
+    await vi.waitFor(() => expect(rows[0].error).toContain('Leitura concluída'));
+    rows[0].lease_expires_at = '2020-01-01T00:00:00Z';
+    await request(); await vi.waitFor(() => expect(rows[0].status).toBe('ready'));
+    expect(read).toHaveBeenCalledOnce(); expect(download).toHaveBeenCalledOnce();
+  });
+  it('não chama a IA se não puder consultar um resultado já preservado', async () => {
+    recoveryDownload.mockResolvedValue({data:null,error:{statusCode:'500',message:'Unavailable'}});
+    await request('POST', '', input); await vi.waitFor(() => expect(rows[0].status).toBe('failed'));
+    expect(read).not.toHaveBeenCalled(); expect(download).not.toHaveBeenCalled();
+  });
+  it('reaproveita uma parte concluída quando a parte seguinte falha', async () => {
+    let generatedParts = 0;
+    read.mockImplementation(async (_config, _key, _file, _hint, _signal, context) => {
+      const cached = await context.loadPart(0, 'part-hash');
+      if (!cached) { generatedParts++; await context.savePart(0, 'part-hash', extraction); throw {status:503}; }
+      return cached;
+    });
+    await request('POST', '', input); await vi.waitFor(() => expect(rows[0].status).toBe('failed'));
+    await request('POST', `/${id}/retry`); await vi.waitFor(() => expect(rows[0].status).toBe('ready'));
+    expect(generatedParts).toBe(1);
   });
 });

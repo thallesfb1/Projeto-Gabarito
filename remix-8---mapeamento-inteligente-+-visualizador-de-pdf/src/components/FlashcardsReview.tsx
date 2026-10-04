@@ -6,6 +6,7 @@ import { ExamReader } from './ExamReader';
 import type { FlashcardDeck, SimuladoData } from '../types';
 import { compatibleFlashcardDeck, flashcardReviewId, savedFlashcardReviews, flashcardSourceKey, flashcardSources } from '../utils/flashcards';
 import { generateFlashcardsWithAI } from '../utils/aiClient';
+import { prepareReadingSound, playReadingSound } from '../utils/readingSound';
 
 interface Props {
   proof: SimuladoData;
@@ -42,6 +43,7 @@ export function FlashcardsReview({ proof, signedIn, onSignIn, onSave, onMapSubje
   const close = () => { abort.current?.abort(); setOpen(false); setBusy(false); setReferenceQuestion(null); setError(''); };
   const create = async () => {
     if (busy || !ready || !sources.length || !signedIn) return;
+    void prepareReadingSound();
     const controller = new AbortController(); abort.current = controller;
     setBusy(true); setError('');
     try {
@@ -49,6 +51,7 @@ export function FlashcardsReview({ proof, signedIn, onSignIn, onSave, onMapSubje
       if (controller.signal.aborted) return;
       const next = { sourceKey, createdAt: new Date().toISOString(), cards, masteredCardIds: [] };
       setGenerated(next); onSave(next); setSelectedReview(flashcardReviewId(next)); setStarted(false); setIndex(0); setFinished(false);
+      if (document.visibilityState === 'hidden') playReadingSound();
     } catch (cause) { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Não foi possível criar os flashcards.'); }
     finally { if (abort.current === controller) setBusy(false); }
   };

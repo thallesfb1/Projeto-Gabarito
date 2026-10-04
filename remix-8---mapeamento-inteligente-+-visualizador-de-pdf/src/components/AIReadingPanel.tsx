@@ -2,17 +2,21 @@ import { useState } from 'react';
 import { Bell, CheckCircle2, LoaderCircle, Sparkles, X } from 'lucide-react';
 import { AICompletionNotice } from './AICompletionNotice';
 import { isReadingJob, type AIReadingJob } from '../utils/aiJobs';
+import { AIReadingProgress } from './AIReadingProgress';
+import { prepareReadingSound, useReadingSound, setReadingSound } from '../utils/readingSound';
 
-export function AIReadingPanel({ jobs, error, notice, dismissNotice, onReview, onRemove, onRefresh }: {
+export function AIReadingPanel({ jobs, error, notice, dismissNotice, onReview, onRemove, onRefresh, onRetry }: {
   jobs: AIReadingJob[]; error: string; notice: AIReadingJob | null; dismissNotice: () => void;
   onReview: (job: AIReadingJob) => Promise<void>; onRemove: (job: AIReadingJob) => Promise<void>; onRefresh: () => void;
+  onRetry: (job: AIReadingJob) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [actionError, setActionError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const sound = useReadingSound();
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(() => typeof Notification !== 'undefined' && window.isSecureContext ? Notification.permission : 'unsupported');
   const act = async (job: AIReadingJob, action: () => Promise<void>) => {
-    if (busy) return; setBusy(job.id); setActionError('');
+    if (busy) return; void prepareReadingSound(); setBusy(job.id); setActionError('');
     try { await action(); } catch (cause) { setOpen(true); setActionError((cause as Error).message); }
     finally { setBusy(null); }
   };
@@ -35,11 +39,14 @@ export function AIReadingPanel({ jobs, error, notice, dismissNotice, onReview, o
           {permission === 'denied' && <small>Para receber avisos fora do site, permita notificações nas configurações do navegador.</small>}
           {permission === 'unsupported' && <small>Este navegador não oferece avisos externos. Você receberá o aviso no site.</small>}
         </div>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={sound} onChange={event => {setReadingSound(event.target.checked);}}/>Aviso sonoro ao concluir</label>
         {(error || actionError) && <div role="alert" className="ai-error"><p>{actionError || error}</p><button className="text-action" onClick={onRefresh}>Atualizar leituras</button></div>}
         <ul>{jobs.map(job => <li key={job.id}>
           <div className="ai-reading-file"><span>{isReadingJob(job) ? <LoaderCircle size={18} className="animate-spin"/> : job.status === 'ready' ? <CheckCircle2 size={18}/> : <X size={18}/>}</span><div><strong>{job.source.name}</strong><small>{job.target_snapshot?.title || 'Novo simulado'} · {job.mode === 'exam' ? 'Prova' : 'Gabarito'}</small></div></div>
-          <p role="status">{job.status === 'queued' ? 'Aguardando processamento…' : job.status === 'running' ? 'Lendo o arquivo. Você pode continuar usando o site.' : job.status === 'ready' ? 'Pronto para conferir e importar.' : job.error || 'Não foi possível concluir a leitura.'}</p>
+          {isReadingJob(job) ? <AIReadingProgress job={job}/> : <p role="status">{job.status === 'ready' ? 'Pronto para conferir e importar.' : job.error || 'Não foi possível concluir a leitura.'}</p>}
           <div className="ai-reading-actions">{job.status === 'ready' && <button className="primary-action" disabled={Boolean(busy)} onClick={() => void act(job, () => onReview(job))}>{busy === job.id ? 'Abrindo…' : 'Conferir leitura'}</button>}
+            {isReadingJob(job) && <button className="primary-action" disabled={Boolean(busy)} onClick={() => void act(job, () => onReview(job))}>Acompanhar leitura</button>}
+            {job.status === 'failed' && <><button className="primary-action" disabled={Boolean(busy)} onClick={() => {void prepareReadingSound();void act(job, () => onRetry(job));}}>Tentar novamente</button><button className="text-action" disabled={Boolean(busy)} onClick={() => void act(job, () => onReview(job))}>Ver arquivo e leitura</button></>}
             <button className="text-action" disabled={Boolean(busy)} onClick={() => void act(job, () => onRemove(job))}>{isReadingJob(job) ? 'Cancelar leitura' : 'Dispensar leitura'}</button></div>
         </li>)}</ul>
       </div>}

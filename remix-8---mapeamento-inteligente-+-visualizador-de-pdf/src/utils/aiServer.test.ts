@@ -4,6 +4,8 @@ import { AddressInfo } from 'node:net';
 const mocks=vi.hoisted(()=>({generate:vi.fn(),list:vi.fn(),getUser:vi.fn(),construct:vi.fn()}));
 vi.mock('@google/genai',()=>({GoogleGenAI:class { constructor(config:unknown){mocks.construct(config);} models={generateContent:mocks.generate,list:mocks.list}; }}));
 vi.mock('@supabase/supabase-js',()=>({createClient:()=>({auth:{getUser:mocks.getUser}})}));
+vi.mock('../../server/pdfParts', () => ({ splitPDF: async (data: string) => [{ data, pages: [1], mainStart: 1, mainEnd: 1 }], mergeReadings: (parts: unknown[]) => parts[0] }));
+vi.mock('node:timers/promises', () => ({ setTimeout: async (_ms: number, _value: unknown, options?: {signal?: AbortSignal}) => { options?.signal?.throwIfAborted(); } }));
 import { createAIApp, validateFilePayload } from '../../server/ai';
 import { AI_EXTRACTION_TIMEOUT_MS, AI_EXTRACTION_ATTEMPT_TIMEOUT_MS } from './aiTiming';
 let server:Server;let url:string;

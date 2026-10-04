@@ -16,6 +16,7 @@ import {
 import { AppTheme } from '../types';
 
 interface ControlsBarProps {
+  onImportFile?: () => void;
   totalQuestions: number;
   onTotalChange: (newTotal: number) => void;
   filledCount: number;
@@ -37,6 +38,7 @@ interface ControlsBarProps {
 }
 
 export const ControlsBar: React.FC<ControlsBarProps> = ({
+  onImportFile,
   totalQuestions,
   onTotalChange,
   filledCount,
@@ -223,6 +225,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         {/* Right Side: Primary Actions (Gabarito, Central, Corrigir) */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Central de Exportação e Gabarito */}
+          {onImportFile && <button type="button" className="secondary-action text-xs" onClick={onImportFile}><Upload size={16}/>Importar arquivo</button>}
           <button
             id="btn-open-export-import-center"
             type="button"
