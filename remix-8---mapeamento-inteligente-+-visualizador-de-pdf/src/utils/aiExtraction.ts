@@ -1,5 +1,6 @@
 import type { AnswerOption, ExamType, ExtractedQuestion, SubjectRange, SubjectColor } from '../types.ts';
 import { normalizeAnswer } from './validation.ts';
+import { aiReviewWarnings } from './aiReadingWarnings.ts';
 
 export type ExtractionMode = 'exam' | 'key';
 export interface AIExtraction {
@@ -28,7 +29,7 @@ export function validateAIExtraction(value: unknown, mode: ExtractionMode): AIEx
   const examType = raw.examType;
   const total = raw.totalQuestions;
   if (typeof total !== 'number' || !Number.isInteger(total) || total < 1 || total > 200) throw new Error('A leitura deve conter entre 1 e 200 questões. Divida provas maiores em arquivos menores.');
-  const warnings = Array.isArray(raw.warnings) ? raw.warnings.map(item => text(item, 1000)).filter(Boolean).slice(0, 30) : [];
+  const warnings = Array.isArray(raw.warnings) ? aiReviewWarnings(raw.warnings.map(item => text(item, 1000)).filter(Boolean)).slice(0, 30) : [];
   const seen = new Set<number>();
   const questions: ExtractedQuestion[] = [];
   if (mode === 'exam') {

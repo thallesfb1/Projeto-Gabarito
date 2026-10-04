@@ -21,6 +21,14 @@ async function prepare(){
   expect(screen.queryByRole('checkbox',{name:/Enviar este arquivo/})).toBeNull();
 }
 describe('conferência de IA',()=>{
+  it('reabre uma leitura antiga sem relatos internos e mantém o mapa final e avisos úteis',()=>{
+    const extraction={...result,examType:'multiple_choice' as const,answers:[],questions:[1,2].map(number=>({number,statement:'Enunciado',subject:'Atualidades',options:[]})),warnings:["As questões 1 a 2 foram classificadas como 'Direito Ambiental' por inferência de conteúdo.",'O documento contém 4 partes. Esta é a parte 2 de 4.','Confira a figura da questão 2 no PDF.']};
+    render(<AIImportModal initialMode="exam" simulado={null} initialExtraction={extraction} initialFile={new File(['pdf'],'prova.pdf',{type:'application/pdf'})} onKey={vi.fn()} onCreate={vi.fn()} onClose={vi.fn()}/>);
+    expect(screen.getByText('Disciplinas identificadas')).toBeTruthy();
+    expect(screen.getByText('Atualidades')).toBeTruthy();expect(screen.getByText('Questões 1–2')).toBeTruthy();
+    expect(screen.getByText('Pontos para conferir')).toBeTruthy();expect(screen.getByText('Confira a figura da questão 2 no PDF.')).toBeTruthy();
+    expect(screen.queryByText(/Direito Ambiental/)).toBeNull();expect(screen.queryByText(/parte 2 de 4/)).toBeNull();
+  });
   it('exige arquivo e revisão, permite corrigir OCR e só então aplica',async()=>{
     const onKey=vi.fn().mockResolvedValue(undefined);const onClose=vi.fn();
     render(<AIImportModal initialMode="key" simulado={createNewSimulado('Minha prova',2)} onKey={onKey} onCreate={vi.fn()} onClose={onClose}/>);

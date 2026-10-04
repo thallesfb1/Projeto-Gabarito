@@ -10,6 +10,7 @@ import { DocumentPreview } from './DocumentPreview';
 import { isReadingJob, type AIReadingJob } from '../utils/aiJobs';
 import { AIReadingProgress, ReadingElapsedTime } from './AIReadingProgress';
 import { prepareReadingSound, useReadingSound, setReadingSound } from '../utils/readingSound';
+import { aiReviewWarnings } from '../utils/aiReadingWarnings';
 
 interface Props {
   initialMode: ExtractionMode;
@@ -47,6 +48,7 @@ export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreat
   const [completed, setCompleted] = useState<{ filename: string; count: number } | null>(null);
   const sound = useReadingSound();
   const tracking = Boolean(initialJob && isReadingJob(initialJob));
+  const reviewWarnings = aiReviewWarnings(result?.warnings || []);
   useEffect(() => { if (initialExtraction) { setResult(initialExtraction); setReviewed(false); } }, [initialExtraction]);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>(() => typeof Notification !== 'undefined' && window.isSecureContext ? Notification.permission : 'unsupported');
   const enableNotifications = async () => {
@@ -131,7 +133,7 @@ export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreat
         {error && <p className="ai-error rounded-xl p-3 text-sm" role="alert">{error}</p>}
         {result && <>
           <div><h3 className="font-bold text-lg">Confira a leitura antes de importar</h3><p className="text-sm opacity-75">{result.totalQuestions} questões · {result.examType === 'true_false' ? 'Certo/Errado' : 'Múltipla escolha'}. A IA pode errar; compare com o arquivo original.</p></div>
-          {result.warnings.length > 0 && <div className="ai-warning rounded-xl p-3 space-y-1" role="status">{result.warnings.map((warning,index)=><p className="text-sm" key={index}>{warning}</p>)}</div>}
+          {reviewWarnings.length > 0 && <div className="ai-warning rounded-xl p-3 space-y-1" role="status"><strong className="text-sm">Pontos para conferir</strong>{reviewWarnings.map((warning,index)=><p className="text-sm" key={index}>{warning}</p>)}</div>}
           {(creating || mode === 'exam') && <label className="block text-sm font-semibold">{creating ? 'Título da nova prova' : 'Nome da prova identificado no PDF'}<input value={result.title} maxLength={180} disabled={Boolean(busy)} onChange={e=>setResult({...result,title:e.target.value})} className="block mt-2 w-full rounded-lg border p-2.5"/></label>}
           {mode==='exam' && <section className="ai-subject-summary"><h4>Disciplinas identificadas</h4>{subjectRangesFromQuestions(result.questions).map(range=><p key={range.id}><strong>{range.name}</strong><span>Questões {range.start}{range.end!==range.start?`–${range.end}`:''}</span></p>)}{result.questions.some(question=>!question.subject?.trim())&&<small>Algumas disciplinas precisam de identificação. Confira os campos de cada questão abaixo.</small>}</section>}
           <div className="grid md:grid-cols-2 gap-4">
