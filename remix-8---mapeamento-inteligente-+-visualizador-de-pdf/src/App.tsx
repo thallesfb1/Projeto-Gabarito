@@ -31,6 +31,10 @@ import { AccountBar } from './components/AccountBar';
 import { ExamReader } from './components/ExamReader';
 import { AIExtraction, ExtractionMode } from './utils/aiExtraction';
 import { applyAIReading,sameAIImportTarget } from './utils/aiImport';
+import { useAIReadingJobs } from './hooks/useAIReadingJobs';
+import { AIReadingPanel } from './components/AIReadingPanel';
+import { locksProof, type AIReadingJob } from './utils/aiJobs';
+import { reviewAIJobFile } from './utils/aiJobClient';
 import { saveFlashcardReview } from './utils/flashcards';
 import {useExamTimer} from './hooks/useExamTimer';
 import {TimerStartModal} from './components/TimerStartModal';
@@ -49,6 +53,10 @@ export default function App() {
   // Multi-exam centralized state with auto-migration from legacy single-exam storage
   const workspace = useWorkspace();
   const { store, setStore, isStorageReady, saveStatus, scope } = workspace;
+  const aiReadings = useAIReadingJobs(scope, isStorageReady && Boolean(workspace.session));
+  const [reviewReading, setReviewReading] = useState<{ job: AIReadingJob; file: File } | null>(null);
+  const lockedProofIds = new Set(aiReadings.jobs.filter(job => locksProof(job, job.proof_id)).map(job => job.proof_id));
+  const readingLocks = useRef(lockedProofIds); readingLocks.current = lockedProofIds;
   const currentStore = useRef(store);
   currentStore.current = store;
   const currentScope = useRef(scope);
@@ -136,6 +144,7 @@ export default function App() {
     setIsBackupModalOpen(false);
     setMapperProvaId(null);
     setAiMode(null); setAiTargetId(null);
+    setReviewReading(null);
     setModalState(previous => ({ ...previous, isOpen: false }));
   }, [scope]);
 
@@ -152,6 +161,7 @@ export default function App() {
       const activeIdx = prevStore.provas.findIndex(p => p.id === prevStore.activeId);
       if (activeIdx === -1) return prevStore;
       const currentActive = prevStore.provas[activeIdx];
+      if (readingLocks.current.has(currentActive.id)) return prevStore;
       const updated = updater(currentActive);
       updated.updatedAt = new Date().toISOString();
       const nextProvas = [...prevStore.provas];
@@ -164,7 +174,7 @@ export default function App() {
   }, []);
 
   const timer=useExamTimer(simulado,scope,updateActiveSimulado);
-  const handleQuestionFocus=(index:number|null)=>{setActiveQuestionIndex(index);if(index!==null)timer.requestStart();};
+  const handleQuestionFocus=(index:number|null)=>{if(simulado && readingLocks.current.has(simulado.id))return;setActiveQuestionIndex(index);if(index!==null)timer.requestStart();};
   const handleQuestionOpen=(index:number)=>{if(timer.requestStart())pendingReader.current=index;else setReaderQuestionIndex(index);};
   const decideTimer=(start:boolean)=>{timer.decide(start);if(pendingReader.current!==null){setReaderQuestionIndex(pendingReader.current);pendingReader.current=null;}};
   useEffect(()=>{pendingReader.current=null;},[scope,simulado?.id,workspaceView]);
@@ -172,7 +182,7 @@ export default function App() {
   // Keyboard navigation & quick answers for active exam
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!simulado || !isStorageReady || workspaceView !== 'exam' || isKeyDrawerOpen || e.ctrlKey || e.metaKey || e.altKey || e.isComposing || e.repeat) return;
+      if (!simulado || readingLocks.current.has(simulado.id) || !isStorageReady || workspaceView !== 'exam' || isKeyDrawerOpen || e.ctrlKey || e.metaKey || e.altKey || e.isComposing || e.repeat) return;
 
       // If user is in an input or textarea or any modal is open, ignore global shortcuts
       if (
@@ -447,6 +457,7 @@ export default function App() {
   // Rename prova
   const handleRenameProva = (newTitle: string) => {
     if (!renameModalProva) return;
+    if (readingLocks.current.has(renameModalProva.id)) { showToast('Confira ou dispense a leitura antes de editar esta prova.'); return; }
     const targetId = renameModalProva.id;
     setStore(prev => ({
       ...prev,
@@ -460,6 +471,7 @@ export default function App() {
 
   // Delete prova with confirmation
   const handleDeleteProva = (prova: SimuladoData) => {
+    if (readingLocks.current.has(prova.id)) { showToast('Cancele ou dispense a leitura desta prova antes de excluí-la.'); return; }
     setConfirmDialog({
       isOpen: true,
       title: 'Excluir Prova',
@@ -758,9 +770,13 @@ export default function App() {
   );
 
   const handleAIReading = async (result: AIExtraction, file: File, mode: ExtractionMode) => {
-    const account=scope; const destination=aiTargetId;
+    const account=scope; const job=reviewReading?.job; const destination=job ? (job.target_snapshot ? job.proof_id : null) : aiTargetId;
+    if(job?.user_id && job.user_id!==account) throw new Error('A leitura pertence a outra conta.');
+    const alreadyApplied=job && currentStore.current.provas.find(item=>item.aiReadingJobId===job.id);
+    if(alreadyApplied){await workspace.persistNow();await aiReadings.remove(job,true);setReviewReading(null);return;}
     const target=destination?currentStore.current.provas.find(proof=>proof.id===destination) || null:null;
-    if(destination && !target) throw new Error('Esta prova não está mais disponível. Abra novamente a importação.');
+    if(destination && !target) throw new Error('Esta prova não está mais disponível. Dispense a leitura e importe novamente como um novo simulado.');
+    if(job?.target_snapshot && !sameAIImportTarget(job.target_snapshot,target || undefined)) throw new Error('A prova mudou desde o envio do arquivo. A leitura foi preservada; dispense-a e faça uma nova importação para evitar sobrescrever respostas.');
     const proof=applyAIReading(result,mode,target,currentStore.current.provas.length);
     if(target) {
       if((target.sourceDocuments || []).length>=100) throw new Error('Esta prova já possui 100 originais salvos.');
@@ -768,15 +784,36 @@ export default function App() {
       if(!snapshot) throw new Error('Não foi possível preservar a prova atual. Exporte um backup antes de importar.');
     }
     if(currentScope.current!==account) throw new Error('A conta mudou. Abra novamente a importação.');
-    const original=await uploadOriginalFile(file,proof.id,mode);
+    const original=job?.source || await uploadOriginalFile(file,proof.id,mode);
+    if(job){proof.id=job.proof_id;proof.aiReadingJobId=job.id;}
     if(currentScope.current!==account) throw new Error('A conta mudou durante o salvamento. Abra novamente a importação.');
     if(target && !sameAIImportTarget(target,currentStore.current.provas.find(item=>item.id===destination))) throw new Error('A prova mudou durante a leitura. Confira a versão atual e importe novamente.');
     proof.sourceDocuments=[...(target?.sourceDocuments || []),original];
     if(mode==='exam') proof.sourceFileName=file.name;
     proof.updatedAt=new Date().toISOString();
-    setStore(previous=>({...previous,activeId:proof.id,provas:destination?previous.provas.map(item=>item.id===destination?{...proof,timeSpentSeconds:item.timeSpentSeconds}:item):[...previous.provas,proof]}));
+    const next={...currentStore.current,activeId:proof.id,provas:destination?currentStore.current.provas.map(item=>item.id===destination?{...proof,timeSpentSeconds:item.timeSpentSeconds,sortOrder:item.sortOrder}:item):[...currentStore.current.provas,proof]};
+    setStore(next);
+    if(job){await workspace.persistNow(next);if(currentScope.current!==account)throw new Error('A conta mudou. A leitura foi preservada.');await aiReadings.remove(job,true);setReviewReading(null);}
     setWorkspaceView('exam');setActiveQuestionIndex(0);setFilterMode('all');setIsKeyDrawerOpen(false);
     showToast(target?(mode==='exam'?'PDF e disciplinas adicionados à prova.':'Gabarito conferido importado. Corrija a prova para atualizar o resultado.'):(mode==='exam'?'Simulado criado com enunciados e disciplinas.':'Novo simulado criado com o gabarito conferido.'));
+  };
+
+  const reviewJob = async (job: AIReadingJob) => {
+    const account=scope;
+    const reading=await reviewAIJobFile(job);
+    if(currentScope.current!==account)return;
+    setReviewReading(reading);setAiTargetId(reading.job.target_snapshot ? reading.job.proof_id : null);setAiMode(reading.job.mode);
+  };
+  const startReading = async (file: File, mode: ExtractionMode, hint: string) => {
+    const account=scope,destination=aiTargetId;
+    if(destination && readingLocks.current.has(destination))throw new Error('Já há uma leitura nesta prova. Confira o painel de leituras.');
+    if(destination && currentProvaId.current===destination)timer.stop();
+    await workspace.persistNow();
+    if(currentScope.current!==account)throw new Error('A conta mudou durante o envio.');
+    const target=destination ? currentStore.current.provas.find(item=>item.id===destination) || null : null;
+    if(destination && !target)throw new Error('A prova de destino não está mais disponível.');
+    await aiReadings.start(file,mode,target,hint);
+    if(currentScope.current===account)showToast('Leitura iniciada. Você pode continuar nas outras provas.');
   };
 
   return (
@@ -966,6 +1003,8 @@ export default function App() {
                 ? 'bg-[#22242a] border border-[#3b3e48] text-zinc-100 shadow-xl shadow-black/40'
                 : 'bg-white border border-slate-200'
             }`}>
+              {lockedProofIds.has(simulado.id) && <div className="ai-proof-lock" role="status"><strong>Esta prova está aguardando a leitura com IA.</strong><p>As respostas estão protegidas até você conferir ou dispensar o resultado. Você pode estudar nas outras provas.</p><button className="secondary-action" onClick={()=>setWorkspaceView('home')}>Voltar ao painel</button></div>}
+              <fieldset disabled={lockedProofIds.has(simulado.id)} className="ai-proof-fields">
               {/* Header with Title, Date, Simulation Timer & Provas toggle button */}
               <Header
                 key={simulado.id}
@@ -1168,6 +1207,7 @@ export default function App() {
                   </a>
                 </div>
               </footer>
+              </fieldset>
             </div>
           )}
           </React.Suspense>
@@ -1178,7 +1218,9 @@ export default function App() {
       {timer.promptOpen && <TimerStartModal onDecide={decideTimer}/>}
       {/* Export / Import Modal for Individual Exam */}
       <React.Suspense fallback={<div className="fixed inset-0 bg-black/50 z-[100] grid place-items-center text-white" role="status">Abrindo painel…</div>}>
-      {aiMode && isStorageReady && <AIImportModal key={scope+':'+(aiTargetId||'new')} initialMode={aiMode} purpose={aiTargetId?'attach':'create'} simulado={aiTargetProof} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onClose={() => {setAiMode(null);setAiTargetId(null);}}
+      {aiMode && isStorageReady && <AIImportModal key={scope+':'+(reviewReading?.job.id || aiTargetId || 'new')} initialMode={aiMode} purpose={aiTargetId?'attach':'create'} simulado={aiTargetProof} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onClose={() => {setAiMode(null);setAiTargetId(null);setReviewReading(null);}}
+        onStart={reviewReading ? undefined : startReading}
+        initialExtraction={reviewReading?.job.extraction || undefined} initialFile={reviewReading?.file}
         onCreate={handleAIReading}
         onKey={(result,file)=>handleAIReading(result,file,'key')} />}
       {simulado && (
@@ -1267,10 +1309,12 @@ export default function App() {
 
       {simulado && readerQuestionIndex !== null && <ExamReader key={scope + simulado.id} simulado={simulado} index={readerQuestionIndex} onNavigate={index => { setReaderQuestionIndex(index); setActiveQuestionIndex(index); }} onAnswer={handleSelectAnswer} onClose={() => setReaderQuestionIndex(null)}/>}
 
-      {simulado && workspaceView === 'exam' && isStorageReady && <React.Suspense fallback={null}><FlashcardsReview key={scope + simulado.id} proof={simulado} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onMapSubjects={() => setMapperProvaId(simulado.id)} onSave={deck => {
+      {simulado && !lockedProofIds.has(simulado.id) && workspaceView === 'exam' && isStorageReady && <React.Suspense fallback={null}><FlashcardsReview key={scope + simulado.id} proof={simulado} signedIn={Boolean(workspace.session)} onSignIn={workspace.signIn} onMapSubjects={() => setMapperProvaId(simulado.id)} onSave={deck => {
         if (currentScope.current !== scope || currentProvaId.current !== simulado.id) return;
         updateActiveSimulado(previous => previous.id === simulado.id ? saveFlashcardReview(previous,deck) : previous);
       }}/></React.Suspense>}
+
+      {workspace.session && <AIReadingPanel key={scope} {...aiReadings} onReview={reviewJob} onRemove={job=>aiReadings.remove(job)} onRefresh={aiReadings.refresh}/>}
 
       {/* Floating Toast Notification */}
       {toastMessage && (

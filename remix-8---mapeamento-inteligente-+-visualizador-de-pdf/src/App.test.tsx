@@ -6,8 +6,19 @@ import type {MultiSimuladoStore} from './types';
 const mocks=vi.hoisted(()=>({initial:null as MultiSimuladoStore|null,store:null as MultiSimuladoStore|null,extract:vi.fn(),upload:vi.fn(),snapshot:vi.fn()}));
 vi.mock('./hooks/useWorkspace',()=>({useWorkspace:()=>{
   const[store,setStore]=React.useState(mocks.initial!);mocks.store=store;
-  return {store,setStore,scope:'test-account',isStorageReady:true,configured:true,saveStatus:'saved',cloudStatus:'synced',error:'',session:{user:{id:'test-account',user_metadata:{},email:'test@example.test'}},signIn:vi.fn(),signOut:vi.fn(),importGuest:vi.fn(),retry:vi.fn()};
+  return {store,setStore,scope:'test-account',isStorageReady:true,configured:true,saveStatus:'saved',cloudStatus:'synced',error:'',session:{user:{id:'test-account',user_metadata:{},email:'test@example.test'}},signIn:vi.fn(),signOut:vi.fn(),importGuest:vi.fn(),retry:vi.fn(),persistNow:vi.fn().mockResolvedValue(undefined)};
 }}));
+vi.mock('./hooks/useAIReadingJobs',()=>({useAIReadingJobs:()=>{
+  const[jobs,setJobs]=React.useState<any[]>([]);
+  return {jobs,error:'',notice:null,dismissNotice:vi.fn(),refresh:vi.fn(),start:async(file:File,mode:string,target:any)=>{
+    const id=crypto.randomUUID(),proof_id=target?.id || crypto.randomUUID();
+    const source={...await mocks.upload(file,proof_id,mode),mime:file.type,name:file.name};
+    const job={id,user_id:'test-account',proof_id,source,mode,target_snapshot:target,status:'running',extraction:null};
+    setJobs(previous=>[job,...previous]);
+    void mocks.extract(file,mode,new AbortController().signal).then((extraction:any)=>setJobs(previous=>previous.map(item=>item.id===id?{...item,status:'ready',extraction}:item)));
+  },remove:async(job:any)=>{setJobs(previous=>previous.filter(item=>item.id!==job.id));}};
+}}));
+vi.mock('./utils/aiJobClient',()=>({reviewAIJobFile:async(job:any)=>({job,file:new File(['file'],job.source.name,{type:job.source.mime})})}));
 vi.mock('./utils/aiClient',()=>({extractWithAI:mocks.extract,generateFlashcardsWithAI:vi.fn()}));
 vi.mock('./utils/sourceDocuments',()=>({uploadOriginalFile:mocks.upload}));
 vi.mock('./utils/indexedDbStorage',()=>({saveSnapshotToIndexedDB:mocks.snapshot}));
@@ -29,10 +40,33 @@ afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals();});
 async function readKey(){
   fireEvent.click(await screen.findByRole('button',{name:'Ler gabarito em imagem ou PDF'}));
   fireEvent.change(screen.getByLabelText('Selecione a imagem ou o PDF do gabarito oficial'),{target:{files:[new File(['image'],'gabarito.png',{type:'image/png'})]}});
-  fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
+  fireEvent.click(screen.getByRole('button',{name:'Ler em segundo plano'}));await waitFor(()=>expect(screen.queryByRole('dialog',{name:'Importar com IA'})).toBeNull());
+  fireEvent.click(await screen.findByRole('button',{name:/Suas leituras com IA/}));fireEvent.click(await screen.findByRole('button',{name:'Conferir leitura'}));await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
   fireEvent.click(screen.getByRole('checkbox',{name:/Conferi a leitura/}));
 }
 describe('importação por contexto da aplicação',()=>{
+  it('libera as outras provas enquanto a leitura protege o cartão de destino',async()=>{
+    let finish!: (value:any)=>void;
+    mocks.extract.mockReturnValue(new Promise(resolve=>{finish=resolve;}));
+    const other={...createNewSimulado('Outra prova',2),timerPrompted:true};
+    mocks.initial!.provas.push(other);
+    render(<App/>);fireEvent.click(screen.getByRole('button',{name:/Continuar minha prova/}));
+    fireEvent.click(screen.getByRole('button',{name:'Importar com IA'}));
+    await screen.findByRole('dialog',{name:'Importar com IA'});
+    fireEvent.click(screen.getByRole('button',{name:'Ler gabarito em imagem ou PDF'}));
+    fireEvent.change(screen.getByLabelText('Selecione a imagem ou o PDF do gabarito oficial'),{target:{files:[new File(['image'],'gabarito.png',{type:'image/png'})]}});
+    fireEvent.click(screen.getByRole('button',{name:'Ler em segundo plano'}));
+    await waitFor(()=>expect(screen.queryByRole('dialog',{name:'Importar com IA'})).toBeNull());
+    expect(screen.getByText('Esta prova está aguardando a leitura com IA.')).toBeTruthy();
+    fireEvent.keyDown(window,{key:'C'});expect(mocks.store!.provas[0].userAnswers).toEqual(['A','B']);
+    fireEvent.click(screen.getAllByText('Outra prova')[0]);
+    fireEvent.keyDown(window,{key:'C'});expect(mocks.store!.provas.find(proof=>proof.id===other.id)!.userAnswers[0]).toBe('C');
+    finish({title:'Gabarito',examType:'multiple_choice',totalQuestions:2,questions:[],answers:[{number:1,answer:'D'},{number:2,answer:'E'}],warnings:[]});
+    fireEvent.click(await screen.findByRole('button',{name:/Suas leituras com IA/}));fireEvent.click(await screen.findByRole('button',{name:'Conferir leitura'}));
+    fireEvent.click(await screen.findByRole('checkbox',{name:/Conferi a leitura/}));fireEvent.click(screen.getByRole('button',{name:'Importar gabarito conferido'}));
+    await waitFor(()=>expect(mocks.store!.provas[0].keyAnswers).toEqual(['D','E']));
+    expect(mocks.store!.provas.find(proof=>proof.id===other.id)!.userAnswers[0]).toBe('C');
+  });
   it('a página inicial cria uma prova nova por imagem e preserva a correção existente',async()=>{
     render(<App/>);expect(screen.queryByText('Central de Gabarito')).toBeNull();
     fireEvent.click(screen.getByRole('button',{name:'Importar com IA'}));await screen.findByRole('dialog',{name:'Importar com IA'});await readKey();
@@ -55,7 +89,7 @@ describe('importação por contexto da aplicação',()=>{
     fireEvent.click(screen.getByRole('button',{name:'Importar com IA'}));await screen.findByText('Importar nesta prova');
     fireEvent.click(screen.getByRole('button',{name:'Ler prova em PDF'}));
     fireEvent.change(screen.getByLabelText('Selecione a prova em PDF'),{target:{files:[new File(['pdf'],'prova.pdf',{type:'application/pdf'})]}});
-    fireEvent.click(screen.getByRole('button',{name:'Extrair e conferir'}));await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
+    fireEvent.click(screen.getByRole('button',{name:'Ler em segundo plano'}));await waitFor(()=>expect(screen.queryByRole('dialog',{name:'Importar com IA'})).toBeNull());fireEvent.click(await screen.findByRole('button',{name:/Suas leituras com IA/}));fireEvent.click(await screen.findByRole('button',{name:'Conferir leitura'}));await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
     fireEvent.click(screen.getByRole('checkbox',{name:/Conferi a leitura/}));fireEvent.click(screen.getByRole('button',{name:'Adicionar PDF e disciplinas à prova'}));
     await waitFor(()=>expect(mocks.store!.provas[0].extractedQuestions).toHaveLength(2));
     expect(mocks.store?.provas).toHaveLength(1);expect(mocks.store!.provas[0].title).toBe('PDF da prova');expect(mocks.store!.provas[0].userAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].keyAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].isCorrected).toBe(true);

@@ -166,5 +166,17 @@ export function useWorkspace() {
     await queue.current.catch(() => {});
     setReload(value => value + 1);
   };
-  return { store, setStore, session, scope, isStorageReady, saveStatus, cloudStatus, error, signIn, signOut, importGuest, retry, configured: Boolean(supabase) };
+  const persistNow = async (next = latest.current) => {
+    const version = generation.current;
+    if (!await saveMultiSimuladoStore(next, undefined, scope)) throw new Error('Não foi possível salvar a prova neste dispositivo. A leitura foi preservada para tentar novamente.');
+    if (!supabase || !session || !cloudLoaded.current) throw new Error('Sincronize a conta antes de importar a leitura. O resultado continua salvo.');
+    const client = supabase;
+    const pending = queue.current.catch(() => {}).then(async () => {
+      if (version !== generation.current) throw new Error('A conta mudou durante o salvamento.');
+      await writeCloud(client, scope, next, baseline.current, records => checkpoint(records, scope));
+    });
+    queue.current = pending;
+    await pending;
+  };
+  return { store, setStore, session, scope, isStorageReady, saveStatus, cloudStatus, error, signIn, signOut, importGuest, retry, persistNow, configured: Boolean(supabase) };
 }

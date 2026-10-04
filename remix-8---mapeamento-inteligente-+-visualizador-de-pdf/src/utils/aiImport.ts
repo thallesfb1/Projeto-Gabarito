@@ -4,7 +4,7 @@ import { AIExtraction, ExtractionMode, answersFromExtraction, subjectRangesFromQ
 
 export function sameAIImportTarget(before:SimuladoData,current:SimuladoData|undefined):boolean {
   if(!current)return false;
-  const content=(proof:SimuladoData)=>{const {timeSpentSeconds:_time,updatedAt:_updated,...data}=proof;return JSON.stringify(data);};
+  const content=(proof:SimuladoData)=>{const {timeSpentSeconds:_time,updatedAt:_updated,sortOrder:_order,...data}=proof;return JSON.stringify(data);};
   return content(before)===content(current);
 }
 
