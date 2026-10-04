@@ -1171,7 +1171,7 @@ export default function App() {
               }`}>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  <span role="status">{saveStatus === 'error' ? 'Não foi possível salvar. Exporte um backup antes de sair.' : saveStatus === 'saving' ? 'Salvando alterações…' : `Gabarito Pro · ${store.provas.length} ${store.provas.length === 1 ? 'simulado salvo' : 'simulados salvos'} neste navegador`}</span>
+                  <span role="status">{saveStatus === 'error' ? 'Não foi possível salvar. Exporte um backup antes de sair.' : saveStatus === 'saving' ? 'Salvando alterações…' : `Próximo Acerto · ${store.provas.length} ${store.provas.length === 1 ? 'simulado salvo' : 'simulados salvos'} neste navegador`}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -1225,7 +1225,10 @@ export default function App() {
           </React.Suspense>
         </div>
       </div>
-
+      <footer className="legal-footer no-print">
+        <span>Próximo Acerto</span>
+        <a href={window.location.protocol === 'file:' ? 'https://proximoacerto.site/privacidade.html' : '/privacidade.html'} target="_blank" rel="noopener noreferrer">Política de privacidade<span className="sr-only"> (abre em nova aba)</span></a>
+      </footer>
       </div>
       {timer.promptOpen && <TimerStartModal onDecide={decideTimer}/>}
       {/* Export / Import Modal for Individual Exam */}

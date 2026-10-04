@@ -175,7 +175,7 @@ export function metadataFromBlueprint(blueprint: ExamBlueprint): ExamMetadata {
     category: blueprint.category,
     organizer: blueprint.organizer,
     durationMinutes: blueprint.durationMinutes,
-    sourceLabel: 'Biblioteca Gabarito Pro',
+    sourceLabel: 'Biblioteca Próximo Acerto',
   };
 }
 

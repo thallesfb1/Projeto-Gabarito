@@ -279,7 +279,7 @@ export function createDemoSimulado(): SimuladoData {
     isLocked: false,
     isResultOutdated: false,
     timeSpentSeconds: 320,
-    notes: 'Esta é uma prova de demonstração para você testar e conhecer as funcionalidades de marcação, conferência e correção do Gabarito Online.',
+    notes: 'Esta é uma prova de demonstração para você testar e conhecer as funcionalidades de marcação, conferência e correção do Próximo Acerto.',
   };
 }
 

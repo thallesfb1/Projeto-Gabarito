@@ -188,6 +188,10 @@ input, select, textarea { color: var(--text-surface-title); }
 .brand-lockup strong { display: block; font-size: 20px; letter-spacing: -.6px; font-weight: 750; }
 .brand-lockup strong span { color: var(--brand); }
 .brand-lockup small { display: block; color: var(--text-surface-muted); font-size: 11px; margin-top: 1px; }
+.legal-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 24px; padding: 16px 4px; border-top: 1px solid var(--border-surface); color: var(--text-surface-muted); font-size: 12px; }
+.legal-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; padding: 8px 0; }
+.legal-footer a:hover { color: var(--text-surface-title); }
+.legal-footer a:focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; border-radius: 4px; }
 .account-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .sync-state { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-surface-muted); }
 .account-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-surface-body); }

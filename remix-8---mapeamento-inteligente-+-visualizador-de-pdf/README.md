@@ -1,4 +1,4 @@
-# Gabarito Pro
+# Próximo Acerto
 
 Plataforma local para transformar provas e simulados em diagnóstico de estudo. O foco do produto não é replicar um banco fechado de questões: o estudante pode usar uma prova de qualquer fonte, registrar o gabarito, mapear disciplinas e descobrir o que revisar em seguida.
 

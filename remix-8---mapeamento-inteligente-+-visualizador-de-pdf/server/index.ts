@@ -10,4 +10,4 @@ const dist = fileURLToPath(new URL('../dist', import.meta.url));
 app.use(express.static(dist));
 app.get('*', (_req, res) => res.sendFile(`${dist}/index.html`));
 const port = Number(process.env.PORT) || 3000;
-app.listen(port, () => console.log(`Gabarito Pro disponível na porta ${port}`));
+app.listen(port, () => console.log(`Próximo Acerto disponível na porta ${port}`));

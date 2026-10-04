@@ -1,6 +1,6 @@
 {
-  "name": "Remix 8 - Importar PDF com Ia",
-  "description": "Imported from GitHub: thallesfb1/Projeto-Gabarito",
+  "name": "Próximo Acerto",
+  "description": "Simulados, correção de provas e revisão com direção.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

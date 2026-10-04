@@ -130,7 +130,7 @@ export const CompletionFeedbackModal: React.FC<CompletionFeedbackModalProps> = (
             <div className="flex items-center gap-2 text-amber-500">
               <MessageSquare className="w-4 h-4 shrink-0" />
               <h3 className="font-bold text-sm text-[#1c2b45] dark:text-zinc-100">
-                Ajude a aprimorar o Gabarito Online
+                Ajude a aprimorar o Próximo Acerto
               </h3>
             </div>
             <p className="text-xs text-[#5b6478] dark:text-zinc-300 leading-relaxed">
