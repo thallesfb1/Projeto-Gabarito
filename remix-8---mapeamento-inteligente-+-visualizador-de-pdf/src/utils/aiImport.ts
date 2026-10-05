@@ -4,7 +4,8 @@ import { AIExtraction, ExtractionMode, answersFromExtraction, subjectRangesFromQ
 
 export function sameAIImportTarget(before:SimuladoData,current:SimuladoData|undefined):boolean {
   if(!current)return false;
-  const content=(proof:SimuladoData)=>{const {timeSpentSeconds:_time,updatedAt:_updated,sortOrder:_order,...data}=proof;return JSON.stringify(data);};
+  const canonical=(value:unknown):unknown=>Array.isArray(value)?value.map(canonical):value && typeof value==='object'?Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([key,item])=>[key,canonical(item)])):value;
+  const content=(proof:SimuladoData)=>{const {timeSpentSeconds:_time,updatedAt:_updated,sortOrder:_order,...data}=proof;return JSON.stringify(canonical(data));};
   return content(before)===content(current);
 }
 

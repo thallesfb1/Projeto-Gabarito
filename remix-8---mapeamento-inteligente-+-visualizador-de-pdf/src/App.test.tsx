@@ -45,6 +45,19 @@ async function readKey(){
   fireEvent.click(screen.getByRole('checkbox',{name:/Conferi a leitura/}));
 }
 describe('importação por contexto da aplicação',()=>{
+  it('reaproveita uma leitura incompatível em nova prova sem ler ou enviar de novo',async()=>{
+    render(<App/>);fireEvent.click(screen.getByRole('button',{name:/Continuar minha prova/}));
+    fireEvent.click(screen.getByRole('button',{name:'Importar arquivo'}));await screen.findByText('Importar nesta prova');await readKey();
+    fireEvent.click(screen.getByRole('button',{name:'Importar gabarito conferido'}));
+    await screen.findByText(/além/);
+    fireEvent.click(screen.getByRole('button',{name:'Criar nova prova com esta leitura'}));
+    await waitFor(()=>expect(mocks.store!.provas).toHaveLength(2));
+    expect(mocks.store!.provas.find(proof=>proof.id===existing.id)).toEqual(existing);
+    const created=mocks.store!.provas.find(proof=>proof.id!==existing.id)!;
+    expect(created.keyAnswers).toEqual(['C','D','E']);expect(created.userAnswers).toEqual([null,null,null]);
+    expect(created.sourceDocuments).toHaveLength(1);
+    expect(mocks.extract).toHaveBeenCalledTimes(1);expect(mocks.upload).toHaveBeenCalledTimes(1);
+  });
   it('o cabeçalho oferece três provas ou uma nova e mantém o arquivo ao mudar o destino',async()=>{
     const second=createNewSimulado('Segunda prova',3),third=createNewSimulado('Terceira prova',3);
     mocks.initial!.provas.push(second,third);
@@ -119,9 +132,11 @@ describe('importação por contexto da aplicação',()=>{
     fireEvent.change(screen.getByLabelText('Selecione a prova em PDF'),{target:{files:[new File(['pdf'],'prova.pdf',{type:'application/pdf'})]}});
     fireEvent.click(screen.getByRole('button',{name:'Ler arquivo'}));await screen.findByRole('heading',{name:'Confira a leitura antes de importar'});
     expect(screen.getByText('Questão 1').closest('details')?.open).toBe(false);
+    // Simulate restored/synchronized data changing after the PDF was sent.
+    mocks.store!.provas[0]={...mocks.store!.provas[0],userAnswers:['D','E'],notes:'Anotação recuperada'};
     fireEvent.click(screen.getByRole('checkbox',{name:/Conferi a leitura/}));fireEvent.click(screen.getByRole('button',{name:'Adicionar PDF e disciplinas à prova'}));
     await waitFor(()=>expect(mocks.store!.provas[0].extractedQuestions).toHaveLength(2));
-    expect(mocks.store?.provas).toHaveLength(1);expect(mocks.store!.provas[0].title).toBe('PDF da prova');expect(mocks.store!.provas[0].userAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].keyAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].isCorrected).toBe(true);
+    expect(mocks.store?.provas).toHaveLength(1);expect(mocks.store!.provas[0].title).toBe('PDF da prova');expect(mocks.store!.provas[0].userAnswers).toEqual(['D','E']);expect(mocks.store!.provas[0].notes).toContain('Anotação recuperada');expect(mocks.store!.provas[0].keyAnswers).toEqual(['A','B']);expect(mocks.store!.provas[0].isCorrected).toBe(true);
     expect(mocks.store!.provas[0].subjectRanges).toMatchObject([{name:'Português',start:1,end:1},{name:'Matemática',start:2,end:2}]);expect(mocks.upload.mock.calls[0][1]).toBe(existing.id);expect(mocks.upload.mock.calls[0][2]).toBe('exam');
   });
 });

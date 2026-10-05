@@ -8,6 +8,11 @@ const key:AIExtraction={title:'Gabarito novo',examType:'multiple_choice',totalQu
 const existing={...createNewSimulado('Prova antiga',4),isCorrected:true,isLocked:true,userAnswers:['A','B','C','D'] as any,keyAnswers:['A','B','C','D'] as any};
 const exam:AIExtraction={...key,title:'PDF',answers:[],questions:[1,2,3,4].map(number=>({number,statement:`Questão ${number}`,subject:number<=2?'Português':'Matemática',options:[]}))};
 describe('destino e disciplinas da importação',()=>{
+  it('ignora a ordem das propriedades restauradas do backup, inclusive em objetos internos',()=>{
+    const before={...existing,examMetadata:{year:2025,organizer:'Banca'}};
+    const current=Object.fromEntries(Object.entries({...before,examMetadata:{organizer:'Banca',year:2025}}).reverse());
+    expect(sameAIImportTarget(before,current as typeof before)).toBe(true);
+  });
   it('permite o cronômetro avançar durante um upload, mas impede aplicar em respostas alteradas ou numa prova excluída',()=>{
     expect(sameAIImportTarget(existing,{...existing,timeSpentSeconds:12,updatedAt:'2026-10-03T12:00:00Z'})).toBe(true);
     expect(sameAIImportTarget(existing,{...existing,userAnswers:['B','B','C','D']})).toBe(false);expect(sameAIImportTarget(existing,undefined)).toBe(false);

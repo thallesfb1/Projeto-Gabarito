@@ -20,6 +20,7 @@ interface Props {
   simulado: SimuladoData | null;
   onClose: () => void;
   onCreate: (result: AIExtraction, file: File, mode: ExtractionMode) => Promise<void>;
+  onCreateNew?: (result: AIExtraction, file: File, mode: ExtractionMode) => Promise<void>;
   onKey: (result: AIExtraction, file: File) => Promise<void>;
   onStart?: (file: File, mode: ExtractionMode, versionHint: string) => Promise<void>;
   initialExtraction?: AIExtraction;
@@ -30,7 +31,7 @@ interface Props {
   onRetry?: () => Promise<void>;
   onCancel?: () => Promise<void>;
 }
-export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreate, onKey, signedIn, onSignIn, onStart, initialExtraction, initialFile, initialJob, proofs = [], onDestinationChange, onRetry, onCancel }: Props) {
+export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreate, onCreateNew, onKey, signedIn, onSignIn, onStart, initialExtraction, initialFile, initialJob, proofs = [], onDestinationChange, onRetry, onCancel }: Props) {
   const creating = purpose ? purpose === 'create' : !simulado;
   const [mode, setMode] = useState(initialMode);
   const [file, setFile] = useState<File | null>(initialFile || null);
@@ -78,10 +79,11 @@ export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreat
     if (!next) return;
     try { validateAIFile(next, mode); setFile(next); } catch(cause) { setError((cause as Error).message); }
   };
-  const apply = () => run('apply', async () => {
+  const apply = (createNew = false) => run('apply', async () => {
     if (!result || !file || !reviewed) return;
     const validated = validateAIExtraction(result, mode);
-    if (creating) await onCreate(validated, file, mode);
+    if (createNew && onCreateNew) await onCreateNew(validated, file, mode);
+    else if (creating) await onCreate(validated, file, mode);
     else {
       if (!simulado) throw new Error('Esta prova não está mais disponível. Abra novamente a importação dentro da prova desejada.');
       if (validated.examType !== (simulado.examType || 'multiple_choice')) throw new Error('O tipo do arquivo é diferente do cartão selecionado.');
@@ -141,7 +143,7 @@ export function AIImportModal({ initialMode, purpose, simulado, onClose, onCreat
           <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">{mode === 'exam' ? result.questions.map((question,index)=><details key={question.number} className="rounded-xl border p-3"><summary className="font-semibold cursor-pointer">Questão {question.number}{question.page ? ` · página ${question.page}` : ''}</summary><label className="block text-xs mt-3">Disciplina<input aria-label={`Disciplina da questão ${question.number}`} value={question.subject||''} maxLength={120} disabled={Boolean(busy)} onChange={e=>setResult({...result,questions:result.questions.map((item,i)=>i===index?{...item,subject:e.target.value}:item)})} className="block w-full rounded border p-2 mt-1 text-sm"/></label><label className="block text-xs mt-3">Enunciado<textarea aria-label={`Enunciado da questão ${question.number}`} rows={5} value={question.statement} disabled={Boolean(busy)} onChange={e=>setResult({...result,questions:result.questions.map((item,i)=>i===index?{...item,statement:e.target.value}:item)})} className="block w-full rounded border p-2 mt-1 text-sm"/></label>{question.options.map((option,optionIndex)=><label key={option.label} className="block text-xs mt-2">Alternativa {option.label}<textarea aria-label={`Questão ${question.number}, texto da alternativa ${option.label}`} rows={2} disabled={Boolean(busy)} value={option.text} onChange={e=>setResult({...result,questions:result.questions.map((item,i)=>i===index?{...item,options:item.options.map((opt,j)=>j===optionIndex?{...opt,text:e.target.value}:opt)}:item)})} className="block w-full rounded border p-2 mt-1 text-sm"/></label>)}</details>) : result.answers.map((item,index)=><label key={item.number} className="flex items-center justify-between gap-3 rounded-lg border p-2 text-sm"><span>Questão {String(item.number).padStart(2,'0')}</span><select aria-label={`Gabarito da questão ${item.number}`} value={item.answer||''} disabled={Boolean(busy)} className="rounded border p-2" onChange={e=>setResult({...result,answers:result.answers.map((answer,i)=>i===index?{...answer,answer:(e.target.value||null) as typeof answer.answer}:answer)})}><option value="">Em branco / ilegível</option>{(result.examType==='true_false'?['V','F']:['A','B','C','D','E']).map(answer=><option key={answer} value={answer}>{answer}</option>)}</select></label>)}</div>
           </div>
           <label className="flex gap-2 text-sm"><input type="checkbox" checked={reviewed} disabled={Boolean(busy)} onChange={e=>setReviewed(e.target.checked)}/><span>Conferi a leitura e a versão da prova com o arquivo original.</span></label>
-          <div className="flex flex-wrap gap-2"><button className="primary-action" disabled={Boolean(busy)||!reviewed} onClick={apply}>{creating?(mode==='exam'?'Criar prova com os enunciados':'Criar simulado com este gabarito'):(mode==='exam'?'Adicionar PDF e disciplinas à prova':'Importar gabarito conferido')}</button><button className="secondary-action" disabled={Boolean(busy)} onClick={()=>{if(initialExtraction){onClose();return;}setResult(null);setReviewed(false);}}>{initialExtraction ? 'Conferir depois' : 'Escolher outro arquivo'}</button></div>
+          <div className="flex flex-wrap gap-2"><button className="primary-action" disabled={Boolean(busy)||!reviewed} onClick={()=>apply()}>{creating?(mode==='exam'?'Criar prova com os enunciados':'Criar simulado com este gabarito'):(mode==='exam'?'Adicionar PDF e disciplinas à prova':'Importar gabarito conferido')}</button>{!creating && onCreateNew && <button className="secondary-action" disabled={Boolean(busy)||!reviewed} onClick={()=>apply(true)}>Criar nova prova com esta leitura</button>}<button className="secondary-action" disabled={Boolean(busy)} onClick={()=>{if(initialExtraction){onClose();return;}setResult(null);setReviewed(false);}}>{initialExtraction ? 'Conferir depois' : 'Escolher outro arquivo'}</button></div>
         </>}
       </div>
     </div>

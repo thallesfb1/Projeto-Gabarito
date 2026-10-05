@@ -780,14 +780,14 @@ export default function App() {
     </div>
   );
 
-  const handleAIReading = async (result: AIExtraction, file: File, mode: ExtractionMode) => {
-    const account=scope; const job=reviewReading?.job; const destination=job ? (job.target_snapshot ? job.proof_id : null) : aiTargetId;
+  const handleAIReading = async (result: AIExtraction, file: File, mode: ExtractionMode, createNew = false) => {
+    const account=scope; const job=reviewReading?.job; const destination=createNew ? null : job ? (job.target_snapshot ? job.proof_id : null) : aiTargetId;
     if(job?.user_id && job.user_id!==account) throw new Error('A leitura pertence a outra conta.');
     const alreadyApplied=job && currentStore.current.provas.find(item=>item.aiReadingJobId===job.id);
     if(alreadyApplied){await workspace.persistNow();await aiReadings.remove(job,true);setReviewReading(null);return;}
     const target=destination?currentStore.current.provas.find(proof=>proof.id===destination) || null:null;
-    if(destination && !target) throw new Error('Esta prova não está mais disponível. Dispense a leitura e importe novamente como um novo simulado.');
-    if(job?.target_snapshot && !sameAIImportTarget(job.target_snapshot,target || undefined)) throw new Error('A prova mudou desde o envio do arquivo. A leitura foi preservada; dispense-a e faça uma nova importação para evitar sobrescrever respostas.');
+    if(destination && !target) throw new Error('Esta prova não está mais disponível. Use “Criar nova prova com esta leitura” para aproveitar o resultado.');
+    if(destination && mode==='key' && job?.target_snapshot && !sameAIImportTarget(job.target_snapshot,target || undefined)) throw new Error('A prova mudou desde o envio do arquivo. Sua leitura está salva. Use “Criar nova prova com esta leitura” para aproveitar o resultado sem alterar a prova atual.');
     const proof=applyAIReading(result,mode,target,currentStore.current.provas.length);
     if(target) {
       if((target.sourceDocuments || []).length>=100) throw new Error('Esta prova já possui 100 originais salvos.');
@@ -796,9 +796,9 @@ export default function App() {
     }
     if(currentScope.current!==account) throw new Error('A conta mudou. Abra novamente a importação.');
     const original=job?.source || await uploadOriginalFile(file,proof.id,mode);
-    if(job){proof.id=job.proof_id;proof.aiReadingJobId=job.id;}
+    if(job){if(!createNew)proof.id=job.proof_id;proof.aiReadingJobId=job.id;}
     if(currentScope.current!==account) throw new Error('A conta mudou durante o salvamento. Abra novamente a importação.');
-    if(target && !sameAIImportTarget(target,currentStore.current.provas.find(item=>item.id===destination))) throw new Error('A prova mudou durante a leitura. Confira a versão atual e importe novamente.');
+    if(target && !sameAIImportTarget(target,currentStore.current.provas.find(item=>item.id===destination))) throw new Error('A prova mudou durante o salvamento. Tente adicionar novamente ou use “Criar nova prova com esta leitura”.');
     proof.sourceDocuments=[...(target?.sourceDocuments || []),original];
     if(mode==='exam') proof.sourceFileName=file.name;
     proof.updatedAt=new Date().toISOString();
@@ -1241,6 +1241,7 @@ export default function App() {
         onStart={reviewReading ? undefined : startReading}
         initialExtraction={reviewReading?.job.extraction || undefined} initialFile={reviewReading?.file}
         onCreate={handleAIReading}
+        onCreateNew={(result,file,mode)=>handleAIReading(result,file,mode,true)}
         onKey={(result,file)=>handleAIReading(result,file,'key')} />}
       {simulado && (
         <ExportImportModal
